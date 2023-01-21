@@ -1,0 +1,37 @@
+{
+  "env": {
+    "browser": true,
+    "node": true,
+    "webextensions": true,
+    "es6": true
+  },
+  "extends": [
+    "plugin:jsdoc/recommended",
+    "standard"
+  ],
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "babelOptions": {
+      "plugins": [
+        "@babel/plugin-syntax-import-assertions"
+      ]
+    },
+    "ecmaVersion": "latest",
+    "requireConfigFile": false,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "unicorn"
+  ],
+  "reportUnusedDisableDirectives": true,
+  "rules": {
+    "no-await-in-loop": "error",
+    "semi": ["error", "always"],
+    "space-before-function-paren": ["error", {
+      "anonymous": "always",
+      "asyncArrow": "always",
+      "named": "never"
+    }],
+    "unicorn/prefer-node-protocol": "error"
+  }
+}
