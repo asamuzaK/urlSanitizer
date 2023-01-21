@@ -110,7 +110,7 @@ export class URISchemes {
    *
    * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
    *      - Historical schemes omitted
-   *      - Added 'moz-extension' scheme by default
+   *      - 'moz-extension' scheme added
    * @returns {Array.<string>} - array of schemes
    */
   get() {

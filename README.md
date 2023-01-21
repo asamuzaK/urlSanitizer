@@ -2,7 +2,7 @@
 
 [![build](https://github.com/asamuzaK/urlSanitizer/workflows/build/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3Abuild)
 [![CodeQL](https://github.com/asamuzaK/urlSanitizer/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3Agithub-code-scanning%3Acodeql)
-[![npm package](https://badge.fury.io/js/url-sanitizer.svg)](https://badge.fury.io/js/url-sanitizer)
+[![release](https://img.shields.io/github/release/asamuzaK/urlSanitizer.svg)](https://github.com/asamuzaK/urlSanitizer/releases)
 
 URL sanitizer for Node.js (>=18), browsers and web sites.
 **Experimental**
@@ -17,7 +17,7 @@ For browsers and web sites, standalone ESM builds are available in `dist/` direc
 * node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
 
-Or, download from [Releases](https://github.com/asamuzaK/urlSanitizer/releases)
+Or, download the source code from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
 ## Usage
 
@@ -111,7 +111,7 @@ Synchronous version of the [isURI()](#isuriuri).
 
 Get an array of URI schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml "Uniform Resource Identifier (URI) Schemes").
 * Historical schemes omitted.
-* `moz-extension` scheme added by default.
+* `moz-extension` scheme added.
 
 Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
