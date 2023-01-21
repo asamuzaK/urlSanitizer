@@ -26,11 +26,11 @@ jobs:
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
-            asset-name: url-sanitizer.min.tar.gz
+            asset-name: url-sanitizer_minified.tar.gz
             pkg-dir: pkg/min
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
-            zip-cmd: cd ./pkg/min && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
+            zip-cmd: cd ./pkg/min && tar -cvzf url-sanitizer_minified.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
             zip-mime: application/gzip
     runs-on: ${{ matrix.os }}
     env:
