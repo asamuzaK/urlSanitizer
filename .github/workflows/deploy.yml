@@ -1,0 +1,75 @@
+name: deploy
+
+on:
+  release:
+    types: [ created ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    name: deploy release assets
+    strategy:
+      matrix:
+        include:
+          - node-version: 18.x
+            os: ubuntu-latest
+            python-version: '3.x'
+            asset-name: url-sanitizer.tar.gz
+            pkg-dir: pkg/dist
+            zip-cmd: cd ./pkg && tar -cvzf url-sanitizer.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.js ./dist/url-sanitizer.js.map && cd ../
+          - node-version: 18.x
+            os: ubuntu-latest
+            python-version: '3.x'
+            asset-name: url-sanitizer.zip
+            pkg-dir: pkg/dist
+            zip-cmd: cd ./pkg && zip url-sanitizer.zip ./dist && cd ../
+          - node-version: 18.x
+            os: ubuntu-latest
+            python-version: '3.x'
+            asset-name: url-sanitizer.min.tar.gz
+            pkg-dir: pkg/dist
+            zip-cmd: cd ./pkg && tar -cvzf url-sanitizer.min.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.min.js ./dist/url-sanitizer.min.js.map && cd ../
+          - node-version: 18.x
+            os: ubuntu-latest
+            python-version: '3.x'
+            asset-name: url-sanitizer.min.zip
+            pkg-dir: pkg/dist
+            zip-cmd: cd ./pkg && zip url-sanitizer.min.zip ./dist && cd ../
+    runs-on: ${{ matrix.os }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: set up nasm
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: choco install nasm
+      - name: set up developer command prompt
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          check-latest: true
+          node-version: ${{ matrix.node-version }}
+      - name: install dependencies
+        run: npm install
+      - name: prepare build
+        run: npm run prebuild
+      - name: make directories
+        run: mkdir -p ./{bundle,${{ matrix.pkg-dir }}}
+      - name: zip package
+        run: |
+          cp ./LICENSE ./README.md ./README.ja.md ./dist/${{ matrix.file-name }} ./dist/${{ matrix.file-map }} ./${{ matrix.pkg-dir }}
+          ${{ matrix.zip-cmd }}
+          stat ./${{ matrix.pkg-dir}}/${{ matrix.asset-name }}
+      - name: upload release asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.asset-name }}
