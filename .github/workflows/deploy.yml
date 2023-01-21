@@ -1,8 +1,6 @@
 name: deploy
 
-on:
-  release:
-    types: [ created ]
+on: push
 
 defaults:
   run:
@@ -71,5 +69,6 @@ jobs:
           stat ./${{ matrix.pkg-dir}}/${{ matrix.asset-name }}
       - name: upload release asset
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ./${{ matrix.pkg-dir}}/${{ matrix.asset-name }}
