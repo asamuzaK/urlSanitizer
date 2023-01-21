@@ -86,6 +86,7 @@ Determines whether the given URI is valid.
 * `uri` **[string][1]** URI input
 
 Returns **[Promise][5]<[boolean][3]>** result
+* Always `true` for `web+*` and/or `ext+*` schemes
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
@@ -129,7 +130,6 @@ Check if the given scheme is registered.
 * `scheme` **[string][1]** scheme
 
 Returns **[boolean][3]** result
-* Always `true` for `web+*` and/or `ext+*` schemes
 
 ```javascript
 const res1 = urlSanitizer.has('https');
@@ -137,9 +137,6 @@ const res1 = urlSanitizer.has('https');
 
 const res2 = urlSanitizer.has('foo');
 // -> false
-
-const res3 = uriSanitizer.has('web+foo');
-// -> true
 ```
 
 ### urlSanitizer.add(scheme)

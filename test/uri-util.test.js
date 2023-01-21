@@ -146,6 +146,12 @@ describe('uri-scheme', () => {
         const res = schemes.has('foo');
         assert.isFalse(res, 'result');
       });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.has('web+foo');
+        assert.isFalse(res, 'result');
+      });
     });
 
     describe('add scheme', () => {
