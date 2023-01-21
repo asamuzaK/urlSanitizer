@@ -23,14 +23,6 @@ jobs:
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
-            asset-name: url-sanitizer.zip
-            pkg-dir: pkg/dist
-            file-name: url-sanitizer.js
-            file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg/dist && zip url-sanitizer.zip . && cd ../../
-          - node-version: 18.x
-            os: ubuntu-latest
-            python-version: '3.x'
             asset-name: url-sanitizer.min.tar.gz
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
@@ -39,11 +31,19 @@ jobs:
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
+            asset-name: url-sanitizer.zip
+            pkg-dir: pkg/dist
+            file-name: url-sanitizer.js
+            file-map: url-sanitizer.js.map
+            zip-cmd: zip -j ./pkg/dist/url-sanitizer.zip ./pkg/dist/
+          - node-version: 18.x
+            os: ubuntu-latest
+            python-version: '3.x'
             asset-name: url-sanitizer.min.zip
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
-            zip-cmd: cd ./pkg/dist && zip url-sanitizer.min.zip . && cd ../../
+            zip-cmd: zip -j ./pkg/dist/url-sanitizer.min.zip ./pkg/dist
     runs-on: ${{ matrix.os }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
