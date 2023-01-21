@@ -2,7 +2,7 @@
 
 [![build](https://github.com/asamuzaK/urlSanitizer/workflows/build/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3Abuild)
 [![CodeQL](https://github.com/asamuzaK/urlSanitizer/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3Agithub-code-scanning%3Acodeql)
-[![version](https://img.shields.io/github/release/asamuzaK/urlSanitizer.svg)](https://github.com/asamuzaK/urlSanitizer/releases)
+![version](https://img.shields.io/github/package-json/v/asamuzaK/urlSanitizer)
 
 URL sanitizer for Node.js (>=18), browsers and web sites.
 **Experimental**
