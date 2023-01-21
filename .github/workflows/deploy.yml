@@ -47,12 +47,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: set up nasm
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: choco install nasm
-      - name: set up developer command prompt
-        if: ${{ matrix.os == 'windows-latest' }}
-        uses: ilammy/msvc-dev-cmd@v1
       - name: use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -60,10 +54,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: install dependencies
         run: npm install
-      - name: prepare build
-        run: npm run prebuild
       - name: make directories
-        run: mkdir -p ./{bundle,${{ matrix.pkg-dir }}}
+        run: mkdir -p ./${{ matrix.pkg-dir }}
       - name: zip package
         run: |
           cp ./LICENSE ./README.md ./README.ja.md ./dist/${{ matrix.file-name }} ./dist/${{ matrix.file-map }} ./${{ matrix.pkg-dir }}
