@@ -19,24 +19,32 @@ jobs:
             python-version: '3.x'
             asset-name: url-sanitizer.tar.gz
             pkg-dir: pkg/dist
+            file-name: url-sanitizer.js
+            file-map: url-sanitizer.js.map
             zip-cmd: cd ./pkg && tar -cvzf url-sanitizer.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.js ./dist/url-sanitizer.js.map && cd ../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.zip
             pkg-dir: pkg/dist
+            file-name: url-sanitizer.js
+            file-map: url-sanitizer.js.map
             zip-cmd: cd ./pkg && zip url-sanitizer.zip ./dist && cd ../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.tar.gz
             pkg-dir: pkg/dist
+            file-name: url-sanitizer.min.js
+            file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg && tar -cvzf url-sanitizer.min.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.min.js ./dist/url-sanitizer.min.js.map && cd ../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.zip
             pkg-dir: pkg/dist
+            file-name: url-sanitizer.min.js
+            file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg && zip url-sanitizer.min.zip ./dist && cd ../
     runs-on: ${{ matrix.os }}
     env:
