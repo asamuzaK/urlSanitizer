@@ -19,7 +19,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.js
             file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.tar.gz LICENSE README.md url-sanitizer.js url-sanitizer.js.map && cd ../../
+            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.tar.gz ./ && cd ../../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
@@ -27,7 +27,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
-            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
+            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz ./ && cd ../../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
