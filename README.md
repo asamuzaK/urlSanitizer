@@ -73,7 +73,7 @@ const res5 = await sanitizeURL('data:text/html,%3Cscript%3Ealert(1);%3C/script%3
 
 ## sanitizeURLSync
 
-Synchronous version of the [sanitizeURL](#sanitizeurlurl-opt).
+Synchronous version of the [sanitizeURL()](#sanitizeurlurl-opt).
 
 ## isURI(uri)
 
@@ -101,7 +101,7 @@ const res4 = await isURI('web+foo:bar');
 
 ## isURISync(uri)
 
-Synchronous version of the [isURI](#isuriuri).
+Synchronous version of the [isURI()](#isuriuri).
 
 ## urlSanitizer
 
