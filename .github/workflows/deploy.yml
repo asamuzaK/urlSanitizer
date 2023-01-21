@@ -19,7 +19,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.js
             file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg && tar -cvzf ./dist/url-sanitizer.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.js ./dist/url-sanitizer.js.map && cd ../
+            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.tar.gz LICENSE README.md url-sanitizer.js url-sanitizer.js.map && cd ../../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
@@ -27,7 +27,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.js
             file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg && zip ./dist/url-sanitizer.zip ./dist && cd ../
+            zip-cmd: cd ./pkg/dist && zip url-sanitizer.zip . && cd ../../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
@@ -35,7 +35,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
-            zip-cmd: cd ./pkg && tar -cvzf ./dist/url-sanitizer.min.tar.gz ./dist/LICENSE ./dist/README.md ./dist/url-sanitizer.min.js ./dist/url-sanitizer.min.js.map && cd ../
+            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
           - node-version: 18.x
             os: ubuntu-latest
             python-version: '3.x'
@@ -43,7 +43,7 @@ jobs:
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
-            zip-cmd: cd ./pkg && zip ./dist/url-sanitizer.min.zip ./dist && cd ../
+            zip-cmd: cd ./pkg/dist && zip url-sanitizer.min.zip . && cd ../../
     runs-on: ${{ matrix.os }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
