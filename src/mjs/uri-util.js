@@ -276,10 +276,10 @@ const urlSanitizer = new URLSanitizer();
 const isUri = uri => urlSanitizer.isURI(uri);
 
 /**
- * is URI async
+ * is URI
  *
  * @param {string} uri - URI input
- * @returns {boolean} - result
+ * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
   const res = await isUri(uri);
@@ -300,11 +300,11 @@ const sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
 });
 
 /**
- * sanitize URL async
+ * sanitize URL
  *
  * @param {string} url - URL input
  * @param {object} opt - options
- * @returns {?string} - sanitized URL
+ * @returns {Promise<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt) => {
   const res = await sanitizeUrl(url, opt);

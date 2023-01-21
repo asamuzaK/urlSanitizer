@@ -36,7 +36,7 @@ Sanitize the given URL asynchronously.
 * `url` **[string][1]** URL input
 * `opt` **[object][4]** options
 
-Returns **[string][1]?** sanitized URL, nullable
+Returns **[Promise][5]<[string][1]?>** sanitized URL, `null`able
 
 ```javascript
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
@@ -83,7 +83,7 @@ Determines whether the given URI is valid asynchronously.
 
 * `uri` **[string][1]** URI input
 
-Returns **[boolean][3]** result
+Returns **[Promise][5]<[boolean][3]?>** result
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
@@ -182,3 +182,5 @@ const res2 = urlSanitizer.remove('foo');
 [3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
 
 [4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
+
+[5]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
