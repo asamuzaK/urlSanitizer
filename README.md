@@ -1,6 +1,12 @@
 # urlSanitizer
 
-URL sanitizer.
+[![build](https://github.com/asamuzaK/urlSanitizer/workflows/build/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3Abuild)
+[![CodeQL](https://github.com/asamuzaK/urlSanitizer/workflows/CodeQL/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions?query=workflow%3ACodeQL)
+<!--
+[![npm version](https://badge.fury.io/js/urlSanitizer.svg)](https://badge.fury.io/js/urlSanitizer)
+-->
+
+URL sanitizer for Node.js (>=18), browsers and web sites.
 
 ## Install
 
@@ -8,7 +14,7 @@ URL sanitizer.
 npm i url-sanitizer
 ```
 
-Minified and unminified builds are available in `dist/` directory.
+For browsers and web sites, standalone esm builds are available in `dist/` directory.
 * node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
 
