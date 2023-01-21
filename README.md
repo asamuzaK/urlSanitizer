@@ -36,7 +36,7 @@ Sanitize the given URL asynchronously.
 * `url` **[string][1]** URL input
 * `opt` **[object][4]** options
 
-Returns **[string][1]?** sanitized URL
+Returns **[string][1]?** sanitized URL, nullable
 
 ```javascript
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
@@ -109,13 +109,13 @@ Synchronous version of the `isURI` function.
 
 Get an array of URI schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml).
 * Historical schemes omitted.
-* Added `moz-extension` scheme by default.
+* `moz-extension` scheme added by default.
 
 Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
 ```javascript
 const schemes = urlSanitizer.get();
-// -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
+// -> ['aaa', 'aaas', 'about', 'acap', 'acct', 'acd', 'acr', ...];
 ```
 
 ### urlSanitizer.has(scheme)
@@ -153,7 +153,7 @@ Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
 ```javascript
 const res = urlSanitizer.add('foo');
-// -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
+// -> ['aaa', 'aaas', 'about', 'acap', 'acct', 'acd', ... 'foo', ...];
 ```
 
 ### urlSanitizer.remove(scheme)
