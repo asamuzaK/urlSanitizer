@@ -31,17 +31,14 @@ Sanitize the given URL asynchronously.
 * `data` and/or `file` schemes must be explicitly allowed.
 * `javascript` and/or `vbscript` schemes can not be allowed.
 
+### Parameters
+
+* `url` **[string][1]** URL input
+* `opt` **[object][4]** options
+
+Returns **[string][1]?** sanitized URL
+
 ```
-/**
- * sanitize URL
- *
- * @param {string} url - URL input
- * @param {object} opt - options
- * @param {Array.<string>} opt.allow - array of allowed schemes
- * @param {Array.<string>} opt.deny - array of denied schemes
- * @param {boolean} opt.escapeTags - escape tags and quotes in data URL
- * @returns {?string} - sanitized URL
- */
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
   .then(res => decodeURIComponent(res));
 // -> 'http://example.com/?&lt;script&gt;alert(1);&lt;/script&gt;'
@@ -70,7 +67,7 @@ const res5 = await sanitizeURL('data:text/html,%3Cscript%3Ealert(1);%3C/script%3
   allow: ['data'],
   escapeTags: false
 }).then(res => decodeURIComponent(res));
-// WATCH OUT!!!
+// **WATCH OUT!!!**
 // -> 'data:text/html,<script>alert(1);</script>'
 ```
 
@@ -82,13 +79,13 @@ Synchronous version of the `sanitizeURL` function.
 
 Determines whether the given URI is valid asynchronously.
 
+### Parameters
+
+* `uri` **[string][1]** URI input
+
+Returns **[boolean][3]** result
+
 ```
-/**
- * is URI
- *
- * @param {string} uri - URI input
- * @returns {boolean} - result
- */
 const res1 = await isURI('https://example.com/foo');
 // -> true
 
@@ -114,47 +111,47 @@ Get an array of URI schemes registered at [iana.org](https://www.iana.org/assign
 * Historical schemes omitted.
 * Added `moz-extension` scheme by default.
 
+Returns **[Array][2]<[string][1]>** array of registered URI schemes
+
 ```
-/**
- * get schemes
- *
- * @returns {Array.<string>} - array of schemes
- */
 const schemes = urlSanitizer.get();
 // -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
 ```
 
 ### urlSanitizer.has(scheme)
 
-Returns a boolean whether the scheme is registered.
+Check if the given scheme is registered.
+
+#### Parameters
+
+* `scheme` **[string][1]** scheme
+
+Returns **[boolean][3]** result
+* Always `true` for `web+\*` and/or `ext+\*` schemes
 
 ```
-/**
- * has scheme
- *
- * @param {string} scheme - scheme input
- * @returns {boolean} - result
- */
 const res1 = urlSanitizer.has('https');
 // -> true
 
 const res2 = urlSanitizer.has('foo');
 // -> false
+
+const res3 = uriSanitizer.has('web+foo');
+// -> true
 ```
 
 ### urlSanitizer.add(scheme)
 
 Add a scheme to the list of URI schemes.
-* `javascript` and/or `vbscript` schemes can not be registered.
-* Returns an array of URI schemes.
+* `javascript` and/or `vbscript` schemes can not be registered. It throws.
+
+#### Parameters
+
+* `scheme` **[string][1]** scheme
+
+Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
 ```
-/**
- * add scheme
- *
- * @param {string} scheme - scheme input
- * @returns {Array.<string>} - array of schemes
- */
 const res = urlSanitizer.add('foo');
 // -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
 ```
@@ -162,18 +159,26 @@ const res = urlSanitizer.add('foo');
 ### urlSanitizer.remove(scheme)
 
 Remove a scheme from the list of URI schemes.
-* Returns `true` if the scheme is successfully removed, `false` otherwise.
+
+#### Parameters
+
+* `scheme` **[string][1]** scheme
+
+Returns **[boolean][3]** result
+* `true` if the scheme is successfully removed, `false` otherwise.
 
 ```
-/**
- * remove scheme
- *
- * @param {string} scheme - scheme
- * @returns {boolean} - result
- */
 const res1 = urlSanitizer.remove('aaa');
 // -> true
 
 const res2 = urlSanitizer.remove('foo');
 // -> false
 ```
+
+[1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
+
+[2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array
+
+[3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+
+[4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
