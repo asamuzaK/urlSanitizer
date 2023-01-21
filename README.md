@@ -27,7 +27,7 @@ import urlSanitizer, {
 
 ## sanitizeURL(url, opt)
 
-Sanitize the given URL asynchronously.
+Sanitize the given URL.
 * `data` and/or `file` schemes must be explicitly allowed.
 * `javascript` and/or `vbscript` schemes can not be allowed.
 
@@ -73,11 +73,11 @@ const res5 = await sanitizeURL('data:text/html,%3Cscript%3Ealert(1);%3C/script%3
 
 ## sanitizeURLSync
 
-Synchronous version of the `sanitizeURL` function.
+Synchronous version of the [sanitizeURL](#sanitizeurlurl-opt).
 
 ## isURI(uri)
 
-Determines whether the given URI is valid asynchronously.
+Determines whether the given URI is valid.
 
 ### Parameters
 
@@ -101,13 +101,13 @@ const res4 = await isURI('web+foo:bar');
 
 ## isURISync(uri)
 
-Synchronous version of the `isURI` function.
+Synchronous version of the [isURI](#isuriuri).
 
 ## urlSanitizer
 
 ### urlSanitizer.get()
 
-Get an array of URI schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml).
+Get an array of URI schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml "Uniform Resource Identifier (URI) Schemes").
 * Historical schemes omitted.
 * `moz-extension` scheme added by default.
 
