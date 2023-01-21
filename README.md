@@ -4,7 +4,7 @@ URL sanitizer.
 
 ## Install
 
-```
+```shell
 npm i url-sanitizer
 ```
 
@@ -127,7 +127,7 @@ Check if the given scheme is registered.
 * `scheme` **[string][1]** scheme
 
 Returns **[boolean][3]** result
-* Always `true` for `web+\*` and/or `ext+\*` schemes
+* Always `true` for `web+*` and/or `ext+*` schemes
 
 ```javascript
 const res1 = urlSanitizer.has('https');
