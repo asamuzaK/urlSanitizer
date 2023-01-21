@@ -85,7 +85,7 @@ Determines whether the given URI is valid.
 
 * `uri` **[string][1]** URI input
 
-Returns **[Promise][5]<[boolean][3]?>** result
+Returns **[Promise][5]<[boolean][3]>** result
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
