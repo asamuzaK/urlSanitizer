@@ -72,4 +72,4 @@ jobs:
       - name: upload release asset
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ matrix.asset-name }}
+          files: ./${{ matrix.pkg-dir}}/${{ matrix.asset-name }}
