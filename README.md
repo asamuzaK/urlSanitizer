@@ -19,7 +19,7 @@ Or, download directly from unpkg.com
 
 ## Usage
 
-```
+```javascript
 import urlSanitizer, {
   isURI, isURISync, sanitizeURL, sanitizeURLSync
 } from 'url-sanitizer';
@@ -38,7 +38,7 @@ Sanitize the given URL asynchronously.
 
 Returns **[string][1]?** sanitized URL
 
-```
+```javascript
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
   .then(res => decodeURIComponent(res));
 // -> 'http://example.com/?&lt;script&gt;alert(1);&lt;/script&gt;'
@@ -67,7 +67,7 @@ const res5 = await sanitizeURL('data:text/html,%3Cscript%3Ealert(1);%3C/script%3
   allow: ['data'],
   escapeTags: false
 }).then(res => decodeURIComponent(res));
-// **WATCH OUT!!!**
+// WATCH OUT!!!
 // -> 'data:text/html,<script>alert(1);</script>'
 ```
 
@@ -85,7 +85,7 @@ Determines whether the given URI is valid asynchronously.
 
 Returns **[boolean][3]** result
 
-```
+```javascript
 const res1 = await isURI('https://example.com/foo');
 // -> true
 
@@ -113,7 +113,7 @@ Get an array of URI schemes registered at [iana.org](https://www.iana.org/assign
 
 Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
-```
+```javascript
 const schemes = urlSanitizer.get();
 // -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
 ```
@@ -129,7 +129,7 @@ Check if the given scheme is registered.
 Returns **[boolean][3]** result
 * Always `true` for `web+\*` and/or `ext+\*` schemes
 
-```
+```javascript
 const res1 = urlSanitizer.has('https');
 // -> true
 
@@ -151,7 +151,7 @@ Add a scheme to the list of URI schemes.
 
 Returns **[Array][2]<[string][1]>** array of registered URI schemes
 
-```
+```javascript
 const res = urlSanitizer.add('foo');
 // -> ["aaa", "aaas", "about", "acap", "acct", "acd", "acr", ...];
 ```
@@ -167,7 +167,7 @@ Remove a scheme from the list of URI schemes.
 Returns **[boolean][3]** result
 * `true` if the scheme is successfully removed, `false` otherwise.
 
-```
+```javascript
 const res1 = urlSanitizer.remove('aaa');
 // -> true
 
