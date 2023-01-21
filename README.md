@@ -13,14 +13,11 @@ URL sanitizer for Node.js (>=18), browsers and web sites.
 npm i url-sanitizer
 ```
 
-For browsers and web sites, standalone esm builds are available in `dist/` directory.
+For browsers and web sites, standalone ESM builds are available in `dist/` directory.
 * node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
 
-<!--
-Or, download directly from unpkg.com
-* 
--->
+Or, download from [Releases](https://github.com/asamuzaK/urlSanitizer/releases)
 
 ## Usage
 
