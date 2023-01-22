@@ -17,7 +17,7 @@ For browsers and web sites, standalone ESM builds are available in `dist/` direc
 * node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
 
-Or, download the source code from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
+Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
 ## Usage
 
@@ -37,6 +37,9 @@ Sanitize the given URL.
 
 * `url` **[string][1]** URL input
 * `opt` **[object][4]** options
+* `opt.allow` **[Array[2]<[string][1]>]** array of allowed schemes
+* `opt.deny` **[Array[2]<[string][1]>]** array of denied schemes
+* `opt.escapeTags` **[boolean][3]** escape tags and quotes in data URL
 
 Returns **[Promise][5]<[string][1]?>** sanitized URL, `null`able
 
