@@ -259,8 +259,8 @@ export class URLSanitizer extends URISchemes {
                     if (parsedDataUrl) {
                       parsedData = parsedData.replace(dataUrl, parsedDataUrl);
                     }
-                    type = 0;
                   }
+                  type = 0;
                 }
               } else if (/data:[^,]*,/.test(parsedData) &&
                          !(escapeTags ?? true)) {
