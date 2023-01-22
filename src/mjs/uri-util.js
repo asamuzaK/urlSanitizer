@@ -310,6 +310,7 @@ export class URLSanitizer extends URISchemes {
             sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
               .replace(regAmp, escapeUrlEncodedHtmlChars);
             break;
+          case 0:
           default:
             sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString);
         }
