@@ -39,7 +39,7 @@ Sanitize the given URL.
 * `opt` **[object][3]** options
 * `opt.allow` **[Array][4]<[string][1]>** array of allowed schemes
 * `opt.deny` **[Array][4]<[string][1]>** array of denied schemes
-* `opt.escapeTags` **[boolean][2]** escape tags and quotes in data URL
+* `opt.escapeTags` **[boolean][2]** escape tags and quotes in data URL, `true` if omitted
 
 Returns **[Promise][5]<[string][1]?>** sanitized URL, `null`able
 
