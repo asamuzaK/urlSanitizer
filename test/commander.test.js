@@ -10,7 +10,8 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  commander, includeLibraries, parseCommand, saveUriSchemes
+  commander, createCharTable, includeLibraries, parseCommand, saveUriSchemes,
+  storeTextChars
 } from '../modules/commander.js';
 
 const BASE_URL_IANA = 'https://www.iana.org';
@@ -155,6 +156,80 @@ describe('include libraries', () => {
     stubWrite.restore();
     assert.strictEqual(writeCallCount, i + 1, 'write');
     assert.strictEqual(infoCallCount, j + 1, 'info');
+    assert.strictEqual(res, filePath, 'result');
+  });
+});
+
+describe('store text char codes', () => {
+  it('should get result', async () => {
+    const stubWrite = sinon.stub(fs.promises, 'writeFile');
+    const stubInfo = sinon.stub(console, 'info');
+    const i = stubWrite.callCount;
+    const j = stubInfo.callCount;
+    const libPath = path.resolve(process.cwd(), 'src', 'lib');
+    const filePath = path.resolve(libPath, 'file', 'text-chars.json');
+    const res = await storeTextChars();
+    const { callCount: writeCallCount } = stubWrite;
+    const { callCount: infoCallCount } = stubInfo;
+    stubInfo.restore();
+    stubWrite.restore();
+    assert.strictEqual(writeCallCount, i + 1, 'write');
+    assert.strictEqual(infoCallCount, j, 'info');
+    assert.strictEqual(res, filePath, 'result');
+  });
+
+  it('should get result', async () => {
+    const stubWrite = sinon.stub(fs.promises, 'writeFile');
+    const stubInfo = sinon.stub(console, 'info');
+    const i = stubWrite.callCount;
+    const j = stubInfo.callCount;
+    const libPath = path.resolve(process.cwd(), 'src', 'lib');
+    const filePath = path.resolve(libPath, 'file', 'text-chars.json');
+    const res = await storeTextChars({ info: true });
+    const { callCount: writeCallCount } = stubWrite;
+    const { callCount: infoCallCount } = stubInfo;
+    stubInfo.restore();
+    stubWrite.restore();
+    assert.strictEqual(writeCallCount, i + 1, 'write');
+    assert.strictEqual(infoCallCount, j + 1, 'info');
+    assert.strictEqual(res, filePath, 'result');
+  });
+});
+
+describe('create a table of chars', () => {
+  it('should throw', async () => {
+    const stubWrite = sinon.stub(fs.promises, 'writeFile');
+    const stubInfo = sinon.stub(console, 'info');
+    const i = stubWrite.callCount;
+    const j = stubInfo.callCount;
+    stubWrite.rejects(new Error('error'));
+    const res = await createCharTable().catch(e => {
+      assert.instanceOf(e, Error, 'error');
+      assert.strictEqual(e.message, 'error', 'message');
+    });
+    const { callCount: writeCallCount } = stubWrite;
+    const { callCount: infoCallCount } = stubInfo;
+    stubInfo.restore();
+    stubWrite.restore();
+    assert.strictEqual(writeCallCount, i + 1, 'write');
+    assert.strictEqual(infoCallCount, j, 'info');
+    assert.isUndefined(res, 'result');
+  });
+
+  it('should get result', async () => {
+    const stubWrite = sinon.stub(fs.promises, 'writeFile');
+    const stubInfo = sinon.stub(console, 'info');
+    const i = stubWrite.callCount;
+    const j = stubInfo.callCount;
+    const libPath = path.resolve(process.cwd(), 'src', 'lib');
+    const filePath = path.resolve(libPath, 'file', 'text-chars.json');
+    const res = await createCharTable();
+    const { callCount: writeCallCount } = stubWrite;
+    const { callCount: infoCallCount } = stubInfo;
+    stubInfo.restore();
+    stubWrite.restore();
+    assert.strictEqual(writeCallCount, i + 1, 'write');
+    assert.strictEqual(infoCallCount, j, 'info');
     assert.strictEqual(res, filePath, 'result');
   });
 });

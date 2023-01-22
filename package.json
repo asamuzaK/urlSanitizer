@@ -24,6 +24,7 @@
     "bundle": "npm-run-all -s bundle-*",
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./index.js",
     "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./index.js",
+    "char": "node ./modules/index char -i",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"

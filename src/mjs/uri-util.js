@@ -4,6 +4,7 @@
 
 /* shared */
 import { getType, isString } from './common.js';
+import textCharTable from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
 /* constants */
@@ -64,7 +65,6 @@ export const escapeUrlEncodedHtmlChars = ch => {
 /**
  * parse base64
  *
- * @see {@link https://github.com/file/file/blob/master/src/encoding.c}
  * @param {string} data - base64 data
  * @returns {string} - parsed data / base64 data
  */
@@ -74,13 +74,7 @@ export const parseBase64 = data => {
   }
   const bin = atob(data);
   const uint8arr = Uint8Array.from([...bin].map(c => c.charCodeAt(0)));
-  const textChars = new Set([0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x1b]);
-  for (let i = 0x20; i < 0x7f; i++) {
-    textChars.add(i);
-  }
-  for (let i = 0x80; i <= 0xff; i++) {
-    textChars.add(i);
-  }
+  const textChars = new Set(textCharTable);
   let parsedData;
   if (uint8arr.every(c => textChars.has(c))) {
     parsedData = bin.replace(/\s/g, getUrlEncodedString);
