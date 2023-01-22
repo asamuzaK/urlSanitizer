@@ -30,16 +30,16 @@ import urlSanitizer, {
 ## sanitizeURL(url, opt)
 
 Sanitize the given URL.
-* `data` and/or `file` schemes must be explicitly allowed.
-* `javascript` and/or `vbscript` schemes can not be allowed.
+* `data` and `file` schemes must be explicitly allowed.
+* `javascript` and `vbscript` schemes can not be allowed.
 
 ### Parameters
 
 * `url` **[string][1]** URL input
-* `opt` **[object][4]** options
-* `opt.allow` **[Array][2]<[string][1]>** array of allowed schemes
-* `opt.deny` **[Array][2]<[string][1]>** array of denied schemes
-* `opt.escapeTags` **[boolean][3]** escape tags and quotes in data URL
+* `opt` **[object][3]** options
+* `opt.allow` **[Array][4]<[string][1]>** array of allowed schemes
+* `opt.deny` **[Array][4]<[string][1]>** array of denied schemes
+* `opt.escapeTags` **[boolean][2]** escape tags and quotes in data URL
 
 Returns **[Promise][5]<[string][1]?>** sanitized URL, `null`able
 
@@ -88,8 +88,8 @@ Determines whether the given URI is valid.
 
 * `uri` **[string][1]** URI input
 
-Returns **[Promise][5]<[boolean][3]>** result
-* Always `true` for `web+*` and/or `ext+*` schemes
+Returns **[Promise][5]<[boolean][2]>** result
+* Always `true` for `web+*` and `ext+*` schemes
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
@@ -117,7 +117,7 @@ Get an array of URI schemes registered at [iana.org](https://www.iana.org/assign
 * Historical schemes omitted.
 * `moz-extension` scheme added.
 
-Returns **[Array][2]<[string][1]>** array of registered URI schemes
+Returns **[Array][4]<[string][1]>** array of registered URI schemes
 
 ```javascript
 const schemes = urlSanitizer.get();
@@ -132,7 +132,7 @@ Check if the given scheme is registered.
 
 * `scheme` **[string][1]** scheme
 
-Returns **[boolean][3]** result
+Returns **[boolean][2]** result
 
 ```javascript
 const res1 = urlSanitizer.has('https');
@@ -145,17 +145,23 @@ const res2 = urlSanitizer.has('foo');
 ### urlSanitizer.add(scheme)
 
 Add a scheme to the list of URI schemes.
-* `javascript` and/or `vbscript` schemes can not be registered. It throws.
+* `javascript` and `vbscript` schemes can not be registered. It throws.
 
 #### Parameters
 
 * `scheme` **[string][1]** scheme
 
-Returns **[Array][2]<[string][1]>** array of registered URI schemes
+Returns **[Array][4]<[string][1]>** array of registered URI schemes
 
 ```javascript
+console.log(isURISync('foo'));
+// -> false;
+
 const res = urlSanitizer.add('foo');
 // -> ['aaa', 'aaas', 'about', 'acap', 'acct', 'acd', ... 'foo', ...];
+
+console.log(isURISync('foo'));
+// -> true;
 ```
 
 ### urlSanitizer.remove(scheme)
@@ -166,12 +172,18 @@ Remove a scheme from the list of URI schemes.
 
 * `scheme` **[string][1]** scheme
 
-Returns **[boolean][3]** result
+Returns **[boolean][2]** result
 * `true` if the scheme is successfully removed, `false` otherwise.
 
 ```javascript
+console.log(isURISync('aaa'));
+// -> true;
+
 const res1 = urlSanitizer.remove('aaa');
 // -> true
+
+console.log(isURISync('aaa'));
+// -> false;
 
 const res2 = urlSanitizer.remove('foo');
 // -> false
@@ -179,10 +191,10 @@ const res2 = urlSanitizer.remove('foo');
 
 [1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
 
-[2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array
+[2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
 
-[3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+[3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
 
-[4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
+[4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array
 
 [5]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
