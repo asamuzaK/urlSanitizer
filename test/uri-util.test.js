@@ -106,8 +106,8 @@ describe('uri-scheme', () => {
 
     it('should get parsed data', () => {
       const data = 'Hello%2C%20World!';
-      const base64data = btoa(data);
-      const res = func(base64data);
+      const base64Data = btoa(data);
+      const res = func(base64Data);
       assert.strictEqual(res, data, 'result');
     });
   });
@@ -449,16 +449,43 @@ describe('uri-scheme', () => {
 
       it('should get value', () => {
         const data = 'Hello%2C%20World!';
-        const base64data = btoa(data);
+        const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer
-          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64data}`, {
+          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64Data}`, {
             allow: ['data']
           });
         assert.strictEqual(res,
           'data:text/plain;charset=UTF-8,Hello%2C%20World!', 'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/plain;charset=UTF-8,Hello, World!', 'decode');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer
+          .sanitize('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', {
+            allow: ['data']
+          });
+        assert.strictEqual(res,
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', 'decode');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer
+          .sanitize('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', {
+            allow: ['data'],
+            escapeTags: false
+          });
+        assert.strictEqual(res,
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', 'decode');
       });
 
       it('should get value', () => {
@@ -476,10 +503,10 @@ describe('uri-scheme', () => {
 
       it('should get value', () => {
         const data = '<svg></svg>';
-        const base64data = btoa(data);
+        const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer
-          .sanitize(`data:image/svg+xml;base64,${base64data}`, {
+          .sanitize(`data:image/svg+xml;base64,${base64Data}`, {
             allow: ['data'],
             escapeTags: false
           });
@@ -491,10 +518,10 @@ describe('uri-scheme', () => {
 
       it('should get sanitized value', () => {
         const data = 'Hello%2C%20World!';
-        const base64data = btoa(data);
+        const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer
-          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64data}`, {
+          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64Data}`, {
             allow: ['data']
           });
         assert.strictEqual(res,
@@ -516,9 +543,9 @@ describe('uri-scheme', () => {
 
       it('should get sanitized value', () => {
         const data = "<script>alert('XSS');</script>?<script>alert(1);</script>";
-        const base64data = btoa(data);
+        const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(`data:text/html;base64,${base64data}`, {
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
         assert.strictEqual(res, 'data:text/html,%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;?%26lt;script%26gt;alert(1);%26lt;/script%26gt;',
@@ -540,14 +567,82 @@ describe('uri-scheme', () => {
 
       it('should get sanitized value', () => {
         const data = "%3Cscript%3Ealert('XSS');%3C/script%3E?%3Cscript%3Ealert(1);%3C/script%3E";
-        const base64data = btoa(data);
+        const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(`data:text/html;base64,${base64data}`, {
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
         assert.strictEqual(res, 'data:text/html,%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;?%26lt;script%26gt;alert(1);%26lt;/script%26gt;',
           'result');
         assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;?&lt;script&gt;alert(1);&lt;/script&gt;',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData = '<script>alert(1)</script>';
+        const encodedInnerData = encodeURIComponent(innerData);
+        const innerUrl = `data:text/html,${encodedInnerData}`;
+        const data = `<iframe src="${innerUrl}"></iframe>`;
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%26quot;%26gt;%26lt;/iframe%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData = '<script>alert(1)</script>';
+        const encodedInnerData = encodeURIComponent(innerData);
+        const base64InnerData = btoa(encodedInnerData);
+        const innerUrl = `data:text/html;base64,${base64InnerData}`;
+        const data = `<iframe src="${innerUrl}"></iframe>`;
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26amp;lt;script%26amp;gt;alert(1)%26amp;lt;%2Fscript%26amp;gt;%26quot;%26gt;%26lt;/iframe%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;&quot;&gt;&lt;/iframe&gt;',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData = '<script>alert(1)</script>';
+        const encodedInnerData = encodeURIComponent(innerData);
+        const innerUrl = `data:text/html,${encodedInnerData}`;
+        const data = `<iframe src="${innerUrl}"></iframe>`;
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data'],
+          escapeTags: false
+        });
+        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%22%3E%3C/iframe%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData = '<script>alert(1)</script>';
+        const encodedInnerData = encodeURIComponent(innerData);
+        const base64InnerData = btoa(encodedInnerData);
+        const innerUrl = `data:text/html;base64,${base64InnerData}`;
+        const data = `<iframe src="${innerUrl}"></iframe>`;
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data'],
+          escapeTags: false
+        });
+        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%22%3E%3C/iframe%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
           'decode');
       });
 

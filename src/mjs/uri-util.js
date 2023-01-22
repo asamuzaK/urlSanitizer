@@ -83,7 +83,7 @@ export const parseBase64 = data => {
   }
   let parsedData;
   if (uint8arr.every(c => textChars.has(c))) {
-    parsedData = bin;
+    parsedData = bin.replace(/\s/g, getUrlEncodedString);
   } else {
     parsedData = data;
   }
@@ -232,31 +232,86 @@ export class URLSanitizer extends URISchemes {
         }
       }
       if (bool) {
-        let urlToSanitize = href;
-        if (schemeParts.includes('data')) {
-          const [header, data] = pathname.split(',');
-          const mediaType = header.split(';');
-          const isBase64 = mediaType.pop() === 'base64';
-          if (isBase64) {
-            const parsedData = parseBase64(data);
-            if (parsedData !== data) {
-              urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
-            }
-          }
-        }
         const [amp, lt, gt, quot, apos] =
           ['&', '<', '>', '"', "'"].map(getUrlEncodedString);
         const regChars = /[<>"']/g;
         const regAmp = new RegExp(amp, 'g');
         const regEncodedChars =
           new RegExp(`(${lt}|${gt}|${quot}|${apos})`, 'g');
-        if (schemeParts.includes('data') && !(escapeTags ?? true)) {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
-            .replace(regAmp, escapeUrlEncodedHtmlChars);
+        let type;
+        let urlToSanitize = href;
+        if (schemeParts.includes('data')) {
+          const [header, data] = pathname.split(',');
+          const mediaType = header.split(';');
+          const isBase64 = mediaType.pop() === 'base64';
+          if (isBase64) {
+            let parsedData = parseBase64(data);
+            if (parsedData !== data) {
+              const regDataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/g;
+              if (regDataUrl.test(parsedData)) {
+                const dataUrlArr = [];
+                let arr = regDataUrl.exec(parsedData);
+                do {
+                  if (arr) {
+                    dataUrlArr.push(arr);
+                  }
+                } while ((arr = regDataUrl.exec(parsedData)));
+                if (dataUrlArr.length) {
+                  for (const i of dataUrlArr) {
+                    const [dataUrl] = i;
+                    const parsedDataUrl = this.sanitize(dataUrl, {
+                      allow: ['data']
+                    });
+                    if (parsedDataUrl) {
+                      parsedData = parsedData.replace(dataUrl, parsedDataUrl);
+                    }
+                    type = 0;
+                  }
+                }
+              } else if (/data:[^,]*,/.test(parsedData) &&
+                         !(escapeTags ?? true)) {
+                const dataArr = parsedData.split(/data:[^,]*,/);
+                const l = dataArr.length;
+                let i = 1;
+                while (i < l) {
+                  const dataItem = dataArr[i]
+                    .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+                  parsedData = parsedData.replace(dataArr[i], dataItem);
+                  i++;
+                }
+                type = 0;
+              }
+              urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
+              if ((escapeTags ?? true)) {
+                type = 1;
+              } else if (!Number.isInteger(type)) {
+                type = 2;
+              }
+            } else if ((escapeTags ?? true)) {
+              type = 1;
+            } else {
+              type = 2;
+            }
+          } else if ((escapeTags ?? true)) {
+            type = 1;
+          } else {
+            type = 2;
+          }
         } else {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
-            .replace(regAmp, escapeUrlEncodedHtmlChars)
-            .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+          type = 1;
+        }
+        switch (type) {
+          case 1:
+            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
+              .replace(regAmp, escapeUrlEncodedHtmlChars)
+              .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+            break;
+          case 2:
+            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
+              .replace(regAmp, escapeUrlEncodedHtmlChars);
+            break;
+          default:
+            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString);
         }
       }
     }
