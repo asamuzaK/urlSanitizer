@@ -726,7 +726,7 @@ var URLSanitizer = class extends URISchemes {
    */
   constructor() {
     super();
-    this.#recurse = /* @__PURE__ */ new Map();
+    this.#recurse = /* @__PURE__ */ new Set();
   }
   /**
    * sanitize URL
@@ -808,7 +808,7 @@ var URLSanitizer = class extends URISchemes {
                       parsedData.substring(0, index),
                       parsedData.substring(index + dataUrl.length)
                     ];
-                    this.#recurse.set(dataUrl, dataUrl);
+                    this.#recurse.add(dataUrl);
                     const parsedDataUrl = this.sanitize(dataUrl, {
                       allow: ["data"]
                     });
