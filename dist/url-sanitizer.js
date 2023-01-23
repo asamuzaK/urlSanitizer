@@ -719,6 +719,15 @@ var URISchemes = class {
   }
 };
 var URLSanitizer = class extends URISchemes {
+  /* private fields */
+  #recurse;
+  /**
+   * construct
+   */
+  constructor() {
+    super();
+    this.#recurse = /* @__PURE__ */ new Map();
+  }
   /**
    * sanitize URL
    * NOTE: `data` and/or `file` schemes must be explicitly allowed
@@ -728,13 +737,12 @@ var URLSanitizer = class extends URISchemes {
    * @param {object} opt - options
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
-   * @param {boolean} opt.escapeTags - escape tags and quotes in data URL
    * @returns {?string} - sanitized URL
    */
-  sanitize(url, opt = { allow: [], deny: [], escapeTags: true }) {
+  sanitize(url, opt = { allow: [], deny: [] }) {
     let sanitizedUrl;
     if (super.isURI(url)) {
-      const { allow, deny, escapeTags } = opt ?? {};
+      const { allow, deny } = opt ?? {};
       const { href, pathname, protocol } = new URL(url);
       const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
@@ -784,67 +792,57 @@ var URLSanitizer = class extends URISchemes {
           if (isBase64) {
             let parsedData = parseBase64(data);
             if (parsedData !== data) {
-              const regDataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/g;
-              if (regDataUrl.test(parsedData)) {
-                const dataUrlArr = [];
-                let arr = regDataUrl.exec(parsedData);
-                do {
-                  if (arr) {
-                    dataUrlArr.push(arr);
-                  }
-                } while (arr = regDataUrl.exec(parsedData));
-                if (dataUrlArr.length) {
-                  for (const i of dataUrlArr) {
-                    const [dataUrl] = i;
+              if (/data:[^,]*,/.test(parsedData)) {
+                const regDataUrl = /data:[^,]*,[^"]+/g;
+                const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
+                const matchedDataUrls = parsedData.matchAll(regDataUrl);
+                const items = [...matchedDataUrls].reverse();
+                if (items.length) {
+                  for (const item of items) {
+                    const { index } = item;
+                    let [dataUrl] = item;
+                    if (regBase64DataUrl.test(dataUrl)) {
+                      [dataUrl] = regBase64DataUrl.exec(dataUrl);
+                    }
+                    const [beforeDataUrl, afterDataUrl] = [
+                      parsedData.substring(0, index),
+                      parsedData.substring(index + dataUrl.length)
+                    ];
+                    this.#recurse.set(dataUrl, dataUrl);
                     const parsedDataUrl = this.sanitize(dataUrl, {
                       allow: ["data"]
                     });
                     if (parsedDataUrl) {
-                      parsedData = parsedData.replace(dataUrl, parsedDataUrl);
+                      parsedData = [
+                        beforeDataUrl,
+                        parsedDataUrl,
+                        afterDataUrl
+                      ].join("");
                     }
                   }
-                  type = 0;
                 }
-              } else if (/data:[^,]*,/.test(parsedData) && !(escapeTags ?? true)) {
-                const dataArr = parsedData.split(/data:[^,]*,/);
-                const l = dataArr.length;
-                let i = 1;
-                while (i < l) {
-                  const dataItem = dataArr[i].replace(regEncodedChars, escapeUrlEncodedHtmlChars);
-                  parsedData = parsedData.replace(dataArr[i], dataItem);
-                  i++;
-                }
-                type = 0;
+              }
+              if (this.#recurse.has(url)) {
+                this.#recurse.delete(url);
+              } else {
+                type = 1;
               }
               urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
-              if (escapeTags ?? true) {
-                type = 1;
-              } else if (!Number.isInteger(type)) {
-                type = 2;
-              }
-            } else if (escapeTags ?? true) {
-              type = 1;
             } else {
-              type = 2;
+              type = 1;
             }
-          } else if (escapeTags ?? true) {
-            type = 1;
+          } else if (this.#recurse.has(url)) {
+            this.#recurse.delete(url);
           } else {
-            type = 2;
+            type = 1;
           }
         } else {
           type = 1;
         }
-        switch (type) {
-          case 1:
-            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars).replace(regEncodedChars, escapeUrlEncodedHtmlChars);
-            break;
-          case 2:
-            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
-            break;
-          case 0:
-          default:
-            sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString);
+        if (type === 1) {
+          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars).replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+        } else {
+          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
         }
       }
     }
@@ -859,8 +857,7 @@ var isURI = async (uri) => {
 };
 var sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
   allow: [],
-  deny: [],
-  escapeTags: true
+  deny: []
 });
 var sanitizeURL = async (url, opt) => {
   const res = await sanitizeUrl(url, opt);
