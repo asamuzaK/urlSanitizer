@@ -174,6 +174,17 @@ export class URISchemes {
 
 /* URL sanitizer */
 export class URLSanitizer extends URISchemes {
+  /* private fields */
+  #recurse;
+
+  /**
+   * construct
+   */
+  constructor() {
+    super();
+    this.#recurse = new Map();
+  }
+
   /**
    * sanitize URL
    * NOTE: `data` and/or `file` schemes must be explicitly allowed
@@ -188,7 +199,7 @@ export class URLSanitizer extends URISchemes {
   sanitize(url, opt = { allow: [], deny: [] }) {
     let sanitizedUrl;
     if (super.isURI(url)) {
-      const { allow, deny, recurse } = opt ?? {};
+      const { allow, deny } = opt ?? {};
       const { href, pathname, protocol } = new URL(url);
       const scheme = protocol.replace(/:$/, '');
       const schemeParts = scheme.split('+');
@@ -256,9 +267,9 @@ export class URLSanitizer extends URISchemes {
                       parsedData.substring(0, index),
                       parsedData.substring(index + dataUrl.length)
                     ];
+                    this.#recurse.set(dataUrl, dataUrl);
                     const parsedDataUrl = this.sanitize(dataUrl, {
-                      allow: ['data'],
-                      recurse: false
+                      allow: ['data']
                     });
                     if (parsedDataUrl) {
                       parsedData = [
@@ -270,14 +281,18 @@ export class URLSanitizer extends URISchemes {
                   }
                 }
               }
-              if ((recurse ?? true)) {
+              if (this.#recurse.has(url)) {
+                this.#recurse.delete(url);
+              } else {
                 type = 1;
               }
               urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
             } else {
               type = 1;
             }
-          } else if ((recurse ?? true)) {
+          } else if (this.#recurse.has(url)) {
+            this.#recurse.delete(url);
+          } else {
             type = 1;
           }
         } else {
