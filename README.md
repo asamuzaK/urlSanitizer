@@ -39,7 +39,6 @@ Sanitize the given URL.
 * `opt` **[object][3]** options
 * `opt.allow` **[Array][4]<[string][1]>** array of allowed schemes
 * `opt.deny` **[Array][4]<[string][1]>** array of denied schemes
-* `opt.escapeTags` **[boolean][2]** escape tags and quotes in data URL, `true` if omitted
 
 Returns **[Promise][5]<[string][1]?>** sanitized URL, `null`able
 
@@ -59,21 +58,6 @@ const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
 }).then(res => decodeURIComponent(res));
 // -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
-
-// Also an option if you don't want to escape tags and quotes in data URL
-// But use it with care
-const res4 = await sanitizeURL('data:image/svg+xml,%3Csvg%3E%3C/svg%3E', {
-  allow: ['data'],
-  escapeTags: false
-}).then(res => decodeURIComponent(res));
-// -> 'data:image/svg+xml,<svg></svg>'
-
-const res5 = await sanitizeURL('data:text/html,%3Cscript%3Ealert(1);%3C/script%3E', {
-  allow: ['data'],
-  escapeTags: false
-}).then(res => decodeURIComponent(res));
-// WATCH OUT!!!
-// -> 'data:text/html,<script>alert(1);</script>'
 ```
 
 ## sanitizeURLSync
