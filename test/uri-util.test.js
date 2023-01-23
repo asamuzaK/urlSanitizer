@@ -605,9 +605,9 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26amp;lt;script%26amp;gt;alert(1)%26amp;lt;%2Fscript%26amp;gt;%26quot;%26gt;%26lt;/iframe%26gt;',
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%26quot;%26gt;%26lt;/iframe%26gt;',
           'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;&quot;&gt;&lt;/iframe&gt;',
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;',
           'decode');
       });
 
@@ -622,9 +622,9 @@ describe('uri-scheme', () => {
           allow: ['data'],
           escapeTags: false
         });
-        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%22%3E%3C/iframe%3E',
+        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%3Cscript%3Ealert(1)%3C%2Fscript%3E%22%3E%3C/iframe%3E',
           'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,<script>alert(1)</script>"></iframe>',
           'decode');
       });
 
@@ -640,9 +640,58 @@ describe('uri-scheme', () => {
           allow: ['data'],
           escapeTags: false
         });
-        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%26lt;script%26gt;alert(1)%26lt;%2Fscript%26gt;%22%3E%3C/iframe%3E',
+        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%3Cscript%3Ealert(1)%3C%2Fscript%3E%22%3E%3C/iframe%3E',
           'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>',
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,<script>alert(1)</script>"></iframe>',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData1 = '<script>alert(1)</script>';
+        const innerUrl1 = `data:text/html,${innerData1}`;
+        const outerData1 = `<iframe src="${innerUrl1}"></iframe>`;
+        const innerData2 = '<script>alert(2)</script>';
+        const base64InnerData2 = btoa(innerData2);
+        const innerUrl2 = `data:text/html;base64,${base64InnerData2}`;
+        const outerData2 = `<iframe src="${innerUrl2}"></iframe>`;
+        const innerData3 = '<script>alert(3)</script>';
+        const encodedInnerData3 = encodeURIComponent(innerData3);
+        const innerUrl3 = `data:text/html,${encodedInnerData3}`;
+        const outerData3 = `<iframe src="${innerUrl1}"></iframe>`;
+        const data = `${outerData1}${outerData2}${outerData3}`
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;script%26gt;alert(1)%26lt;/script%26gt;%26quot;%26gt;%26lt;/iframe%26gt;%26lt;iframe%20src=%26quot;data:text/html,%26lt;script%26gt;alert(2)%26lt;/script%26gt;%26quot;%26gt;%26lt;/iframe%26gt;%26lt;iframe%20src=%26quot;data:text/html,%26lt;script%26gt;alert(1)%26lt;/script%26gt;%26quot;%26gt;%26lt;/iframe%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(2)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(1)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const innerData1 = '<script>alert(1)</script>';
+        const innerUrl1 = `data:text/html,${innerData1}`;
+        const outerData1 = `<iframe src="${innerUrl1}"></iframe>`;
+        const innerData2 = '<script>alert(2)</script>';
+        const base64InnerData2 = btoa(innerData2);
+        const innerUrl2 = `data:text/html;base64,${base64InnerData2}`;
+        const outerData2 = `<iframe src="${innerUrl2}"></iframe>`;
+        const innerData3 = '<script>alert(3)</script>';
+        const encodedInnerData3 = encodeURIComponent(innerData3);
+        const innerUrl3 = `data:text/html,${encodedInnerData3}`;
+        const outerData3 = `<iframe src="${innerUrl3}"></iframe>`;
+        const data = `${outerData1}${outerData2}${outerData3}`
+        const base64Data = btoa(data);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+          allow: ['data'],
+          escapeTags: false
+        });
+        assert.strictEqual(res, 'data:text/html,%3Ciframe%20src=%22data:text/html,%3Cscript%3Ealert(1)%3C/script%3E%22%3E%3C/iframe%3E%3Ciframe%20src=%22data:text/html,%3Cscript%3Ealert(2)%3C/script%3E%22%3E%3C/iframe%3E%3Ciframe%20src=%22data:text/html,%3Cscript%3Ealert(3)%3C%2Fscript%3E%22%3E%3C/iframe%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<iframe src="data:text/html,<script>alert(1)</script>"></iframe><iframe src="data:text/html,<script>alert(2)</script>"></iframe><iframe src="data:text/html,<script>alert(3)</script>"></iframe>',
           'decode');
       });
 

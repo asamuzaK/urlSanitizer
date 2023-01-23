@@ -241,46 +241,60 @@ export class URLSanitizer extends URISchemes {
           if (isBase64) {
             let parsedData = parseBase64(data);
             if (parsedData !== data) {
-              const regDataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/g;
-              if (regDataUrl.test(parsedData)) {
-                const dataUrlArr = [];
-                let arr = regDataUrl.exec(parsedData);
-                do {
-                  if (arr) {
-                    dataUrlArr.push(arr);
-                  }
-                } while ((arr = regDataUrl.exec(parsedData)));
-                if (dataUrlArr.length) {
-                  for (const i of dataUrlArr) {
-                    const [dataUrl] = i;
-                    const parsedDataUrl = this.sanitize(dataUrl, {
-                      allow: ['data']
-                    });
-                    if (parsedDataUrl) {
-                      parsedData = parsedData.replace(dataUrl, parsedDataUrl);
+              if (/data:[^,]*,/.test(parsedData)) {
+                const regDataUrl = /data:[^,]*,[^"]+/g;
+                const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
+                const matchedDataUrls = parsedData.matchAll(regDataUrl);
+                const items = [...matchedDataUrls].reverse();
+                if (items.length) {
+                  for (const item of items) {
+                    const { index } = item;
+                    let [dataUrl] = item;
+                    if (regBase64DataUrl.test(dataUrl)) {
+                      [dataUrl] = regBase64DataUrl.exec(dataUrl);
                     }
+                    const [beforeDataUrl, afterDataUrl] = [
+                      parsedData.substring(0, index),
+                      parsedData.substring(index + dataUrl.length)
+                    ];
+                    //if (regBase64DataUrl.test(dataUrl)) {
+                      const parsedDataUrl = this.sanitize(dataUrl, {
+                        allow: ['data'],
+                        escapeTags: false
+                      });
+                      if (parsedDataUrl) {
+                        parsedData = [
+                          beforeDataUrl,
+                          parsedDataUrl,
+                          afterDataUrl
+                        ].join('');
+                        console.log('base64')
+                        type = 3;
+                      }
+                    /*
+                    } else if (!(escapeTags ?? true)) {
+                      const [dataUrlHeader, dataUrlBody] = dataUrl.split(',');
+                      const escapedDataUrlBody = dataUrlBody
+                        .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+                      parsedData = [
+                        beforeDataUrl,
+                        `${dataUrlHeader},${escapedDataUrlBody}`,
+                        afterDataUrl
+                      ].join('');
+                      console.log('escape')
+                      type = 1;
+                    }
+                    */
                   }
-                  type = 0;
                 }
-              } else if (/data:[^,]*,/.test(parsedData) &&
-                         !(escapeTags ?? true)) {
-                const dataArr = parsedData.split(/data:[^,]*,/);
-                const l = dataArr.length;
-                let i = 1;
-                while (i < l) {
-                  const dataItem = dataArr[i]
-                    .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
-                  parsedData = parsedData.replace(dataArr[i], dataItem);
-                  i++;
-                }
-                type = 0;
               }
-              urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
               if ((escapeTags ?? true)) {
+                console.log(type)
                 type = 1;
               } else if (!Number.isInteger(type)) {
                 type = 2;
               }
+              urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
             } else if ((escapeTags ?? true)) {
               type = 1;
             } else {
@@ -304,7 +318,7 @@ export class URLSanitizer extends URISchemes {
             sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
               .replace(regAmp, escapeUrlEncodedHtmlChars);
             break;
-          case 0:
+          case 3:
           default:
             sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString);
         }
@@ -354,7 +368,7 @@ const sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
  *
  * @param {string} url - URL input
  * @param {object} opt - options
- * @returns {Promise<?string>} - sanitized URL
+ * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt) => {
   const res = await sanitizeUrl(url, opt);
