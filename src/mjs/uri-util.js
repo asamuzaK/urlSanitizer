@@ -182,7 +182,7 @@ export class URLSanitizer extends URISchemes {
    */
   constructor() {
     super();
-    this.#recurse = new Map();
+    this.#recurse = new Set();
   }
 
   /**
@@ -267,7 +267,7 @@ export class URLSanitizer extends URISchemes {
                       parsedData.substring(0, index),
                       parsedData.substring(index + dataUrl.length)
                     ];
-                    this.#recurse.set(dataUrl, dataUrl);
+                    this.#recurse.add(dataUrl);
                     const parsedDataUrl = this.sanitize(dataUrl, {
                       allow: ['data']
                     });
