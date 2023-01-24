@@ -242,7 +242,7 @@ export class URLSanitizer extends URISchemes {
         const regAmp = new RegExp(amp, 'g');
         const regEncodedChars =
           new RegExp(`(${lt}|${gt}|${quot}|${apos})`, 'g');
-        let type;
+        let escapeHtml;
         let urlToSanitize = href;
         if (schemeParts.includes('data')) {
           const [header, data] = pathname.split(',');
@@ -256,55 +256,48 @@ export class URLSanitizer extends URISchemes {
                 const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
                 const matchedDataUrls = parsedData.matchAll(regDataUrl);
                 const items = [...matchedDataUrls].reverse();
-                if (items.length) {
-                  for (const item of items) {
-                    const { index } = item;
-                    let [dataUrl] = item;
-                    if (regBase64DataUrl.test(dataUrl)) {
-                      [dataUrl] = regBase64DataUrl.exec(dataUrl);
-                    }
-                    const [beforeDataUrl, afterDataUrl] = [
-                      parsedData.substring(0, index),
-                      parsedData.substring(index + dataUrl.length)
-                    ];
-                    this.#recurse.add(dataUrl);
-                    const parsedDataUrl = this.sanitize(dataUrl, {
-                      allow: ['data']
-                    });
-                    if (parsedDataUrl) {
-                      parsedData = [
-                        beforeDataUrl,
-                        parsedDataUrl,
-                        afterDataUrl
-                      ].join('');
-                    }
+                for (const item of items) {
+                  const { index } = item;
+                  let [dataUrl] = item;
+                  if (regBase64DataUrl.test(dataUrl)) {
+                    [dataUrl] = regBase64DataUrl.exec(dataUrl);
+                  }
+                  const [beforeDataUrl, afterDataUrl] = [
+                    parsedData.substring(0, index),
+                    parsedData.substring(index + dataUrl.length)
+                  ];
+                  this.#recurse.add(dataUrl);
+                  const parsedDataUrl = this.sanitize(dataUrl, {
+                    allow: ['data']
+                  });
+                  if (parsedDataUrl) {
+                    parsedData =
+                      `${beforeDataUrl}${parsedDataUrl}${afterDataUrl}`;
                   }
                 }
               }
               if (this.#recurse.has(url)) {
                 this.#recurse.delete(url);
               } else {
-                type = 1;
+                escapeHtml = true;
               }
               urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
             } else {
-              type = 1;
+              escapeHtml = true;
             }
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
-            type = 1;
+            escapeHtml = true;
           }
         } else {
-          type = 1;
+          escapeHtml = true;
         }
-        if (type === 1) {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
-            .replace(regAmp, escapeUrlEncodedHtmlChars)
-            .replace(regEncodedChars, escapeUrlEncodedHtmlChars);
-        } else {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
-            .replace(regAmp, escapeUrlEncodedHtmlChars);
+        sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
+          .replace(regAmp, escapeUrlEncodedHtmlChars);
+        if (escapeHtml) {
+          sanitizedUrl =
+            sanitizedUrl.replace(regEncodedChars, escapeUrlEncodedHtmlChars);
         }
       }
     }
