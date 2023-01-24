@@ -257,20 +257,20 @@ export class URLSanitizer extends URISchemes {
                 const matchedDataUrls = parsedData.matchAll(regDataUrl);
                 const items = [...matchedDataUrls].reverse();
                 for (const item of items) {
-                  const { index } = item;
                   let [dataUrl] = item;
                   if (regBase64DataUrl.test(dataUrl)) {
                     [dataUrl] = regBase64DataUrl.exec(dataUrl);
                   }
-                  const [beforeDataUrl, afterDataUrl] = [
-                    parsedData.substring(0, index),
-                    parsedData.substring(index + dataUrl.length)
-                  ];
                   this.#recurse.add(dataUrl);
                   const parsedDataUrl = this.sanitize(dataUrl, {
                     allow: ['data']
                   });
                   if (parsedDataUrl) {
+                    const { index } = item;
+                    const [beforeDataUrl, afterDataUrl] = [
+                      parsedData.substring(0, index),
+                      parsedData.substring(index + dataUrl.length)
+                    ];
                     parsedData =
                       `${beforeDataUrl}${parsedDataUrl}${afterDataUrl}`;
                   }
@@ -305,6 +305,7 @@ export class URLSanitizer extends URISchemes {
   }
 }
 
+/* instance */
 const urlSanitizer = new URLSanitizer();
 
 /* alias */
@@ -351,6 +352,7 @@ export const sanitizeURL = async (url, opt) => {
   return res;
 };
 
+/* export aliases */
 export {
   urlSanitizer as default,
   isUri as isURISync,
