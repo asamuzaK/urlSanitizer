@@ -308,7 +308,7 @@ export class URLSanitizer extends URISchemes {
 /* instance */
 const urlSanitizer = new URLSanitizer();
 
-/* alias */
+/* aliases and async wrappers */
 /**
  * is URI sync
  *
@@ -318,7 +318,7 @@ const urlSanitizer = new URLSanitizer();
 const isUri = uri => urlSanitizer.isURI(uri);
 
 /**
- * is URI
+ * is URI async
  *
  * @param {string} uri - URI input
  * @returns {Promise.<boolean>} - result
@@ -341,7 +341,7 @@ const sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
 });
 
 /**
- * sanitize URL
+ * sanitize URL async
  *
  * @param {string} url - URL input
  * @param {object} opt - options
@@ -352,7 +352,7 @@ export const sanitizeURL = async (url, opt) => {
   return res;
 };
 
-/* export aliases */
+/* export instance and aliases */
 export {
   urlSanitizer as default,
   isUri as isURISync,
