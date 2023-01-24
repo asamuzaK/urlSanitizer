@@ -720,12 +720,14 @@ var URISchemes = class {
 };
 var URLSanitizer = class extends URISchemes {
   /* private fields */
+  #nest;
   #recurse;
   /**
    * construct
    */
   constructor() {
     super();
+    this.#nest = 0;
     this.#recurse = /* @__PURE__ */ new Set();
   }
   /**
@@ -740,6 +742,10 @@ var URLSanitizer = class extends URISchemes {
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [] }) {
+    if (this.#nest > HEX) {
+      this.#nest = 0;
+      throw new Error("The nesting of data URLs is too deep.");
+    }
     let sanitizedUrl;
     if (super.isURI(url)) {
       const { allow, deny } = opt ?? {};
@@ -783,7 +789,7 @@ var URLSanitizer = class extends URISchemes {
         const regChars = /[<>"']/g;
         const regAmp = new RegExp(amp, "g");
         const regEncodedChars = new RegExp(`(${lt}|${gt}|${quot}|${apos})`, "g");
-        let type;
+        let escapeHtml;
         let urlToSanitize = href;
         if (schemeParts.includes("data")) {
           const [header, data] = pathname.split(",");
@@ -797,52 +803,47 @@ var URLSanitizer = class extends URISchemes {
                 const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
                 const matchedDataUrls = parsedData.matchAll(regDataUrl);
                 const items = [...matchedDataUrls].reverse();
-                if (items.length) {
-                  for (const item of items) {
+                for (const item of items) {
+                  let [dataUrl] = item;
+                  if (regBase64DataUrl.test(dataUrl)) {
+                    [dataUrl] = regBase64DataUrl.exec(dataUrl);
+                  }
+                  this.#nest++;
+                  this.#recurse.add(dataUrl);
+                  const parsedDataUrl = this.sanitize(dataUrl, {
+                    allow: ["data"]
+                  });
+                  if (parsedDataUrl) {
                     const { index } = item;
-                    let [dataUrl] = item;
-                    if (regBase64DataUrl.test(dataUrl)) {
-                      [dataUrl] = regBase64DataUrl.exec(dataUrl);
-                    }
                     const [beforeDataUrl, afterDataUrl] = [
                       parsedData.substring(0, index),
                       parsedData.substring(index + dataUrl.length)
                     ];
-                    this.#recurse.add(dataUrl);
-                    const parsedDataUrl = this.sanitize(dataUrl, {
-                      allow: ["data"]
-                    });
-                    if (parsedDataUrl) {
-                      parsedData = [
-                        beforeDataUrl,
-                        parsedDataUrl,
-                        afterDataUrl
-                      ].join("");
-                    }
+                    parsedData = `${beforeDataUrl}${parsedDataUrl}${afterDataUrl}`;
                   }
                 }
               }
               if (this.#recurse.has(url)) {
                 this.#recurse.delete(url);
               } else {
-                type = 1;
+                escapeHtml = true;
               }
               urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
             } else {
-              type = 1;
+              escapeHtml = true;
             }
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
-            type = 1;
+            escapeHtml = true;
           }
         } else {
-          type = 1;
+          escapeHtml = true;
         }
-        if (type === 1) {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars).replace(regEncodedChars, escapeUrlEncodedHtmlChars);
-        } else {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
+        sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
+        if (escapeHtml) {
+          sanitizedUrl = sanitizedUrl.replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+          this.#nest = 0;
         }
       }
     }
