@@ -422,6 +422,135 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get null if file scheme is not explicitly allowed', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('file:///foo/bar');
+        assert.isNull(res, 'result');
+      });
+
+      it('should override allow and get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('file:///foo/bar', {
+          deny: ['file'],
+          allow: ['file']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('file:///foo/bar', {
+          allow: ['file']
+        });
+        assert.strictEqual(res, 'file:///foo/bar', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar', {
+          allow: ['web+foo']
+        });
+        assert.strictEqual(res, 'web+foo:bar', 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar', {
+          deny: ['web+foo']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('javascript:alert(1)', {
+          allow: ['javascript']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
+          allow: ['vbscript']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+javascript:alert(1)', {
+          allow: ['web+javascript']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
+          allow: ['web+vbscript']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('http://example.com/?lt=5&gt=4');
+        const url = new URL(res);
+        assert.strictEqual(res, 'http://example.com/?lt=5&gt=4', 'result');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5'], ['gt', '4']], 'search');
+      });
+
+      it('should get sanitized value', () => {
+        const value = encodeURIComponent('5&gt=4');
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(`http://example.com/?lt=${value}`);
+        const url = new URL(res);
+        assert.strictEqual(res, 'http://example.com/?lt=5%26amp;gt%3D4', 'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'http://example.com/?lt=5&amp;gt=4', 'decode');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5&amp;gt=4']], 'search');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer
+          .sanitize("http://example.com/?<script>alert('XSS');</script>");
+        const url = new URL(res);
+        assert.strictEqual(res,
+          'http://example.com/?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'http://example.com/?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
+          'decode');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize("http://example.com/?foo=bar&<script>alert('XSS');</script>");
+        const url = new URL(res);
+        assert.strictEqual(res,
+          'http://example.com/?foo=bar&%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'http://example.com/?foo=bar&&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
+          'decode');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [['foo', 'bar'], ['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res =
+          sanitizer.sanitize('http://example.com/"onmouseover="alert(1)"');
+        assert.strictEqual(res,
+          'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;',
+          'decode');
+      });
+
       it('should get null if data scheme is not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!');
@@ -593,133 +722,45 @@ describe('uri-scheme', () => {
           'decode');
       });
 
-      it('should get null if file scheme is not explicitly allowed', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('file:///foo/bar');
-        assert.isNull(res, 'result');
-      });
-
-      it('should override allow and get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('file:///foo/bar', {
-          deny: ['file'],
-          allow: ['file']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get value', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('file:///foo/bar', {
-          allow: ['file']
-        });
-        assert.strictEqual(res, 'file:///foo/bar', 'result');
-      });
-
-      it('should get value', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+foo:bar', {
-          allow: ['web+foo']
-        });
-        assert.strictEqual(res, 'web+foo:bar', 'result');
-      });
-
-      it('should get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+foo:bar', {
-          deny: ['web+foo']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('javascript:alert(1)', {
-          allow: ['javascript']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
-          allow: ['vbscript']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+javascript:alert(1)', {
-          allow: ['web+javascript']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get null', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
-          allow: ['web+vbscript']
-        });
-        assert.isNull(res, 'result');
-      });
-
-      it('should get value', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('http://example.com/?lt=5&gt=4');
-        const url = new URL(res);
-        assert.strictEqual(res, 'http://example.com/?lt=5&gt=4', 'result');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5'], ['gt', '4']], 'search');
-      });
-
       it('should get sanitized value', () => {
-        const value = encodeURIComponent('5&gt=4');
+        let url;
+        for (let i = 0; i < 4; i++) {
+          let srcUrl;
+          if (url) {
+            srcUrl = url;
+          } else {
+            srcUrl = `https://example.com/?q=${i}`;
+          }
+          const html = `<iframe src="${srcUrl}"></iframe>`;
+          const htmlBase64 = btoa(html);
+          url = `data:text/html;base64,${htmlBase64}`;
+        }
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(`http://example.com/?lt=${value}`);
-        const url = new URL(res);
-        assert.strictEqual(res, 'http://example.com/?lt=5%26amp;gt%3D4', 'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?lt=5&amp;gt=4', 'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5&amp;gt=4']], 'search');
-      });
-
-      it('should get sanitized value', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer
-          .sanitize("http://example.com/?<script>alert('XSS');</script>");
-        const url = new URL(res);
-        assert.strictEqual(res,
-          'http://example.com/?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;iframe%20src=%26quot;data:text/html,%26lt;iframe%20src=%26quot;https://example.com/?q=0%26quot;%26gt;%26lt;/iframe%26gt;%26quot;%26gt;%26lt;/iframe%26gt;%26quot;%26gt;%26lt;/iframe%26gt;%26quot;%26gt;%26lt;/iframe%26gt;', 'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:text/html,&lt;iframe src=&quot;data:text/html,&lt;iframe src=&quot;data:text/html,&lt;iframe src=&quot;https://example.com/?q=0&quot;&gt;&lt;/iframe&gt;&quot;&gt;&lt;/iframe&gt;&quot;&gt;&lt;/iframe&gt;&quot;&gt;&lt;/iframe&gt;',
           'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
       });
 
-      it('should get sanitized value', () => {
+      it('should throw', () => {
+        let url;
+        for (let i = 0; i < 18; i++) {
+          let srcUrl;
+          if (url) {
+            srcUrl = url;
+          } else {
+            srcUrl = `https://example.com/?q=${i}`;
+          }
+          const html = `<iframe src="${srcUrl}"></iframe>`;
+          const htmlBase64 = btoa(html);
+          url = `data:text/html;base64,${htmlBase64}`;
+        }
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize("http://example.com/?foo=bar&<script>alert('XSS');</script>");
-        const url = new URL(res);
-        assert.strictEqual(res,
-          'http://example.com/?foo=bar&%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?foo=bar&&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
-          'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['foo', 'bar'], ['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
-      });
-
-      it('should get sanitized value', () => {
-        const sanitizer = new URLSanitizer();
-        const res =
-          sanitizer.sanitize('http://example.com/"onmouseover="alert(1)"');
-        assert.strictEqual(res,
-          'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;',
-          'decode');
+        assert.throws(() => sanitizer.sanitize(url, {
+          allow: ['data']
+        }), 'The nesting of data URLs is too deep.');
       });
     });
   });

@@ -175,6 +175,7 @@ export class URISchemes {
 /* URL sanitizer */
 export class URLSanitizer extends URISchemes {
   /* private fields */
+  #nest;
   #recurse;
 
   /**
@@ -182,6 +183,7 @@ export class URLSanitizer extends URISchemes {
    */
   constructor() {
     super();
+    this.#nest = 0;
     this.#recurse = new Set();
   }
 
@@ -197,6 +199,10 @@ export class URLSanitizer extends URISchemes {
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [] }) {
+    if (this.#nest > HEX) {
+      this.#nest = 0;
+      throw new Error('The nesting of data URLs is too deep.');
+    }
     let sanitizedUrl;
     if (super.isURI(url)) {
       const { allow, deny } = opt ?? {};
@@ -261,6 +267,7 @@ export class URLSanitizer extends URISchemes {
                   if (regBase64DataUrl.test(dataUrl)) {
                     [dataUrl] = regBase64DataUrl.exec(dataUrl);
                   }
+                  this.#nest++;
                   this.#recurse.add(dataUrl);
                   const parsedDataUrl = this.sanitize(dataUrl, {
                     allow: ['data']
@@ -298,6 +305,7 @@ export class URLSanitizer extends URISchemes {
         if (escapeHtml) {
           sanitizedUrl =
             sanitizedUrl.replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+          this.#nest = 0;
         }
       }
     }
