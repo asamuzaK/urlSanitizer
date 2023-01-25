@@ -38,8 +38,8 @@ Sanitize the given URL.
 
 * `url` **[string][1]** URL input
 * `opt` **[object][3]** Options
-* `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes
-* `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes
+* `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`
+* `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able
 
@@ -59,6 +59,11 @@ const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
 }).then(res => decodeURIComponent(res));
 // -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+
+const res4 = await sanitizeURL('web+foo://example.com', {
+  deny: ['web+foo']
+});
+// -> null
 ```
 
 ## sanitizeURLSync
