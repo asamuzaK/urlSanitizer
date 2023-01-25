@@ -162,8 +162,8 @@ export class URISchemes {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
-        res = !/(?:java|vb)script/.test(scheme) &&
-              /^(?:ext|web)\+[a-z]+$/.test(scheme) ||
+        res = (!/(?:java|vb)script/.test(scheme) &&
+               /^(?:ext|web)\+[a-z]+$/.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
       } catch (e) {
         res = false;
@@ -257,7 +257,7 @@ export class URLSanitizer extends URISchemes {
         if (schemeParts.includes('data')) {
           const [header, ...body] = pathname.split(',');
           const data = body.join(',');
-          let mediaType = header.split(';');
+          const mediaType = header.split(';');
           let parsedData = data;
           if (mediaType[mediaType.length - 1] === 'base64') {
             mediaType.pop();
@@ -275,7 +275,7 @@ export class URLSanitizer extends URISchemes {
               // fall through
             }
           }
-          const containsDataUrl = /data:[^,]*,/.test(parsedData)
+          const containsDataUrl = /data:[^,]*,/.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
               const regDataUrlGlobal = /data:[^,]*,[^"]+/g;
