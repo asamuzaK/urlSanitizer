@@ -9,6 +9,13 @@ import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
 /* constants */
 const HEX = 16;
+const REG_CHARS = /[<>"'\s]/g;
+const REG_DATA_URL = /data:[^,]*,[^"]+/g;
+const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
+const REG_DATA_URL_HEADER = /data:[^,]*,/;
+const REG_SCHEME = /^[a-z][a-z0-9+\-.]*$/;
+const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
+const REG_SCRIPT = /(?:java|vb)script/;
 
 /**
  * get URL encoded string
@@ -131,8 +138,7 @@ export class URISchemes {
   add(scheme) {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    } else if (/(?:java|vb)script/.test(scheme) ||
-               !/^[a-z][a-z0-9+\-.]*$/.test(scheme)) {
+    } else if (REG_SCRIPT.test(scheme) || !REG_SCHEME.test(scheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#schemes.add(scheme);
@@ -162,8 +168,7 @@ export class URISchemes {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
-        res = (!/(?:java|vb)script/.test(scheme) &&
-               /^(?:ext|web)\+[a-z]+$/.test(scheme)) ||
+        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
       } catch (e) {
         res = false;
@@ -221,7 +226,7 @@ export class URLSanitizer extends URISchemes {
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
-            if (!/(?:java|vb)script/.test(item)) {
+            if (!REG_SCRIPT.test(item)) {
               schemeMap.set(item, true);
             }
           }
@@ -248,7 +253,6 @@ export class URLSanitizer extends URISchemes {
       if (bool) {
         const [amp, lt, gt, quot, apos] =
           ['&', '<', '>', '"', "'"].map(getUrlEncodedString);
-        const regChars = /[<>"'\s]/g;
         const regAmp = new RegExp(amp, 'g');
         const regEncodedChars =
           new RegExp(`(${lt}|${gt}|${quot}|${apos})`, 'g');
@@ -268,24 +272,22 @@ export class URLSanitizer extends URISchemes {
                 new URL(decodeURIComponent(data));
               const dataScheme = dataProtocol.replace(/:$/, '');
               const dataSchemeParts = dataScheme.split('+');
-              if (dataSchemeParts.some(s => /(?:java|vb)script/.test(s))) {
+              if (dataSchemeParts.some(s => REG_SCRIPT.test(s))) {
                 urlToSanitize = '';
               }
             } catch (e) {
               // fall through
             }
           }
-          const containsDataUrl = /data:[^,]*,/.test(parsedData);
+          const containsDataUrl = REG_DATA_URL_HEADER.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
-              const regDataUrlGlobal = /data:[^,]*,[^"]+/g;
-              const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
-              const matchedDataUrls = parsedData.matchAll(regDataUrlGlobal);
+              const matchedDataUrls = parsedData.matchAll(REG_DATA_URL);
               const items = [...matchedDataUrls].reverse();
               for (const item of items) {
                 let [dataUrl] = item;
-                if (regBase64DataUrl.test(dataUrl)) {
-                  [dataUrl] = regBase64DataUrl.exec(dataUrl);
+                if (REG_DATA_URL_BASE64.test(dataUrl)) {
+                  [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
                 }
                 this.#nest++;
                 this.#recurse.add(dataUrl);
@@ -322,7 +324,7 @@ export class URLSanitizer extends URISchemes {
           escapeHtml = true;
         }
         if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString)
+          sanitizedUrl = urlToSanitize.replace(REG_CHARS, getUrlEncodedString)
             .replace(regAmp, escapeUrlEncodedHtmlChars);
           if (escapeHtml) {
             sanitizedUrl =
