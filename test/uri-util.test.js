@@ -248,6 +248,12 @@ describe('uri-scheme', () => {
 
       it('should get false', () => {
         const schemes = new URISchemes();
+        const res = schemes.isURI('web+javascript:alert(1)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
         const res = schemes.isURI('Javas&#99;ript:alert(1)');
         assert.isFalse(res, 'result');
       });
@@ -422,6 +428,12 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+javascript:alert("XSS")');
+        assert.isNull(res, 'result');
+      });
+
       it('should get null if file scheme is not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar');
@@ -463,33 +475,25 @@ describe('uri-scheme', () => {
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('javascript:alert(1)', {
-          allow: ['javascript']
-        });
+        const res = sanitizer.sanitize('javascript:alert(1)');
         assert.isNull(res, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
-          allow: ['vbscript']
-        });
+        const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
         assert.isNull(res, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+javascript:alert(1)', {
-          allow: ['web+javascript']
-        });
+        const res = sanitizer.sanitize('web+javascript:alert(1)');
         assert.isNull(res, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)', {
-          allow: ['web+vbscript']
-        });
+        const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
         assert.isNull(res, 'result');
       });
 
@@ -761,6 +765,42 @@ describe('uri-scheme', () => {
         assert.throws(() => sanitizer.sanitize(url, {
           allow: ['data']
         }), 'The nesting of data URLs is too deep.');
+      });
+
+      it('should get null', () => {
+        const url = 'data:,javascript:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const url =
+          'data:text/html,<iframe src="javascript:alert(1)"></iframe>';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;javascript:alert(1)%26quot;%26gt;%26lt;/iframe%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;javascript:alert(1)&quot;&gt;&lt;/iframe&gt;',
+          'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const xss = btoa('javascript:alert(1)');
+        const url =
+          `data:text/html,<iframe src="data:base64,${xss}"></iframe>`;
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/html,%26lt;iframe%20src=%26quot;data:,javascript:alert(1)%26quot;%26gt;%26lt;/iframe%26gt;',
+          'result');
+        assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:,javascript:alert(1)&quot;&gt;&lt;/iframe&gt;',
+          'decode');
       });
     });
   });
