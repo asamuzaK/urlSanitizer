@@ -32,7 +32,6 @@ import urlSanitizer, {
 
 Sanitize the given URL.
 * `data` and `file` schemes must be explicitly allowed.
-* `javascript` and `vbscript` schemes can not be allowed.
 
 ### Parameters
 
