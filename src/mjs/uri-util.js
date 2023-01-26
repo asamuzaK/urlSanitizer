@@ -105,7 +105,7 @@ export const parseUrlEncodedNumCharRef = str => {
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
     const textChars = new Set(textCharTable);
-    const items = [...res.matchAll(REG_NUM_REF)];
+    const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
       const [num1, num2] = item;
       let num;
@@ -115,10 +115,15 @@ export const parseUrlEncodedNumCharRef = str => {
         num = parseInt(`0${num2}`, HEX);
       }
       if (Number.isInteger(num)) {
+        const { index } = item;
+        const [beforeNum, afterNum] = [
+          res.substring(0, index),
+          res.substring(index + num1.length)
+        ];
         if (textChars.has(num)) {
-          res = res.replace(num1, String.fromCharCode(num));
+          res = `${beforeNum}${String.fromCharCode(num)}${afterNum}`;
         } else if (num < HEX * HEX) {
-          res = res.replace(num1, '');
+          res = `${beforeNum}${afterNum}`;
         }
       }
     }
