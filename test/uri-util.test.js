@@ -845,7 +845,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('FIXME: should get null', () => {
+      it('should get null', () => {
         const url = 'data:,javasc&#x72;ipt:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -854,7 +854,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('FIXME: should get null', () => {
+      it('should get null', () => {
         const url = 'data:,&#xA0javascript:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -863,7 +863,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('FIXME: should get null', () => {
+      it('should get null', () => {
         const url = 'data:,javasc&#x72;ipt:alert(1)?foo=bar&baz=qux';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
