@@ -116,14 +116,14 @@ export const parseUrlEncodedNumCharRef = str => {
       }
       if (Number.isInteger(num)) {
         const { index } = item;
-        const [beforeNum, afterNum] = [
+        const [preNum, postNum] = [
           res.substring(0, index),
           res.substring(index + num1.length)
         ];
         if (textChars.has(num)) {
-          res = `${beforeNum}${String.fromCharCode(num)}${afterNum}`;
+          res = `${preNum}${String.fromCharCode(num)}${postNum}`;
         } else if (num < HEX * HEX) {
-          res = `${beforeNum}${afterNum}`;
+          res = `${preNum}${postNum}`;
         }
       }
     }
@@ -333,14 +333,13 @@ export class URLSanitizer extends URISchemes {
                 const parsedDataUrl = this.sanitize(dataUrl, {
                   allow: ['data']
                 });
-                const { index } = item;
-                const [beforeDataUrl, afterDataUrl] = [
-                  parsedData.substring(0, index),
-                  parsedData.substring(index + dataUrl.length)
-                ];
                 if (parsedDataUrl) {
-                  parsedData =
-                    `${beforeDataUrl}${parsedDataUrl}${afterDataUrl}`;
+                  const { index } = item;
+                  const [preDataUrl, postDataUrl] = [
+                    parsedData.substring(0, index),
+                    parsedData.substring(index + dataUrl.length)
+                  ];
+                  parsedData = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
                 }
               }
               if (this.#recurse.has(url)) {
