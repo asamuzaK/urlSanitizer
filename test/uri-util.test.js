@@ -112,6 +112,39 @@ describe('uri-scheme', () => {
     });
   });
 
+  describe('parse URL encoded numeric character reference', () => {
+    const func = mjs.parseUrlEncodedNumCharRef;
+
+    it('should throw', () => {
+      assert.throws(() => func());
+    });
+
+    it('should get value', () => {
+      const str = 'Hello%2C%20World!';
+      const res = func(str);
+      assert.strictEqual(res, 'Hello, World!', 'result');
+    });
+
+    it('should get value', () => {
+      const comma = '&#44;';
+      const l = '&#108';
+      const o = '&#0111;';
+      const str = `He${l}${l}o${comma}%20W${o}r${l}d!`;
+      const res = func(str);
+      assert.strictEqual(res, 'Hello, World!', 'result');
+    });
+
+    it('should get value', () => {
+      const nul = '&#x00';
+      const comma = '&#x2C;';
+      const l = '&#x6C';
+      const o = '&#x006F;';
+      const str = `He${l}${l}o${comma}%20${nul}W${o}r${l}d!`;
+      const res = func(str);
+      assert.strictEqual(res, 'Hello, World!', 'result');
+    });
+  });
+
   describe('URI schemes', () => {
     const { URISchemes } = mjs;
 
@@ -769,6 +802,69 @@ describe('uri-scheme', () => {
 
       it('should get null', () => {
         const url = 'data:,javascript:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const url = 'data:,JAVASCRIPT:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const url = 'data:,javasc%72ipt:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const url = 'data:,javasc\u0072ipt:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const url = 'data:,\u2028javascript:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('FIXME: should get null', () => {
+        const url = 'data:,javasc&#x72;ipt:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('FIXME: should get null', () => {
+        const url = 'data:,&#xA0javascript:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('FIXME: should get null', () => {
+        const url = 'data:,javasc&#x72;ipt:alert(1)?foo=bar&baz=qux';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
           allow: ['data']

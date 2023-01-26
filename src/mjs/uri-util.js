@@ -9,10 +9,12 @@ import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
 /* constants */
 const HEX = 16;
+const HEX_FF = 256;
 const REG_CHARS = /[<>"'\s]/g;
 const REG_DATA_URL = /data:[^,]*,[^"]+/g;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
 const REG_DATA_URL_HEADER = /data:[^,]*,/;
+const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 const REG_SCHEME = /^[a-z][a-z0-9+\-.]*$/;
 const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 const REG_SCRIPT = /(?:java|vb)script/;
@@ -89,6 +91,42 @@ export const parseBase64 = data => {
     parsedData = data;
   }
   return parsedData;
+};
+
+/**
+ * parse URL encoded numeric character reference
+ *
+ * @param {string} str - string
+ * @returns {string} - parsed string
+ */
+export const parseUrlEncodedNumCharRef = str => {
+  if (!isString(str)) {
+    throw new TypeError(`Expected String but got ${getType(str)}.`);
+  }
+  let res = decodeURIComponent(str);
+  if (/&#/.test(res)) {
+    const items = [...res.matchAll(REG_NUM_REF)];
+    if (Array.isArray(items)) {
+      const textChars = new Set(textCharTable);
+      for (const item of items) {
+        const [num1, num2] = item;
+        const isHex = num2.startsWith('x');
+        let num;
+        if (isHex) {
+          num = parseInt(`0${num2}`, HEX);
+        } else {
+          num = parseInt(num2);
+        }
+        if (textChars.has(num)) {
+          const numChar = String.fromCharCode(num);
+          res = res.replace(num1, numChar);
+        } else if (Number.isInteger(num) && num < HEX_FF) {
+          res = res.replace(num1, '');
+        }
+      }
+    }
+  }
+  return res;
 };
 
 /**
@@ -212,7 +250,7 @@ export class URLSanitizer extends URISchemes {
     let sanitizedUrl;
     if (super.isURI(url)) {
       const { allow, deny } = opt ?? {};
-      const { href, pathname, protocol } = new URL(url);
+      const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, '');
       const schemeParts = scheme.split('+');
       const schemeMap = new Map([
@@ -260,7 +298,7 @@ export class URLSanitizer extends URISchemes {
         let urlToSanitize = href;
         if (schemeParts.includes('data')) {
           const [header, ...body] = pathname.split(',');
-          const data = body.join(',');
+          const data = `${body.join(',')}${search}${hash}`;
           const mediaType = header.split(';');
           let parsedData = data;
           if (mediaType[mediaType.length - 1] === 'base64') {
@@ -268,10 +306,9 @@ export class URLSanitizer extends URISchemes {
             parsedData = parseBase64(data);
           } else {
             try {
-              const { protocol: dataProtocol } =
-                new URL(decodeURIComponent(data));
-              const dataScheme = dataProtocol.replace(/:$/, '');
-              const dataSchemeParts = dataScheme.split('+');
+              const decodedData = parseUrlEncodedNumCharRef(parsedData);
+              const { protocol: dataScheme } = new URL(decodedData.trim());
+              const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
               if (dataSchemeParts.some(s => REG_SCRIPT.test(s))) {
                 urlToSanitize = '';
               }
