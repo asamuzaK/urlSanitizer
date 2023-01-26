@@ -9,7 +9,6 @@ import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
 /* constants */
 const HEX = 16;
-const HEX_FF = 256;
 const REG_CHARS = /[<>"'\s]/g;
 const REG_DATA_URL = /data:[^,]*,[^"]+/g;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
@@ -105,22 +104,20 @@ export const parseUrlEncodedNumCharRef = str => {
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
+    const textChars = new Set(textCharTable);
     const items = [...res.matchAll(REG_NUM_REF)];
-    if (Array.isArray(items)) {
-      const textChars = new Set(textCharTable);
-      for (const item of items) {
-        const [num1, num2] = item;
-        const isHex = num2.startsWith('x');
-        let num;
-        if (isHex) {
-          num = parseInt(`0${num2}`, HEX);
-        } else {
-          num = parseInt(num2);
-        }
+    for (const item of items) {
+      const [num1, num2] = item;
+      let num;
+      if (/^[\d]+$/.test(num2)) {
+        num = parseInt(num2);
+      } else if (num2.startsWith('x')) {
+        num = parseInt(`0${num2}`, HEX);
+      }
+      if (Number.isInteger(num)) {
         if (textChars.has(num)) {
-          const numChar = String.fromCharCode(num);
-          res = res.replace(num1, numChar);
-        } else if (Number.isInteger(num) && num < HEX_FF) {
+          res = res.replace(num1, String.fromCharCode(num));
+        } else if (num < HEX * HEX) {
           res = res.replace(num1, '');
         }
       }
