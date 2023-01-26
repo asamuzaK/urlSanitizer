@@ -20,7 +20,7 @@
     "index.js"
   ],
   "scripts": {
-    "build": "npm run include && npm run lint && npm test && npm run bundle",
+    "build": "npm run include && npm run char && npm run lint && npm test && npm run bundle",
     "bundle": "npm-run-all -s bundle-*",
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./index.js",
     "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./index.js",
@@ -50,5 +50,5 @@
     "sinon": "^15.0.1",
     "undici": "^5.16.0"
   },
-  "version": "0.4.1"
+  "version": "0.4.2"
 }

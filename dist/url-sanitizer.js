@@ -591,6 +591,14 @@ var uri_schemes_default = [
 
 // src/mjs/uri-util.js
 var HEX = 16;
+var REG_CHARS = /[<>"'\s]/g;
+var REG_DATA_URL = /data:[^,]*,[^"]+/g;
+var REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
+var REG_DATA_URL_HEADER = /data:[^,]*,/;
+var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
+var REG_SCHEME = /^[a-z][a-z0-9+\-.]*$/;
+var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
+var REG_SCRIPT = /(?:java|vb)script/;
 var getUrlEncodedString = (str) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
@@ -643,6 +651,38 @@ var parseBase64 = (data) => {
   }
   return parsedData;
 };
+var parseUrlEncodedNumCharRef = (str) => {
+  if (!isString(str)) {
+    throw new TypeError(`Expected String but got ${getType(str)}.`);
+  }
+  let res = decodeURIComponent(str);
+  if (/&#/.test(res)) {
+    const textChars = new Set(text_chars_default);
+    const items = [...res.matchAll(REG_NUM_REF)].reverse();
+    for (const item of items) {
+      const [num1, num2] = item;
+      let num;
+      if (/^[\d]+$/.test(num2)) {
+        num = parseInt(num2);
+      } else if (num2.startsWith("x")) {
+        num = parseInt(`0${num2}`, HEX);
+      }
+      if (Number.isInteger(num)) {
+        const { index } = item;
+        const [preNum, postNum] = [
+          res.substring(0, index),
+          res.substring(index + num1.length)
+        ];
+        if (textChars.has(num)) {
+          res = `${preNum}${String.fromCharCode(num)}${postNum}`;
+        } else if (num < HEX * HEX) {
+          res = `${preNum}${postNum}`;
+        }
+      }
+    }
+  }
+  return res;
+};
 var URISchemes = class {
   /* private fields */
   #schemes;
@@ -682,7 +722,7 @@ var URISchemes = class {
   add(scheme) {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    } else if (/(?:java|vb)script/.test(scheme) || !/^[a-z][a-z0-9+\-.]*$/.test(scheme)) {
+    } else if (REG_SCRIPT.test(scheme) || !REG_SCHEME.test(scheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#schemes.add(scheme);
@@ -710,7 +750,7 @@ var URISchemes = class {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, "");
         const schemeParts = scheme.split("+");
-        res = /^(?:ext|web)\+[a-z]+$/.test(scheme) || schemeParts.every((s) => this.#schemes.has(s));
+        res = !REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme) || schemeParts.every((s) => this.#schemes.has(s));
       } catch (e) {
         res = false;
       }
@@ -749,18 +789,21 @@ var URLSanitizer = class extends URISchemes {
     let sanitizedUrl;
     if (super.isURI(url)) {
       const { allow, deny } = opt ?? {};
-      const { href, pathname, protocol } = new URL(url);
+      const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
-      const schemeMap = /* @__PURE__ */ new Map([["data", false], ["file", false]]);
+      const schemeMap = /* @__PURE__ */ new Map([
+        ["data", false],
+        ["file", false],
+        ["javascrpt", false],
+        ["vbscript", false]
+      ]);
       if (Array.isArray(allow) && allow.length) {
         const items = Object.values(allow);
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
-            if (/(?:java|vb)script/.test(item)) {
-              schemeMap.set(item, false);
-            } else if (item) {
+            if (!REG_SCRIPT.test(item)) {
               schemeMap.set(item, true);
             }
           }
@@ -786,41 +829,51 @@ var URLSanitizer = class extends URISchemes {
       }
       if (bool) {
         const [amp, lt, gt, quot, apos] = ["&", "<", ">", '"', "'"].map(getUrlEncodedString);
-        const regChars = /[<>"']/g;
         const regAmp = new RegExp(amp, "g");
         const regEncodedChars = new RegExp(`(${lt}|${gt}|${quot}|${apos})`, "g");
         let escapeHtml;
         let urlToSanitize = href;
         if (schemeParts.includes("data")) {
-          const [header, data] = pathname.split(",");
+          const [header, ...body] = pathname.split(",");
+          const data = `${body.join(",")}${search}${hash}`;
           const mediaType = header.split(";");
-          const isBase64 = mediaType.pop() === "base64";
-          if (isBase64) {
-            let parsedData = parseBase64(data);
-            if (parsedData !== data) {
-              if (/data:[^,]*,/.test(parsedData)) {
-                const regDataUrl = /data:[^,]*,[^"]+/g;
-                const regBase64DataUrl = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
-                const matchedDataUrls = parsedData.matchAll(regDataUrl);
-                const items = [...matchedDataUrls].reverse();
-                for (const item of items) {
-                  let [dataUrl] = item;
-                  if (regBase64DataUrl.test(dataUrl)) {
-                    [dataUrl] = regBase64DataUrl.exec(dataUrl);
-                  }
-                  this.#nest++;
-                  this.#recurse.add(dataUrl);
-                  const parsedDataUrl = this.sanitize(dataUrl, {
-                    allow: ["data"]
-                  });
-                  if (parsedDataUrl) {
-                    const { index } = item;
-                    const [beforeDataUrl, afterDataUrl] = [
-                      parsedData.substring(0, index),
-                      parsedData.substring(index + dataUrl.length)
-                    ];
-                    parsedData = `${beforeDataUrl}${parsedDataUrl}${afterDataUrl}`;
-                  }
+          let parsedData = data;
+          if (mediaType[mediaType.length - 1] === "base64") {
+            mediaType.pop();
+            parsedData = parseBase64(data);
+          } else {
+            try {
+              const decodedData = parseUrlEncodedNumCharRef(parsedData);
+              const { protocol: dataScheme } = new URL(decodedData.trim());
+              const dataSchemeParts = dataScheme.replace(/:$/, "").split("+");
+              if (dataSchemeParts.some((s) => REG_SCRIPT.test(s))) {
+                urlToSanitize = "";
+              }
+            } catch (e) {
+            }
+          }
+          const containsDataUrl = REG_DATA_URL_HEADER.test(parsedData);
+          if (parsedData !== data || containsDataUrl) {
+            if (containsDataUrl) {
+              const matchedDataUrls = parsedData.matchAll(REG_DATA_URL);
+              const items = [...matchedDataUrls].reverse();
+              for (const item of items) {
+                let [dataUrl] = item;
+                if (REG_DATA_URL_BASE64.test(dataUrl)) {
+                  [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+                }
+                this.#nest++;
+                this.#recurse.add(dataUrl);
+                const parsedDataUrl = this.sanitize(dataUrl, {
+                  allow: ["data"]
+                });
+                if (parsedDataUrl) {
+                  const { index } = item;
+                  const [preDataUrl, postDataUrl] = [
+                    parsedData.substring(0, index),
+                    parsedData.substring(index + dataUrl.length)
+                  ];
+                  parsedData = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
                 }
               }
               if (this.#recurse.has(url)) {
@@ -828,10 +881,12 @@ var URLSanitizer = class extends URISchemes {
               } else {
                 escapeHtml = true;
               }
-              urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
+            } else if (this.#recurse.has(url)) {
+              this.#recurse.delete(url);
             } else {
               escapeHtml = true;
             }
+            urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
@@ -840,9 +895,14 @@ var URLSanitizer = class extends URISchemes {
         } else {
           escapeHtml = true;
         }
-        sanitizedUrl = urlToSanitize.replace(regChars, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
-        if (escapeHtml) {
-          sanitizedUrl = sanitizedUrl.replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+        if (urlToSanitize) {
+          sanitizedUrl = urlToSanitize.replace(REG_CHARS, getUrlEncodedString).replace(regAmp, escapeUrlEncodedHtmlChars);
+          if (escapeHtml) {
+            sanitizedUrl = sanitizedUrl.replace(regEncodedChars, escapeUrlEncodedHtmlChars);
+            this.#nest = 0;
+          }
+        } else {
+          sanitizedUrl = urlToSanitize;
           this.#nest = 0;
         }
       }
