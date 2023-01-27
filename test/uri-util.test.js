@@ -49,13 +49,11 @@ describe('uri-scheme', () => {
     });
 
     it('should throw', () => {
-      assert.throws(() => func('foo'),
-        'foo is not a URL encoded character.');
+      assert.throws(() => func('foo'), 'Invalid URL encoded character: foo');
     });
 
     it('should throw', () => {
-      assert.throws(() => func('%3G'),
-        '%3G is not a URL encoded character.');
+      assert.throws(() => func('%3G'), 'Invalid URL encoded character: %3G');
     });
 
     it('should get unescaped char', () => {
@@ -177,8 +175,7 @@ describe('uri-scheme', () => {
         nest = `${nest}#x26;`;
       }
       const str = `j${nest}#x61${semi}vascript:alert(1)`;
-      assert.throws(() => func(str),
-        'The nesting of character reference is too deep.');
+      assert.throws(() => func(str), 'Character references nested too deeply.');
     });
   });
 
@@ -834,7 +831,7 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         assert.throws(() => sanitizer.sanitize(url, {
           allow: ['data']
-        }), 'The nesting of data URLs is too deep.');
+        }), 'Data URLs nested too deeply.');
       });
 
       it('should get null', () => {

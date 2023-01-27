@@ -46,7 +46,7 @@ export const escapeUrlEncodedHtmlChars = ch => {
     if (/^%[\dA-F]{2}$/i.test(ch)) {
       ch = ch.toUpperCase();
     } else {
-      throw new Error(`${ch} is not a URL encoded character.`);
+      throw new Error(`Invalid URL encoded character: ${ch}`);
     }
   } else {
     throw new TypeError(`Expected String but got ${getType(ch)}.`);
@@ -109,7 +109,7 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
   }
   if (Number.isInteger(nest)) {
     if (nest > HEX) {
-      throw new Error('The nesting of character reference is too deep.');
+      throw new Error('Character references nested too deeply.');
     }
   } else {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
@@ -262,7 +262,7 @@ export class URLSanitizer extends URISchemes {
   sanitize(url, opt = { allow: [], deny: [] }) {
     if (this.#nest > HEX) {
       this.#nest = 0;
-      throw new Error('The nesting of data URLs is too deep.');
+      throw new Error('Data URLs nested too deeply.');
     }
     let sanitizedUrl;
     if (super.isURI(url)) {
