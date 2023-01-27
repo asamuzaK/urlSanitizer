@@ -21,7 +21,7 @@ describe('uri-scheme', () => {
     const func = mjs.getUrlEncodedString;
 
     it('should throw', () => {
-      assert.throws(() => func());
+      assert.throws(() => func(), 'Expected String but got Undefined.');
     });
 
     it('should get empty string', () => {
@@ -44,15 +44,18 @@ describe('uri-scheme', () => {
     const func = mjs.escapeUrlEncodedHtmlChars;
 
     it('should throw', () => {
-      assert.throws(() => func());
+      assert.throws(() => func(),
+        'Expected String but got Undefined.');
     });
 
     it('should throw', () => {
-      assert.throws(() => func('foo'));
+      assert.throws(() => func('foo'),
+        'foo is not a URL encoded character.');
     });
 
     it('should throw', () => {
-      assert.throws(() => func('%3G'));
+      assert.throws(() => func('%3G'),
+        '%3G is not a URL encoded character.');
     });
 
     it('should get unescaped char', () => {
@@ -91,11 +94,15 @@ describe('uri-scheme', () => {
     });
   });
 
-  describe('parse base64', () => {
+  describe('parse base64 encoded data', () => {
     const func = mjs.parseBase64;
 
     it('should throw', () => {
-      assert.throws(() => func());
+      assert.throws(() => func(), 'Expected String but got Undefined.');
+    });
+
+    it('should throw', () => {
+      assert.throws(() => func('foo%20bar'), 'Invalid base64 data: foo%20bar');
     });
 
     it('should get data', () => {
@@ -116,7 +123,12 @@ describe('uri-scheme', () => {
     const func = mjs.parseUrlEncodedNumCharRef;
 
     it('should throw', () => {
-      assert.throws(() => func());
+      assert.throws(() => func(), 'Expected String but got Undefined.');
+    });
+
+    it('should throw', () => {
+      const str = 'Hello%2C%20World!';
+      assert.throws(() => func(str, true), 'Expected Number but got Boolean.');
     });
 
     it('should get value', () => {
@@ -139,9 +151,34 @@ describe('uri-scheme', () => {
       const comma = '&#x2C;';
       const l = '&#x6C';
       const o = '&#x006F;';
-      const str = `He${l}${l}o${comma}%20${nul}W${o}r${l}d!`;
+      const heart = '&#9829;';
+      const str = `He${l}${l}o${comma}%20${nul}W${o}r${l}d${heart}`;
       const res = func(str);
-      assert.strictEqual(res, 'Hello, World!', 'result');
+      assert.strictEqual(res, `Hello, World${heart}`, 'result');
+    });
+
+    it('should get value', () => {
+      const amp = '&#x26;';
+      const semi = '&#x3B;';
+      let nest = amp;
+      for (let i = 0; i < 15; i++) {
+        nest = `${nest}#x26;`;
+      }
+      const str = `j${nest}#x61${semi}vascript:alert(1)`;
+      const res = func(str);
+      assert.strictEqual(res, 'javascript:alert(1)', 'result');
+    });
+
+    it('should throw', () => {
+      const amp = '&#x26;';
+      const semi = '&#x3B;';
+      let nest = amp;
+      for (let i = 0; i < 16; i++) {
+        nest = `${nest}#x26;`;
+      }
+      const str = `j${nest}#x61${semi}vascript:alert(1)`;
+      assert.throws(() => func(str),
+        'The nesting of character reference is too deep.');
     });
   });
 

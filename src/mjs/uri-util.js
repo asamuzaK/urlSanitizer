@@ -71,13 +71,17 @@ export const escapeUrlEncodedHtmlChars = ch => {
 };
 
 /**
- * parse base64
+ * parse base64 encoded data
  *
- * @param {string} data - base64 data
- * @returns {string} - parsed data / base64 data
+ * @param {string} data - base64 encoded data
+ * @returns {string} - parsed text data / base64 encoded data if binary
  */
 export const parseBase64 = data => {
-  if (!isString(data)) {
+  if (isString(data)) {
+    if (!/^[\dA-Za-z+/\-_=]+$/.test(data)) {
+      throw new Error(`Invalid base64 data: ${data}`);
+    }
+  } else {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
   }
   const bin = atob(data);
@@ -93,35 +97,46 @@ export const parseBase64 = data => {
 };
 
 /**
- * parse URL encoded numeric character reference
+ * parse URL encoded numeric character references in the range 0x00 to 0xFF
  *
  * @param {string} str - string
+ * @param {number} nest - nest level
  * @returns {string} - parsed string
  */
-export const parseUrlEncodedNumCharRef = str => {
+export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
+  }
+  if (Number.isInteger(nest)) {
+    if (nest > HEX) {
+      throw new Error('The nesting of character reference is too deep.');
+    }
+  } else {
+    throw new TypeError(`Expected Number but got ${getType(nest)}.`);
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
     const textChars = new Set(textCharTable);
     const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
-      const [num1, num2] = item;
+      const [numCharRef, value] = item;
       let num;
-      if (/^[\d]+$/.test(num2)) {
-        num = parseInt(num2);
-      } else if (num2.startsWith('x')) {
-        num = parseInt(`0${num2}`, HEX);
+      if (/^x[\dA-F]+/i.test(value)) {
+        num = parseInt(`0${value}`, HEX);
+      } else if (/^[\d]+/.test(value)) {
+        num = parseInt(value);
       }
       if (Number.isInteger(num)) {
         const { index } = item;
         const [preNum, postNum] = [
           res.substring(0, index),
-          res.substring(index + num1.length)
+          res.substring(index + numCharRef.length)
         ];
         if (textChars.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
+          if (/#x?$/.test(preNum) || /^#x?[\d]+/.test(postNum)) {
+            res = parseUrlEncodedNumCharRef(res, ++nest);
+          }
         } else if (num < HEX * HEX) {
           res = `${preNum}${postNum}`;
         }
