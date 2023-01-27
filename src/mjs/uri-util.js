@@ -77,12 +77,10 @@ export const escapeUrlEncodedHtmlChars = ch => {
  * @returns {string} - parsed text data / base64 encoded data if binary
  */
 export const parseBase64 = data => {
-  if (isString(data)) {
-    if (!/^[\dA-Za-z+/\-_=]+$/.test(data)) {
-      throw new Error(`Invalid base64 data: ${data}`);
-    }
-  } else {
+  if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
+  } else if (!/^[\dA-Za-z+/\-_=]+$/.test(data)) {
+    throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
   const uint8arr = Uint8Array.from([...bin].map(c => c.charCodeAt(0)));
@@ -107,12 +105,10 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
-  if (Number.isInteger(nest)) {
-    if (nest > HEX) {
-      throw new Error('Character references nested too deeply.');
-    }
-  } else {
+  if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
+  } else if (nest > HEX) {
+    throw new Error('Character references nested too deeply.');
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
