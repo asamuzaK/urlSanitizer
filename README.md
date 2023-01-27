@@ -35,12 +35,12 @@ Sanitize the given URL.
 
 ### Parameters
 
-* `url` **[string][1]** URL input
-* `opt` **[object][3]** Options
-* `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`
-* `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`
+* `url` **[string][1]** URL input.
+* `opt` **[object][3]** Options.
+* `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`.
+* `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`.
 
-Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able
+Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
 ```javascript
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
@@ -75,10 +75,10 @@ Determines whether the given URI is valid.
 
 ### Parameters
 
-* `uri` **[string][1]** URI input
+* `uri` **[string][1]** URI input.
 
-Returns **[Promise][5]<[boolean][2]>** Result
-* Always `true` for `web+*` and `ext+*` schemes
+Returns **[Promise][5]<[boolean][2]>** Result.
+* Always `true` for `web+*` and `ext+*` schemes.
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
@@ -108,11 +108,11 @@ Get an array of URI schemes registered at [iana.org](https://www.iana.org/assign
 * Historical schemes omitted.
 * `moz-extension` scheme added.
 
-Returns **[Array][4]<[string][1]>** Array of registered URI schemes
+Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 const schemes = urlSanitizer.get();
-// -> ['aaa', 'aaas', 'about', 'acap', 'acct', 'acd', 'acr', ...];
+// -> ['aaa', 'aaas', 'about', 'acap', 'acct', ...];
 ```
 
 ### urlSanitizer.has(scheme)
@@ -121,9 +121,9 @@ Check if the given scheme is registered.
 
 #### Parameters
 
-* `scheme` **[string][1]** Scheme
+* `scheme` **[string][1]** Scheme.
 
-Returns **[boolean][2]** Result
+Returns **[boolean][2]** Result.
 
 ```javascript
 const res1 = urlSanitizer.has('https');
@@ -140,16 +140,16 @@ Add a scheme to the list of URI schemes.
 
 #### Parameters
 
-* `scheme` **[string][1]** Scheme
+* `scheme` **[string][1]** Scheme.
 
-Returns **[Array][4]<[string][1]>** Array of registered URI schemes
+Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 console.log(isURISync('foo'));
 // -> false;
 
 const res = urlSanitizer.add('foo');
-// -> ['aaa', 'aaas', 'about', 'acap', 'acct', 'acd', ... 'foo', ...];
+// -> ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...];
 
 console.log(isURISync('foo'));
 // -> true;
@@ -161,9 +161,9 @@ Remove a scheme from the list of URI schemes.
 
 #### Parameters
 
-* `scheme` **[string][1]** Scheme
+* `scheme` **[string][1]** Scheme.
 
-Returns **[boolean][2]** Result
+Returns **[boolean][2]** Result.
 * `true` if the scheme is successfully removed, `false` otherwise.
 
 ```javascript
