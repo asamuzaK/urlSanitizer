@@ -4,19 +4,21 @@
 
 /* shared */
 import { getType, isString } from './common.js';
-import textCharTable from '../lib/file/text-chars.json' assert { type: 'json' };
+import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
 /* constants */
 const HEX = 16;
-const REG_CHARS = /[<>"'\s]/g;
+const REG_BASE64 = /^[\da-z+/\-_=]+$/i;
 const REG_DATA_URL = /data:[^,]*,[^"]+/g;
-const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\dA-Za-z+/\-_=]+/;
+const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
 const REG_DATA_URL_HEADER = /data:[^,]*,/;
+const REG_HTML_ESC = /[<>"'\s]/g;
 const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
-const REG_SCHEME = /^[a-z][a-z0-9+\-.]*$/;
+const REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 const REG_SCRIPT = /(?:java|vb)script/;
+const REG_URL_ENCODED = /^%[\dA-F]{2}$/i;
 
 /**
  * get URL encoded string
@@ -43,7 +45,7 @@ export const getUrlEncodedString = str => {
  */
 export const escapeUrlEncodedHtmlChars = ch => {
   if (isString(ch)) {
-    if (/^%[\dA-F]{2}$/i.test(ch)) {
+    if (REG_URL_ENCODED.test(ch)) {
       ch = ch.toUpperCase();
     } else {
       throw new Error(`Invalid URL encoded character: ${ch}`);
@@ -79,14 +81,14 @@ export const escapeUrlEncodedHtmlChars = ch => {
 export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
-  } else if (!/^[\dA-Za-z+/\-_=]+$/.test(data)) {
+  } else if (!REG_BASE64.test(data)) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
   const uint8arr = Uint8Array.from([...bin].map(c => c.charCodeAt(0)));
-  const textChars = new Set(textCharTable);
+  const textCharCodes = new Set(textChars);
   let parsedData;
-  if (uint8arr.every(c => textChars.has(c))) {
+  if (uint8arr.every(c => textCharCodes.has(c))) {
     parsedData = bin.replace(/\s/g, getUrlEncodedString);
   } else {
     parsedData = data;
@@ -112,7 +114,7 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
-    const textChars = new Set(textCharTable);
+    const textCharCodes = new Set(textChars);
     const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
       const [numCharRef, value] = item;
@@ -128,7 +130,7 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
           res.substring(0, index),
           res.substring(index + numCharRef.length)
         ];
-        if (textChars.has(num)) {
+        if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
           if (/#x?$/.test(preNum) || /^#x?[\d]+/.test(postNum)) {
             res = parseUrlEncodedNumCharRef(res, ++nest);
@@ -373,7 +375,8 @@ export class URLSanitizer extends URISchemes {
           escapeHtml = true;
         }
         if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize.replace(REG_CHARS, getUrlEncodedString)
+          sanitizedUrl = urlToSanitize
+            .replace(REG_HTML_ESC, getUrlEncodedString)
             .replace(regAmp, escapeUrlEncodedHtmlChars);
           if (escapeHtml) {
             sanitizedUrl =
