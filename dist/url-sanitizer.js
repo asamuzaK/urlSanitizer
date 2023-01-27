@@ -614,7 +614,7 @@ var escapeUrlEncodedHtmlChars = (ch) => {
     if (/^%[\dA-F]{2}$/i.test(ch)) {
       ch = ch.toUpperCase();
     } else {
-      throw new Error(`${ch} is not a URL encoded character.`);
+      throw new Error(`Invalid URL encoded character: ${ch}`);
     }
   } else {
     throw new TypeError(`Expected String but got ${getType(ch)}.`);
@@ -639,6 +639,8 @@ var escapeUrlEncodedHtmlChars = (ch) => {
 var parseBase64 = (data) => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
+  } else if (!/^[\dA-Za-z+/\-_=]+$/.test(data)) {
+    throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
   const uint8arr = Uint8Array.from([...bin].map((c) => c.charCodeAt(0)));
@@ -651,30 +653,38 @@ var parseBase64 = (data) => {
   }
   return parsedData;
 };
-var parseUrlEncodedNumCharRef = (str) => {
+var parseUrlEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
+  }
+  if (!Number.isInteger(nest)) {
+    throw new TypeError(`Expected Number but got ${getType(nest)}.`);
+  } else if (nest > HEX) {
+    throw new Error("Character references nested too deeply.");
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
     const textChars = new Set(text_chars_default);
     const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
-      const [num1, num2] = item;
+      const [numCharRef, value] = item;
       let num;
-      if (/^[\d]+$/.test(num2)) {
-        num = parseInt(num2);
-      } else if (num2.startsWith("x")) {
-        num = parseInt(`0${num2}`, HEX);
+      if (/^x[\dA-F]+/i.test(value)) {
+        num = parseInt(`0${value}`, HEX);
+      } else if (/^[\d]+/.test(value)) {
+        num = parseInt(value);
       }
       if (Number.isInteger(num)) {
         const { index } = item;
         const [preNum, postNum] = [
           res.substring(0, index),
-          res.substring(index + num1.length)
+          res.substring(index + numCharRef.length)
         ];
         if (textChars.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
+          if (/#x?$/.test(preNum) || /^#x?[\d]+/.test(postNum)) {
+            res = parseUrlEncodedNumCharRef(res, ++nest);
+          }
         } else if (num < HEX * HEX) {
           res = `${preNum}${postNum}`;
         }
@@ -784,7 +794,7 @@ var URLSanitizer = class extends URISchemes {
   sanitize(url, opt = { allow: [], deny: [] }) {
     if (this.#nest > HEX) {
       this.#nest = 0;
-      throw new Error("The nesting of data URLs is too deep.");
+      throw new Error("Data URLs nested too deeply.");
     }
     let sanitizedUrl;
     if (super.isURI(url)) {
