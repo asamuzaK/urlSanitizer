@@ -871,6 +871,15 @@ describe('uri-scheme', () => {
       });
 
       it('should get null', () => {
+        const url = 'data:,javasc\u{0072}ipt:alert(1)';
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
         const url = 'data:,\u2028javascript:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
