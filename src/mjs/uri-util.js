@@ -265,55 +265,77 @@ export class URLSanitizer extends URISchemes {
       throw new Error('Data URLs nested too deeply.');
     }
     let sanitizedUrl;
-    if (super.isURI(url)) {
-      const { allow, deny, only } = opt ?? {};
-      const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(/:$/, '');
-      const schemeParts = scheme.split('+');
-      const schemeMap = new Map([
-        ['data', false],
-        ['file', false],
-        ['javascrpt', false],
-        ['vbscript', false]
-      ]);
-      if (Array.isArray(only) && only.length) {
-        const schemes = super.get();
-        for (const item of schemes) {
-          schemeMap.set(item, false);
-        }
-        const items = Object.values(only);
-        for (let item of items) {
-          if (isString(item)) {
-            item = item.trim();
-            if (!REG_SCRIPT.test(item)) {
+    const { allow, deny, only } = opt ?? {};
+    const schemeMap = new Map([
+      ['data', false],
+      ['file', false],
+      ['javascrpt', false],
+      ['vbscript', false]
+    ]);
+    if (Array.isArray(only) && only.length) {
+      const schemes = super.get();
+      for (const item of schemes) {
+        schemeMap.set(item, false);
+      }
+      const items = Object.values(only);
+      for (let item of items) {
+        if (isString(item)) {
+          item = item.trim();
+          if (!REG_SCRIPT.test(item)) {
+            if (super.has(item)) {
               schemeMap.set(item, true);
-            }
-          }
-        }
-      } else {
-        if (Array.isArray(allow) && allow.length) {
-          const items = Object.values(allow);
-          for (let item of items) {
-            if (isString(item)) {
-              item = item.trim();
-              if (!REG_SCRIPT.test(item)) {
+            } else {
+              try {
+                super.add(item);
+              } catch (e) {
+                // fall through
+              }
+              if (super.has(item)) {
                 schemeMap.set(item, true);
               }
             }
           }
         }
-        if (Array.isArray(deny) && deny.length) {
-          const items = Object.values(deny);
-          for (let item of items) {
-            if (isString(item)) {
-              item = item.trim();
-              if (item) {
-                schemeMap.set(item, false);
+      }
+    } else {
+      if (Array.isArray(allow) && allow.length) {
+        const items = Object.values(allow);
+        for (let item of items) {
+          if (isString(item)) {
+            item = item.trim();
+            if (!REG_SCRIPT.test(item)) {
+              if (super.has(item)) {
+                schemeMap.set(item, true);
+              } else {
+                try {
+                  super.add(item);
+                } catch (e) {
+                  // fall through
+                }
+                if (super.has(item)) {
+                  schemeMap.set(item, true);
+                }
               }
             }
           }
         }
       }
+      if (Array.isArray(deny) && deny.length) {
+        const items = Object.values(deny);
+        for (let item of items) {
+          if (isString(item)) {
+            item = item.trim();
+            if (item) {
+              schemeMap.set(item, false);
+            }
+          }
+        }
+      }
+    }
+    if (super.isURI(url)) {
+      const { hash, href, pathname, protocol, search } = new URL(url);
+      const scheme = protocol.replace(/:$/, '');
+      const schemeParts = scheme.split('+');
       let bool;
       for (const [key, value] of schemeMap.entries()) {
         bool = value || (scheme !== key && schemeParts.every(s => s !== key));

@@ -525,6 +525,50 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar');
+        assert.strictEqual(res, 'web+foo:bar', 'result');
+      });
+
+      it('should get null if scheme is not registered', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar');
+        assert.isNull(res, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar', {
+          only: ['foo', 'https']
+        });
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar', {
+          allow: ['foo']
+        });
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('Foo:bar', {
+          only: ['Foo', 'https']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('Foo:bar', {
+          allow: ['Foo']
+        });
+        assert.isNull(res, 'result');
+      });
+
       it('should get null if file scheme is not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar');
