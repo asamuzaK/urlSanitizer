@@ -397,6 +397,30 @@ describe('uri-scheme', () => {
         assert.isTrue(res, 'result');
       });
 
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.isURI('ext+javascript:alert(1)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.isURI('web+javascript:alert(1)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.isURI('ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.isURI('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        assert.isFalse(res, 'result');
+      });
+
       it('should get true', () => {
         const schemes = new URISchemes();
         const res = schemes.isURI('git+https://example.com/');

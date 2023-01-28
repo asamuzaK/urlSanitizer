@@ -101,7 +101,7 @@ Determines whether the given URI is valid.
 * `uri` **[string][1]** URI input.
 
 Returns **[Promise][5]<[boolean][2]>** Result.
-* Always `true` for `web+*` and `ext+*` schemes.
+* Always `true` for `web+*` and `ext+*` schemes, except `web+javascript`, `web+vbscript`, `ext+javascript`, `ext+vbscript`.
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
@@ -115,6 +115,9 @@ const res3 = await isURI('foo:bar');
 
 const res4 = await isURI('web+foo:bar');
 // -> true
+
+const res5 = await isURI('web+javascript:alert(1)');
+// -> false
 ```
 
 ## isURISync(uri)
