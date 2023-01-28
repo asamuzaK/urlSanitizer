@@ -50,45 +50,45 @@ Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 ```javascript
 const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
   .then(res => decodeURIComponent(res));
-// -> 'http://example.com/?&lt;script&gt;alert(1);&lt;/script&gt;'
+// => 'http://example.com/?&lt;script&gt;alert(1);&lt;/script&gt;'
 
 const res2 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
   allow: ['data']
 }).then(res => decodeURIComponent(res));
-// -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
 
 // Can parse and sanitize base64 encoded data
 const base64data3 = btoa('<script>alert(1);</script>');
 const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
 }).then(res => decodeURIComponent(res));
-// -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
 
 const res4 = await sanitizeURL('web+foo://example.com', {
   deny: ['web+foo']
 });
-// -> null
+// => null
 
 const res5 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
-// -> null
+// => null
 
 const res6 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 }).then(res => decodeURIComponent(res));
-// -> https://example.com/&quot;onmouseover=&quot;alert(1)&quot;
+// => https://example.com/&quot;onmouseover=&quot;alert(1)&quot;
 
 const res7 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
   only: ['data', 'git', 'https']
 }).then(res => decodeURIComponent(res));
-// -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
 
 // `only` option also allows combinations of the specified schemes
 const res8 = await sanitizeURL('git+https://example.com', {
   only: ['data', 'git', 'https']
 }).then(res => decodeURIComponent(res));;
-// -> git+https://example.com
+// => git+https://example.com
 ```
 
 
@@ -136,14 +136,13 @@ Type: [object][3]
 
 ```javascript
 const res1 = await parseURL('javascript:alert(1)');
-/* -> {
+/* => {
   input: 'javascript:alert(1)',
   valid: false
-}
-*/
+} */
 
 const res2 = await parseURL('https://example.com/?foo=bar#baz');
-/* -> {
+/* => {
   input: 'https://www.example.com/?foo=bar#baz',
   valid: true,
   data: null,
@@ -159,7 +158,7 @@ const res2 = await parseURL('https://example.com/?foo=bar#baz');
 
 // base64 encoded svg '<svg><g onload="alert(1)"/></svg>'
 const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+');
-/* -> {
+/* => {
   input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+',
   valid: true,
   data: {
@@ -175,7 +174,7 @@ const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZ
 
 // base64 encoded png
 const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
-/* -> {
+/* => {
   input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
   valid: true,
   data: {
@@ -187,7 +186,7 @@ const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAA
   protocol: 'data:',
   pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
   ...
-}
+} */
 ```
 
 
@@ -209,19 +208,19 @@ Returns **[Promise][5]<[boolean][2]>** Result.
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
-// -> true
+// => true
 
 const res2 = await isURI('mailto:foo@example.com');
-// -> true
+// => true
 
 const res3 = await isURI('foo:bar');
-// -> false
+// => false
 
 const res4 = await isURI('web+foo:bar');
-// -> true
+// => true
 
 const res5 = await isURI('web+javascript:alert(1)');
-// -> false
+// => false
 ```
 
 
@@ -245,7 +244,7 @@ Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 const schemes = urlSanitizer.get();
-// -> ['aaa', 'aaas', 'about', 'acap', 'acct', ...];
+// => ['aaa', 'aaas', 'about', 'acap', 'acct', ...];
 ```
 
 ### urlSanitizer.has(scheme)
@@ -260,10 +259,10 @@ Returns **[boolean][2]** Result.
 
 ```javascript
 const res1 = urlSanitizer.has('https');
-// -> true
+// => true
 
 const res2 = urlSanitizer.has('foo');
-// -> false
+// => false
 ```
 
 ### urlSanitizer.add(scheme)
@@ -279,13 +278,13 @@ Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 console.log(isURISync('foo'));
-// -> false;
+// => false;
 
 const res = urlSanitizer.add('foo');
-// -> ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...];
+// => ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...];
 
 console.log(isURISync('foo'));
-// -> true;
+// => true;
 ```
 
 ### urlSanitizer.remove(scheme)
@@ -301,16 +300,16 @@ Returns **[boolean][2]** Result.
 
 ```javascript
 console.log(isURISync('aaa'));
-// -> true;
+// => true;
 
 const res1 = urlSanitizer.remove('aaa');
-// -> true
+// => true
 
 console.log(isURISync('aaa'));
-// -> false;
+// => false;
 
 const res2 = urlSanitizer.remove('foo');
-// -> false
+// => false
 ```
 
 [1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
