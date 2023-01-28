@@ -1008,12 +1008,143 @@ describe('uri-scheme', () => {
           'decode');
       });
     });
+
+    describe('parse sanitized URL', () => {
+      it('should throw', () => {
+        const sanitizer = new URLSanitizer();
+        assert.throws(() => sanitizer.parse(),
+          'Expected String but got Undefined.');
+      });
+
+      it('should get result', () => {
+        const sanitizer = new URLSanitizer();
+        const url = 'javascript:alert(1)';
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, {
+          input: 'javascript:alert(1)',
+          valid: false
+        }, 'result');
+      });
+
+      it('should get result', () => {
+        const sanitizer = new URLSanitizer();
+        const url = 'https://www.example.com/?foo=bar#baz';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = null;
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const url = 'data:,Hello%2C%20World!';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: '',
+          data: 'Hello%2C%20World!',
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const data = 'Hello%2C%20World!';
+        const base64Data = btoa(data);
+        const url = `data:text/plain;charset=UTF-8;base64,${base64Data}`;
+        const obj = new URL(`data:text/plain;charset=UTF-8,${data}`);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'text/plain;charset=UTF-8',
+          data: 'Hello%2C%20World!',
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const encodedData = '%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;';
+        const base64Data = btoa(data);
+        const url = `data:image/svg+xml;base64,${base64Data}`;
+        const obj = new URL(`data:image/svg+xml,${encodedData}`);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'image/svg+xml',
+          data: encodedData,
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const url = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'image/png',
+          data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          base64: true
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+    });
   });
 
   describe('alias', () => {
     it('should get aliases', () => {
       assert.isTrue(typeof mjs.isURI === 'function');
       assert.isTrue(typeof mjs.isURISync === 'function');
+      assert.isTrue(typeof mjs.parseURL === 'function');
+      assert.isTrue(typeof mjs.parseURLSync === 'function');
       assert.isTrue(typeof mjs.sanitizeURL === 'function');
       assert.isTrue(typeof mjs.sanitizeURLSync === 'function');
     });
@@ -1033,6 +1164,48 @@ describe('uri-scheme', () => {
       it('should get value', async () => {
         const res = await func('https://example.com');
         assert.isTrue(res, 'result');
+      });
+    });
+
+    describe('parse URL sync', () => {
+      const func = mjs.parseURLSync;
+
+      it('should get result', () => {
+        const url = 'https://example.com';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = null;
+        const res = func(url);
+        assert.deepEqual(res, items, 'result');
+      });
+    });
+
+    describe('parse URL async', () => {
+      const func = mjs.parseURL;
+
+      it('should get result', async () => {
+        const url = 'https://example.com';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (typeof value !== 'function') {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = null;
+        const res = await func(url);
+        assert.deepEqual(res, items, 'result');
       });
     });
 

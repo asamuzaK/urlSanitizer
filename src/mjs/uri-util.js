@@ -404,6 +404,79 @@ export class URLSanitizer extends URISchemes {
     }
     return sanitizedUrl || null;
   }
+
+  /**
+   * object with extended props based on URL api
+   *
+   * @typedef {object} ParsedURL
+   * @property {string} input - URL input
+   * @property {boolean} valid - is valid URL
+   * @property {object} data - parsed result of data URL, `null`able
+   * @property {string} data.mime - mime type
+   * @property {boolean} data.base64 - `true` if base64 encoded
+   * @property {string} data.data - data
+   * @property {string} href - same as URL api
+   * @property {string} origin - same as URL api
+   * @property {string} protocol - same as URL api
+   * @property {string} username - same as URL api
+   * @property {string} password - same as URL api
+   * @property {string} host - same as URL api
+   * @property {string} hostname - same as URL api
+   * @property {string} port - same as URL api
+   * @property {string} pathname - same as URL api
+   * @property {string} search - same as URL api
+   * @property {object} searchParams - same as URL api
+   * @property {string} hash - same as URL api
+   */
+
+  /**
+   * parse sanitized URL
+   *
+   * @param {string} url - URL input
+   * @returns {ParsedURL} - result with extended props based on URL api
+   */
+  parse(url) {
+    if (!isString(url)) {
+      throw new TypeError(`Expected String but got ${getType(url)}.`);
+    }
+    const sanitizedUrl = this.sanitize(url, {
+      allow: ['data', 'file']
+    });
+    const parsedUrl = new Map([
+      ['input', url]
+    ]);
+    if (sanitizedUrl) {
+      const urlObj = new URL(sanitizedUrl);
+      const { hash, pathname, protocol, search } = urlObj;
+      const schemeParts = protocol.replace(/:$/, '').split('+');
+      parsedUrl.set('valid', true);
+      if (schemeParts.includes('data')) {
+        const dataUrl = new Map();
+        const [head, ...body] = pathname.split(',');
+        const data = `${body.join(',')}${search}${hash}`;
+        const mediaType = head.split(';');
+        const isBase64 = mediaType[mediaType.length - 1] === 'base64';
+        if (isBase64) {
+          mediaType.pop();
+        }
+        dataUrl.set('mime', mediaType.join(';'));
+        dataUrl.set('base64', isBase64);
+        dataUrl.set('data', data);
+        parsedUrl.set('data', Object.fromEntries(dataUrl));
+      } else {
+        parsedUrl.set('data', null);
+      }
+      for (const key in urlObj) {
+        const value = urlObj[key];
+        if (typeof value !== 'function') {
+          parsedUrl.set(key, value);
+        }
+      }
+    } else {
+      parsedUrl.set('valid', false);
+    }
+    return Object.fromEntries(parsedUrl);
+  }
 };
 
 /* instance */
@@ -454,9 +527,29 @@ export const sanitizeURL = async (url, opt) => {
   return res;
 };
 
+/**
+ * parse URL sync
+ *
+ * @param {string} url - URL input
+ * @returns {ParsedURL} - result with extended props based on URL api
+ */
+const parseUrl = url => urlSanitizer.parse(url);
+
+/**
+ * parse URL async
+ *
+ * @param {string} url - URL input
+ * @returns {Promise.<ParsedURL>} - result with extended props based on URL api
+ */
+export const parseURL = async url => {
+  const res = await parseUrl(url);
+  return res;
+};
+
 /* export instance and aliases */
 export {
   urlSanitizer as default,
   isUri as isURISync,
+  parseUrl as parseURLSync,
   sanitizeUrl as sanitizeURLSync
 };

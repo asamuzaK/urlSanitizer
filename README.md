@@ -92,6 +92,103 @@ const res8 = await sanitizeURL('git+https://example.com', {
 
 Synchronous version of the [sanitizeURL()](#sanitizeurlurl-opt).
 
+## parseURL(url)
+
+Parse the given URL.
+
+### Parameters
+
+* `url` **[string][1]** URL input.
+
+Returns **[Promise][5]<[ParsedURL][#ParsedURL]>** Result.
+
+### ParsedURL
+
+Object with extended properties based on [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API.
+
+Type: [object][3]
+
+#### Properties
+
+* `input` **[string][44]** URL input.
+* `valid` **[boolean][48]** Is valid URL.
+* `data` **[object][49]** Parsed result of data URL, `null`able.
+  * `data.mime` **[string][44]** MIME type.
+  * `data.base64` **[boolean][48]** `true` if base64 encoded.
+  * `data.data` **[string][44]** Data.
+* `href` **[string][44]** Same as URL API.
+* `origin` **[string][44]** Same as URL API.
+* `protocol` **[string][44]** Same as URL API.
+* `username` **[string][44]** Same as URL API.
+* `password` **[string][44]** Same as URL API.
+* `host` **[string][44]** Same as URL API.
+* `hostname` **[string][44]** Same as URL API.
+* `port` **[string][44]** Same as URL API.
+* `pathname` **[string][44]** Same as URL API.
+* `search` **[string][44]** Same as URL API.
+* `searchParams` **[object][49]** Same as URL API.
+* `hash` **[string][44]** Same as URL API.
+
+```javascript
+const res1 = await parseURL('javascript:alert(1)');
+/* -> {
+  input: 'javascript:alert(1)',
+  valid: false
+}
+*/
+
+const res2 = await parseURL('https://example.com');
+/* -> {
+  input: 'https://www.example.com/?foo=bar#baz',
+  valid: true,
+  data: null,
+  href: 'https://www.example.com/?foo=bar#baz',
+  origin: 'https://www.example.com',
+  protocol: 'https:',
+  hostname: 'www.example.com',
+  pathname: '/',
+  search: '?foo=bar',
+  hash: '#baz',
+  ...
+} */
+
+// base64 encoded svg '<svg><g onload="alert(1)"/></svg>'
+const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+');
+/* -> {
+  input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+',
+  data: {
+    mime: 'image/svg+xml',
+    base64: false,
+    data: '%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;'
+  },
+  valid: true,
+  href: 'data:image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
+  protocol: 'data:',
+  pathname: 'image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
+  ...
+} */
+
+// base64 encoded png
+const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
+/* -> {
+  input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+  data: {
+    mime: 'image/png',
+    base64: true,
+    data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+  },
+  valid: true,
+  href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+  protocol: 'data:',
+  pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+  ...
+}
+```
+
+## parseURLSync(url)
+
+Synchronous version of the [parseURL()](#parseURL).
+
 ## isURI(uri)
 
 Determines whether the given URI is valid.
