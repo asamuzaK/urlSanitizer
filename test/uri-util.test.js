@@ -566,6 +566,24 @@ describe('uri-scheme', () => {
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
+          allow: ['data'],
+          only: ['git', 'https']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('https://example.com', {
+          deny: ['https'],
+          only: ['git', 'https']
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert(1)');
         assert.isNull(res, 'result');
       });
