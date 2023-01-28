@@ -26,7 +26,7 @@ Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/relea
 
 ```javascript
 import urlSanitizer, {
-  isURI, isURISync, sanitizeURL, sanitizeURLSync
+  isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
 } from 'url-sanitizer';
 ```
 
