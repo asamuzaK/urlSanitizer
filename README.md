@@ -156,12 +156,12 @@ const res2 = await parseURL('https://example.com');
 const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+');
 /* -> {
   input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+',
+  valid: true,
   data: {
     mime: 'image/svg+xml',
     base64: false,
     data: '%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;'
   },
-  valid: true,
   href: 'data:image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
   protocol: 'data:',
   pathname: 'image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
