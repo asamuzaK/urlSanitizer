@@ -792,16 +792,17 @@ var URLSanitizer = class extends URISchemes {
    * @param {object} opt - options
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
+   * @param {Array.<string>} opt.only - array of specific schemes to allow
    * @returns {?string} - sanitized URL
    */
-  sanitize(url, opt = { allow: [], deny: [] }) {
+  sanitize(url, opt = { allow: [], deny: [], only: [] }) {
     if (this.#nest > HEX) {
       this.#nest = 0;
       throw new Error("Data URLs nested too deeply.");
     }
     let sanitizedUrl;
     if (super.isURI(url)) {
-      const { allow, deny } = opt ?? {};
+      const { allow, deny, only } = opt ?? {};
       const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
@@ -811,8 +812,12 @@ var URLSanitizer = class extends URISchemes {
         ["javascrpt", false],
         ["vbscript", false]
       ]);
-      if (Array.isArray(allow) && allow.length) {
-        const items = Object.values(allow);
+      if (Array.isArray(only) && only.length) {
+        const schemes = super.get();
+        for (const item of schemes) {
+          schemeMap.set(item, false);
+        }
+        const items = Object.values(only);
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
@@ -821,14 +826,26 @@ var URLSanitizer = class extends URISchemes {
             }
           }
         }
-      }
-      if (Array.isArray(deny) && deny.length) {
-        const items = Object.values(deny);
-        for (let item of items) {
-          if (isString(item)) {
-            item = item.trim();
-            if (item) {
-              schemeMap.set(item, false);
+      } else {
+        if (Array.isArray(allow) && allow.length) {
+          const items = Object.values(allow);
+          for (let item of items) {
+            if (isString(item)) {
+              item = item.trim();
+              if (!REG_SCRIPT.test(item)) {
+                schemeMap.set(item, true);
+              }
+            }
+          }
+        }
+        if (Array.isArray(deny) && deny.length) {
+          const items = Object.values(deny);
+          for (let item of items) {
+            if (isString(item)) {
+              item = item.trim();
+              if (item) {
+                schemeMap.set(item, false);
+              }
             }
           }
         }
@@ -919,6 +936,77 @@ var URLSanitizer = class extends URISchemes {
     }
     return sanitizedUrl || null;
   }
+  /**
+   * object with extended props based on URL API
+   *
+   * @typedef {object} ParsedURL
+   * @property {string} input - URL input
+   * @property {boolean} valid - is valid URI
+   * @property {object} data - parsed result of data URL, `null`able
+   * @property {string} data.mime - MIME type
+   * @property {boolean} data.base64 - `true` if base64 encoded
+   * @property {string} data.data - data part of the data URL
+   * @property {string} href - same as URL API
+   * @property {string} origin - same as URL API
+   * @property {string} protocol - same as URL API
+   * @property {string} username - same as URL API
+   * @property {string} password - same as URL API
+   * @property {string} host - same as URL API
+   * @property {string} hostname - same as URL API
+   * @property {string} port - same as URL API
+   * @property {string} pathname - same as URL API
+   * @property {string} search - same as URL API
+   * @property {object} searchParams - same as URL API
+   * @property {string} hash - same as URL API
+   */
+  /**
+   * parse sanitized URL
+   *
+   * @param {string} url - URL input
+   * @returns {ParsedURL} - result with extended props based on URL API
+   */
+  parse(url) {
+    if (!isString(url)) {
+      throw new TypeError(`Expected String but got ${getType(url)}.`);
+    }
+    const sanitizedUrl = this.sanitize(url, {
+      allow: ["data", "file"]
+    });
+    const parsedUrl = /* @__PURE__ */ new Map([
+      ["input", url]
+    ]);
+    if (sanitizedUrl) {
+      const urlObj = new URL(sanitizedUrl);
+      const { pathname, protocol } = urlObj;
+      const schemeParts = protocol.replace(/:$/, "").split("+");
+      parsedUrl.set("valid", true);
+      if (schemeParts.includes("data")) {
+        const dataUrl = /* @__PURE__ */ new Map();
+        const [head, ...body] = pathname.split(",");
+        const data = `${body.join(",")}`;
+        const mediaType = head.split(";");
+        const isBase64 = mediaType[mediaType.length - 1] === "base64";
+        if (isBase64) {
+          mediaType.pop();
+        }
+        dataUrl.set("mime", mediaType.join(";"));
+        dataUrl.set("base64", isBase64);
+        dataUrl.set("data", data);
+        parsedUrl.set("data", Object.fromEntries(dataUrl));
+      } else {
+        parsedUrl.set("data", null);
+      }
+      for (const key in urlObj) {
+        const value = urlObj[key];
+        if (typeof value !== "function") {
+          parsedUrl.set(key, value);
+        }
+      }
+    } else {
+      parsedUrl.set("valid", false);
+    }
+    return Object.fromEntries(parsedUrl);
+  }
 };
 var urlSanitizer = new URLSanitizer();
 var isUri = (uri) => urlSanitizer.isURI(uri);
@@ -928,7 +1016,8 @@ var isURI = async (uri) => {
 };
 var sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
   allow: [],
-  deny: []
+  deny: [],
+  only: []
 });
 var sanitizeURL = async (url, opt) => {
   const res = await sanitizeUrl(url, opt);
