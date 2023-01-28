@@ -116,7 +116,7 @@ Type: [object][3]
 #### Properties
 
 * `input` **[string][1]** URL input.
-* `valid` **[boolean][2]** Is valid URL.
+* `valid` **[boolean][2]** Is valid URI.
 * `data` **[object][3]** Parsed result of data URL, `null`able.
   * `data.mime` **[string][1]** MIME type.
   * `data.base64` **[boolean][2]** `true` if base64 encoded.

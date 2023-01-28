@@ -406,34 +406,34 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * object with extended props based on URL api
+   * object with extended props based on URL API
    *
    * @typedef {object} ParsedURL
    * @property {string} input - URL input
-   * @property {boolean} valid - is valid URL
+   * @property {boolean} valid - is valid URI
    * @property {object} data - parsed result of data URL, `null`able
-   * @property {string} data.mime - mime type
+   * @property {string} data.mime - MIME type
    * @property {boolean} data.base64 - `true` if base64 encoded
-   * @property {string} data.data - data
-   * @property {string} href - same as URL api
-   * @property {string} origin - same as URL api
-   * @property {string} protocol - same as URL api
-   * @property {string} username - same as URL api
-   * @property {string} password - same as URL api
-   * @property {string} host - same as URL api
-   * @property {string} hostname - same as URL api
-   * @property {string} port - same as URL api
-   * @property {string} pathname - same as URL api
-   * @property {string} search - same as URL api
-   * @property {object} searchParams - same as URL api
-   * @property {string} hash - same as URL api
+   * @property {string} data.data - data part of the data URL
+   * @property {string} href - same as URL API
+   * @property {string} origin - same as URL API
+   * @property {string} protocol - same as URL API
+   * @property {string} username - same as URL API
+   * @property {string} password - same as URL API
+   * @property {string} host - same as URL API
+   * @property {string} hostname - same as URL API
+   * @property {string} port - same as URL API
+   * @property {string} pathname - same as URL API
+   * @property {string} search - same as URL API
+   * @property {object} searchParams - same as URL API
+   * @property {string} hash - same as URL API
    */
 
   /**
    * parse sanitized URL
    *
    * @param {string} url - URL input
-   * @returns {ParsedURL} - result with extended props based on URL api
+   * @returns {ParsedURL} - result with extended props based on URL API
    */
   parse(url) {
     if (!isString(url)) {
@@ -447,13 +447,13 @@ export class URLSanitizer extends URISchemes {
     ]);
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
-      const { hash, pathname, protocol, search } = urlObj;
+      const { pathname, protocol } = urlObj;
       const schemeParts = protocol.replace(/:$/, '').split('+');
       parsedUrl.set('valid', true);
       if (schemeParts.includes('data')) {
         const dataUrl = new Map();
         const [head, ...body] = pathname.split(',');
-        const data = `${body.join(',')}${search}${hash}`;
+        const data = `${body.join(',')};
         const mediaType = head.split(';');
         const isBase64 = mediaType[mediaType.length - 1] === 'base64';
         if (isBase64) {
@@ -531,7 +531,7 @@ export const sanitizeURL = async (url, opt) => {
  * parse URL sync
  *
  * @param {string} url - URL input
- * @returns {ParsedURL} - result with extended props based on URL api
+ * @returns {ParsedURL} - result with extended props based on URL API
  */
 const parseUrl = url => urlSanitizer.parse(url);
 
@@ -539,7 +539,7 @@ const parseUrl = url => urlSanitizer.parse(url);
  * parse URL async
  *
  * @param {string} url - URL input
- * @returns {Promise.<ParsedURL>} - result with extended props based on URL api
+ * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
  */
 export const parseURL = async url => {
   const res = await parseUrl(url);
