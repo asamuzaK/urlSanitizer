@@ -110,24 +110,24 @@ Type: [object][3]
 
 #### Properties
 
-* `input` **[string][44]** URL input.
-* `valid` **[boolean][48]** Is valid URL.
-* `data` **[object][49]** Parsed result of data URL, `null`able.
-  * `data.mime` **[string][44]** MIME type.
-  * `data.base64` **[boolean][48]** `true` if base64 encoded.
-  * `data.data` **[string][44]** Data.
-* `href` **[string][44]** Same as URL API.
-* `origin` **[string][44]** Same as URL API.
-* `protocol` **[string][44]** Same as URL API.
-* `username` **[string][44]** Same as URL API.
-* `password` **[string][44]** Same as URL API.
-* `host` **[string][44]** Same as URL API.
-* `hostname` **[string][44]** Same as URL API.
-* `port` **[string][44]** Same as URL API.
-* `pathname` **[string][44]** Same as URL API.
-* `search` **[string][44]** Same as URL API.
-* `searchParams` **[object][49]** Same as URL API.
-* `hash` **[string][44]** Same as URL API.
+* `input` **[string][1]** URL input.
+* `valid` **[boolean][2]** Is valid URL.
+* `data` **[object][3]** Parsed result of data URL, `null`able.
+  * `data.mime` **[string][1]** MIME type.
+  * `data.base64` **[boolean][2]** `true` if base64 encoded.
+  * `data.data` **[string][1]** Data.
+* `href` **[string][1]** Same as URL API.
+* `origin` **[string][1]** Same as URL API.
+* `protocol` **[string][1]** Same as URL API.
+* `username` **[string][1]** Same as URL API.
+* `password` **[string][1]** Same as URL API.
+* `host` **[string][1]** Same as URL API.
+* `hostname` **[string][1]** Same as URL API.
+* `port` **[string][1]** Same as URL API.
+* `pathname` **[string][1]** Same as URL API.
+* `search` **[string][1]** Same as URL API.
+* `searchParams` **[object][3]** Same as URL API.
+* `hash` **[string][1]** Same as URL API.
 
 ```javascript
 const res1 = await parseURL('javascript:alert(1)');
