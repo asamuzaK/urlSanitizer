@@ -39,7 +39,8 @@ Sanitize the given URL.
 * `opt` **[object][3]** Options.
   * `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`.
   * `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`.
-  * `opt.only` **[Array][4]<[string][1]>** Array of specific schemes to allow, e.g. `['git', 'https']`. `only` takes precedence over `allow` and `deny`.
+  * `opt.only` **[Array][4]<[string][1]>** Array of specific schemes to allow, e.g. `['git', 'https']`.
+    `only` takes precedence over `allow` and `deny`.
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
