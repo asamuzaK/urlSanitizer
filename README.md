@@ -312,6 +312,13 @@ const res2 = urlSanitizer.remove('foo');
 // => false
 ```
 
+## Acknowledgments
+
+The following resources have been of great help in the development of this program.
+
+* [Uniform Resource Identifier (URI) Schemes - IANA](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)
+* [Encoding -- determine the character encoding of a text file.](https://github.com/file/file/blob/master/src/encoding.c)
+
 [1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
 
 [2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
