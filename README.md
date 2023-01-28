@@ -115,7 +115,7 @@ Type: [object][3]
 * `data` **[object][3]** Parsed result of data URL, `null`able.
   * `data.mime` **[string][1]** MIME type.
   * `data.base64` **[boolean][2]** `true` if base64 encoded.
-  * `data.data` **[string][1]** Data.
+  * `data.data` **[string][1]** Data part of the data URL.
 * `href` **[string][1]** Same as URL API.
 * `origin` **[string][1]** Same as URL API.
 * `protocol` **[string][1]** Same as URL API.
