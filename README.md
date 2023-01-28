@@ -77,7 +77,7 @@ const res5 = await sanitizeURL('http://example.com', {
 const res6 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 }).then(res => decodeURIComponent(res));
-// => https://example.com/&quot;onmouseover=&quot;alert(1)&quot;
+// => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
 
 const res7 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
   only: ['data', 'git', 'https']
@@ -88,7 +88,7 @@ const res7 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
 const res8 = await sanitizeURL('git+https://example.com', {
   only: ['data', 'git', 'https']
 }).then(res => decodeURIComponent(res));;
-// => git+https://example.com
+// => 'git+https://example.com'
 ```
 
 
@@ -244,7 +244,7 @@ Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 const schemes = urlSanitizer.get();
-// => ['aaa', 'aaas', 'about', 'acap', 'acct', ...];
+// => ['aaa', 'aaas', 'about', 'acap', 'acct', ...]
 ```
 
 ### urlSanitizer.has(scheme)
@@ -281,7 +281,7 @@ console.log(isURISync('foo'));
 // => false;
 
 const res = urlSanitizer.add('foo');
-// => ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...];
+// => ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...]
 
 console.log(isURISync('foo'));
 // => true;
