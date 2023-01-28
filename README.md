@@ -8,6 +8,7 @@
 URL sanitizer for Node.js (>=18), browsers and web sites.
 **Experimental**
 
+
 ## Install
 
 ```shell
@@ -20,6 +21,7 @@ For browsers and web sites, standalone ESM builds are available in `dist/` direc
 
 Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
+
 ## Usage
 
 ```javascript
@@ -27,6 +29,7 @@ import urlSanitizer, {
   isURI, isURISync, sanitizeURL, sanitizeURLSync
 } from 'url-sanitizer';
 ```
+
 
 ## sanitizeURL(url, opt)
 
@@ -88,9 +91,11 @@ const res8 = await sanitizeURL('git+https://example.com', {
 // -> git+https://example.com
 ```
 
+
 ## sanitizeURLSync
 
 Synchronous version of the [sanitizeURL()](#sanitizeurlurl-opt).
+
 
 ## parseURL(url)
 
@@ -185,9 +190,11 @@ const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAA
 }
 ```
 
+
 ## parseURLSync(url)
 
 Synchronous version of the [parseURL()](#parseURL).
+
 
 ## isURI(uri)
 
@@ -217,9 +224,12 @@ const res5 = await isURI('web+javascript:alert(1)');
 // -> false
 ```
 
+
 ## isURISync(uri)
 
 Synchronous version of the [isURI()](#isuriuri).
+
+---
 
 ## urlSanitizer
 
