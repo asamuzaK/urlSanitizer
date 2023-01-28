@@ -564,7 +564,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('should get null', () => {
+      it('should override allow and get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
           allow: ['data'],
@@ -573,7 +573,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('should get value', () => {
+      it('should override deny and get value', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', {
           deny: ['https'],
