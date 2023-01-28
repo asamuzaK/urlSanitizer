@@ -137,7 +137,7 @@ const res1 = await parseURL('javascript:alert(1)');
 }
 */
 
-const res2 = await parseURL('https://example.com');
+const res2 = await parseURL('https://example.com/?foo=bar#baz');
 /* -> {
   input: 'https://www.example.com/?foo=bar#baz',
   valid: true,
