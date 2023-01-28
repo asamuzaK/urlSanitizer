@@ -314,7 +314,7 @@ const res2 = urlSanitizer.remove('foo');
 
 ## Acknowledgments
 
-The following resources have been of great help in the development of the urlSanitizer.
+The following resources have been of great help in the development of the URL Sanitizer.
 
 * [Uniform Resource Identifier (URI) Schemes - IANA](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)
 * [Encoding -- determine the character encoding of a text file. - file/file](https://github.com/file/file/blob/master/src/encoding.c)
