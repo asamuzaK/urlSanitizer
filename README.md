@@ -312,6 +312,8 @@ const res2 = urlSanitizer.remove('foo');
 // => false
 ```
 
+---
+
 ## Acknowledgments
 
 The following resources have been of great help in the development of the URL Sanitizer.
