@@ -278,13 +278,13 @@ Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
 console.log(isURISync('foo'));
-// => false;
+// => false
 
 const res = urlSanitizer.add('foo');
 // => ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...]
 
 console.log(isURISync('foo'));
-// => true;
+// => true
 ```
 
 ### urlSanitizer.remove(scheme)
@@ -300,13 +300,13 @@ Returns **[boolean][2]** Result.
 
 ```javascript
 console.log(isURISync('aaa'));
-// => true;
+// => true
 
 const res1 = urlSanitizer.remove('aaa');
 // => true
 
 console.log(isURISync('aaa'));
-// => false;
+// => false
 
 const res2 = urlSanitizer.remove('foo');
 // => false
