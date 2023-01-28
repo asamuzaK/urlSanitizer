@@ -540,6 +540,30 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('https://example.com', {
+          only: ['git', 'https']
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('git+https://example.com', {
+          only: ['git', 'https']
+        });
+        assert.strictEqual(res, 'git+https://example.com', 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('http://example.com', {
+          only: ['git', 'https']
+        });
+        assert.isNull(res, 'result');
+      });
+
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert(1)');

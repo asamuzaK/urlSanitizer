@@ -39,6 +39,7 @@ Sanitize the given URL.
 * `opt` **[object][3]** Options.
 * `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`.
 * `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`.
+* `opt.only` **[Array][4]<[string][1]>** Array of specific schemes to allow, e.g. `['git', 'https']`.
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
@@ -63,6 +64,27 @@ const res4 = await sanitizeURL('web+foo://example.com', {
   deny: ['web+foo']
 });
 // -> null
+
+const res5 = await sanitizeURL('http://example.com', {
+  only: ['data', 'git', 'https']
+});
+// -> null
+
+const res6 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
+  only: ['data', 'git', 'https']
+}).then(res => decodeURIComponent(res));
+// -> https://example.com/&quot;onmouseover=&quot;alert(1)&quot;
+
+const res7 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
+  only: ['data', 'git', 'https']
+}).then(res => decodeURIComponent(res));
+// -> 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+
+// `only` option also allows combinations of the specified schemes
+const res8 = await sanitizeURL('git+https://example.com', {
+  only: ['data', 'git', 'https']
+}).then(res => decodeURIComponent(res));;
+// -> git+https://example.com
 ```
 
 ## sanitizeURLSync

@@ -256,16 +256,17 @@ export class URLSanitizer extends URISchemes {
    * @param {object} opt - options
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
+   * @param {Array.<string>} opt.only - array of specific schemes to allow
    * @returns {?string} - sanitized URL
    */
-  sanitize(url, opt = { allow: [], deny: [] }) {
+  sanitize(url, opt = { allow: [], deny: [], only: [] }) {
     if (this.#nest > HEX) {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
     let sanitizedUrl;
     if (super.isURI(url)) {
-      const { allow, deny } = opt ?? {};
+      const { allow, deny, only } = opt ?? {};
       const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, '');
       const schemeParts = scheme.split('+');
@@ -275,8 +276,12 @@ export class URLSanitizer extends URISchemes {
         ['javascrpt', false],
         ['vbscript', false]
       ]);
-      if (Array.isArray(allow) && allow.length) {
-        const items = Object.values(allow);
+      if (Array.isArray(only) && only.length) {
+        const schemes = super.get();
+        for (const item of schemes) {
+          schemeMap.set(item, false);
+        }
+        const items = Object.values(only);
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
@@ -285,14 +290,26 @@ export class URLSanitizer extends URISchemes {
             }
           }
         }
-      }
-      if (Array.isArray(deny) && deny.length) {
-        const items = Object.values(deny);
-        for (let item of items) {
-          if (isString(item)) {
-            item = item.trim();
-            if (item) {
-              schemeMap.set(item, false);
+      } else {
+        if (Array.isArray(allow) && allow.length) {
+          const items = Object.values(allow);
+          for (let item of items) {
+            if (isString(item)) {
+              item = item.trim();
+              if (!REG_SCRIPT.test(item)) {
+                schemeMap.set(item, true);
+              }
+            }
+          }
+        }
+        if (Array.isArray(deny) && deny.length) {
+          const items = Object.values(deny);
+          for (let item of items) {
+            if (isString(item)) {
+              item = item.trim();
+              if (item) {
+                schemeMap.set(item, false);
+              }
             }
           }
         }
@@ -421,7 +438,8 @@ export const isURI = async uri => {
  */
 const sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
   allow: [],
-  deny: []
+  deny: [],
+  only: []
 });
 
 /**
