@@ -453,7 +453,7 @@ export class URLSanitizer extends URISchemes {
       if (schemeParts.includes('data')) {
         const dataUrl = new Map();
         const [head, ...body] = pathname.split(',');
-        const data = `${body.join(',')};
+        const data = `${body.join(',')}`;
         const mediaType = head.split(';');
         const isBase64 = mediaType[mediaType.length - 1] === 'base64';
         if (isBase64) {
