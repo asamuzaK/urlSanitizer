@@ -100,7 +100,7 @@ Parse the given URL.
 
 * `url` **[string][1]** URL input.
 
-Returns **[Promise][5]<[ParsedURL][#parsedurl]>** Result.
+Returns **[Promise][5]<[ParsedURL](#parsedurl)>** Result.
 
 ### ParsedURL
 
