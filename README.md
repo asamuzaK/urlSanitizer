@@ -319,6 +319,9 @@ The following resources have been of great help in the development of the urlSan
 * [Uniform Resource Identifier (URI) Schemes - IANA](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)
 * [Encoding -- determine the character encoding of a text file. - file/file](https://github.com/file/file/blob/master/src/encoding.c)
 
+---
+Copyright (c) 2023 [asamuzaK (Kazz)](https://github.com/asamuzaK/)
+
 [1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
 
 [2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
