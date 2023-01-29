@@ -800,7 +800,6 @@ var URLSanitizer = class extends URISchemes {
       this.#nest = 0;
       throw new Error("Data URLs nested too deeply.");
     }
-    let sanitizedUrl;
     const { allow, deny, only } = opt ?? {};
     const schemeMap = /* @__PURE__ */ new Map([
       ["data", false],
@@ -808,6 +807,7 @@ var URLSanitizer = class extends URISchemes {
       ["javascrpt", false],
       ["vbscript", false]
     ]);
+    let restrictScheme = false;
     if (Array.isArray(only) && only.length) {
       const schemes = super.get();
       for (const item of schemes) {
@@ -828,6 +828,9 @@ var URLSanitizer = class extends URISchemes {
               if (super.has(item)) {
                 schemeMap.set(item, true);
               }
+            }
+            if (!restrictScheme && schemeMap.has(item)) {
+              restrictScheme = schemeMap.get(item);
             }
           }
         }
@@ -866,15 +869,20 @@ var URLSanitizer = class extends URISchemes {
         }
       }
     }
+    let sanitizedUrl;
     if (super.isURI(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
       let bool;
-      for (const [key, value] of schemeMap.entries()) {
-        bool = value || scheme !== key && schemeParts.every((s) => s !== key);
-        if (!bool) {
-          break;
+      if (restrictScheme) {
+        bool = schemeParts.every((s) => schemeMap.get(s));
+      } else {
+        for (const [key, value] of schemeMap.entries()) {
+          bool = value || scheme !== key && schemeParts.every((s) => s !== key);
+          if (!bool) {
+            break;
+          }
         }
       }
       if (bool) {
