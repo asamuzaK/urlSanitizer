@@ -319,7 +319,7 @@ const res2 = urlSanitizer.remove('foo');
 
 ## Reactivate tags and purify DOM
 
-It's outside the scope of URL Sanitizer, but escaped tags in sanitized data URL can be inconvenient.
+It's outside the scope of the URL Sanitizer, but escaped tags in sanitized data URL can be inconvenient.
 For example, embedded SVG in a data URL.
 
 For such cases, here is a sample code that reactivate tags and purify the DOM.
