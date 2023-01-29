@@ -315,6 +315,8 @@ const res2 = urlSanitizer.remove('foo');
 // => false
 ```
 
+---
+
 ## Reactivate tags and purify DOM
 
 It's outside the scope of URL Sanitizer, but escaped tags in sanitized data URL can be inconvenient.
