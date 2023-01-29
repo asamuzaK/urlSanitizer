@@ -29,6 +29,10 @@
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"
   },
+  "dependencies": {
+    "dompurify": "^2.4.3",
+    "jsdom": "^21.1.0"
+  },
   "devDependencies": {
     "@babel/eslint-parser": "^7.19.1",
     "@babel/plugin-syntax-import-assertions": "^7.20.0",

@@ -315,6 +315,79 @@ const res2 = urlSanitizer.remove('foo');
 // => false
 ```
 
+## Reactivate tags and purify DOM
+
+It's outside the scope of URL Sanitizer, but escaped tags in sanitized data URL can be inconvenient.
+For example, embedded SVG in a data URL.
+
+For such cases, here is a sample code that reactivate tags and purify the DOM.
+
+* [dompurify](https://www.npmjs.com/package/dompurify) is required.
+* If you're using Node.js, [jsdom](https://www.npmjs.com/package/jsdom) is also required.
+
+```shell
+npm i dompurify jsdom
+```
+
+```javascript
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
+import { parseURL } from 'url-sanitizer';
+
+const { window } = new JSDOM('');
+const domPurify = DOMPurify(window);
+
+/**
+ * get purified DOM from a data URL
+ *
+ * @param {string} url - URL input
+ * @returns {?string} - purified DOM, `null` if the given URL is not a data URL
+ */
+const getPurifiedDOMFromDataURL = async url => {
+  const parsedURL = await parseURL(url);
+  const { data: parsedDataURL } = parsedURL;
+  let purifiedDOM;
+  if (parsedDataURL) {
+    const { base64, data, mime } = parsedDataURL;
+    if (!base64 &&
+        /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/
+          .test(mime)) {
+      let parsedData = data;
+      const matchedHTMLChars =
+        parsedData.matchAll(/%26?(?:(?:l|g|quo)t|%2339);?/g);
+      const items = [...matchedHTMLChars].reverse();
+      const unescapeURLEncodedHTMLChars = ch => {
+        let unescapedChar;
+        if (/%26lt;?/.test(ch)) {
+          unescapedChar = '<';
+        } else if (/%26gt;?/.test(ch)) {
+          unescapedChar = '>';
+        } else if (/%26quot;?/.test(ch)) {
+          unescapedChar = '"';
+        } else if (/%26%2339;?/.test(ch)) {
+          unescapedChar = "'";
+        } else {
+          unescapedChar = ch;
+        }
+        return unescapedChar;
+      };
+      for (const item of items) {
+        const [htmlChar] = item;
+        const { index } = item;
+        const [preHTMLChar, postHTMLChar] = [
+          parsedData.substring(0, index),
+          parsedData.substring(index + htmlChar.length)
+        ];
+        const unescapedHTMLChar = unescapeURLEncodedHTMLChars(htmlChar);
+        parsedData = `${preHTMLChar}${unescapedHTMLChar}${postHTMLChar}`;
+      }
+      purifiedDOM = domPurify.sanitize(decodeURIComponent(parsedData));
+    }
+  }
+  return purifiedDOM ?? null;
+};
+```
+
 ---
 
 ## Acknowledgments
