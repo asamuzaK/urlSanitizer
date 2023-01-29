@@ -49,7 +49,7 @@ export const getPurifiedDOMFromDataURL = async url => {
           .test(mime)) {
       let parsedData = data;
       const matchedHTMLChars =
-        parsedData.matchAll(/%26?(?:(?:l|g|quo)t|%2339);?/g);
+        parsedData.matchAll(/%26(?:(?:l|g|quo)t|%2339);?/g);
       const items = [...matchedHTMLChars].reverse();
       for (const item of items) {
         const [htmlChar] = item;
