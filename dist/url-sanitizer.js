@@ -974,30 +974,31 @@ var URLSanitizer = class extends URISchemes {
    * @property {string} data.mime - MIME type
    * @property {boolean} data.base64 - `true` if base64 encoded
    * @property {string} data.data - data part of the data URL
-   * @property {string} href - same as URL API
-   * @property {string} origin - same as URL API
-   * @property {string} protocol - same as URL API
-   * @property {string} username - same as URL API
-   * @property {string} password - same as URL API
-   * @property {string} host - same as URL API
-   * @property {string} hostname - same as URL API
-   * @property {string} port - same as URL API
-   * @property {string} pathname - same as URL API
-   * @property {string} search - same as URL API
-   * @property {object} searchParams - same as URL API
-   * @property {string} hash - same as URL API
+   * @property {string} href - sanitized URL input
+   * @property {string} origin - scheme, domain and port of the sanitized URL
+   * @property {string} protocol -  protocol scheme of the sanitized URL
+   * @property {string} username - username specified before the domain name
+   * @property {string} password - password specified before the domain name
+   * @property {string} host - domain and port of the sanitized URL
+   * @property {string} hostname - domain of the sanitized URL
+   * @property {string} port - port number of the sanitized URL
+   * @property {string} pathname - path of the sanitized URL
+   * @property {string} search - query string of the sanitized URL
+   * @property {object} searchParams - URLSearchParams object
+   * @property {string} hash - fragment identifier of the sanitized URL
    */
   /**
    * parse sanitized URL
    *
    * @param {string} url - URL input
+   * @param {object} opt - options
    * @returns {ParsedURL} - result with extended props based on URL API
    */
-  parse(url) {
+  parse(url, opt) {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    const sanitizedUrl = this.sanitize(url, {
+    const sanitizedUrl = this.sanitize(url, opt ?? {
       allow: ["data", "file"]
     });
     const parsedUrl = /* @__PURE__ */ new Map([
@@ -1042,19 +1043,34 @@ var isURI = async (uri) => {
   const res = await isUri(uri);
   return res;
 };
-var sanitizeUrl = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
-  allow: [],
-  deny: [],
-  only: []
-});
+var sanitizeUrl = (url, opt) => {
+  const parsedUrl = urlSanitizer.parse(url, opt ?? {
+    allow: [],
+    deny: [],
+    only: []
+  });
+  let res;
+  if (parsedUrl) {
+    const { href } = parsedUrl;
+    res = href;
+  }
+  return res ?? null;
+};
 var sanitizeURL = async (url, opt) => {
   const res = await sanitizeUrl(url, opt);
+  return res;
+};
+var parseUrl = (url) => urlSanitizer.parse(url);
+var parseURL = async (url) => {
+  const res = await parseUrl(url);
   return res;
 };
 export {
   urlSanitizer as default,
   isURI,
   isUri as isURISync,
+  parseURL,
+  parseUrl as parseURLSync,
   sanitizeURL,
   sanitizeUrl as sanitizeURLSync
 };
