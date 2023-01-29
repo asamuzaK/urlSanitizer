@@ -237,7 +237,7 @@ Instance of the sanitizer.
 
 ### urlSanitizer.get()
 
-Get an array of registered URI schemes.
+Get a list of registered URI schemes.
 
 Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 * Includes schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml "Uniform Resource Identifier (URI) Schemes") by default.
@@ -270,7 +270,7 @@ const res2 = urlSanitizer.has('foo');
 
 ### urlSanitizer.add(scheme)
 
-Add a scheme to the list of URI schemes.
+Add a scheme to the list of registered URI schemes.
 * `javascript` and `vbscript` schemes can not be registered. It throws.
 
 #### Parameters
@@ -292,7 +292,7 @@ console.log(isURISync('foo'));
 
 ### urlSanitizer.remove(scheme)
 
-Remove a scheme from the list of URI schemes.
+Remove a scheme from the list of registered URI schemes.
 
 #### Parameters
 
