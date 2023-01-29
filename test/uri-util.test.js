@@ -1280,6 +1280,11 @@ describe('uri-scheme', () => {
     describe('sanitize URL sync', () => {
       const func = mjs.sanitizeURLSync;
 
+      it('should get null', () => {
+        const res = func('javascript:alert(1)');
+        assert.isNull(res, 'result');
+      });
+
       it('should get value', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
@@ -1288,6 +1293,11 @@ describe('uri-scheme', () => {
 
     describe('sanitize URL async', () => {
       const func = mjs.sanitizeURL;
+
+      it('should get null', async () => {
+        const res = await func('javascript:alert(1)');
+        assert.isNull(res, 'result');
+      });
 
       it('should get value', async () => {
         const res = await func('https://example.com');

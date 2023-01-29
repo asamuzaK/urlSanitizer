@@ -122,18 +122,18 @@ Type: [object][3]
   * `data.mime` **[string][1]** MIME type.
   * `data.base64` **[boolean][2]** `true` if base64 encoded.
   * `data.data` **[string][1]** Data part of the data URL.
-* `href` **[string][1]** Same as URL API.
-* `origin` **[string][1]** Same as URL API.
-* `protocol` **[string][1]** Same as URL API.
-* `username` **[string][1]** Same as URL API.
-* `password` **[string][1]** Same as URL API.
-* `host` **[string][1]** Same as URL API.
-* `hostname` **[string][1]** Same as URL API.
-* `port` **[string][1]** Same as URL API.
-* `pathname` **[string][1]** Same as URL API.
-* `search` **[string][1]** Same as URL API.
-* `searchParams` **[object][3]** Same as URL API.
-* `hash` **[string][1]** Same as URL API.
+* `href` **[string][1]** Sanitized URL input.
+* `origin` **[string][1]** Scheme, domain and port of the sanitized URL.
+* `protocol` **[string][1]** Protocol scheme of the sanitized URL.
+* `username` **[string][1]** Username specified before the domain name.
+* `password` **[string][1]** Password specified before the domain name.
+* `host` **[string][1]** Domain and port of the sanitized URL.
+* `hostname` **[string][1]** Domain of the sanitized URL.
+* `port` **[string][1]** Port number of the sanitized URL.
+* `pathname` **[string][1]** Path of the sanitized URL.
+* `search` **[string][1]** Query string of the sanitized URL.
+* `searchParams` **[object][3]** [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) object.
+* `hash` **[string][1]** Fragment identifier of the sanitized URL.
 
 ```javascript
 const res1 = await parseURL('javascript:alert(1)');
