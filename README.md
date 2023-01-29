@@ -331,6 +331,8 @@ For such cases, here is a sample code that reactivate tags and purify the DOM.
 npm i dompurify jsdom
 ```
 
+### Sample
+
 ```javascript
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
