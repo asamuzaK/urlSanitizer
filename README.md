@@ -324,7 +324,7 @@ For example, embedded SVG in a data URL.
 
 For such cases, here is a sample code that reactivate tags and purify the DOM.
 
-* [dompurify](https://www.npmjs.com/package/dompurify) is required.
+* [DOMPurify](https://www.npmjs.com/package/dompurify) is required.
 * If you're using Node.js, [jsdom](https://www.npmjs.com/package/jsdom) is also required.
 
 ```shell
