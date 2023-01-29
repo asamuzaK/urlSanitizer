@@ -3,5 +3,11 @@
  */
 
 export {
-  default, isURI, isURISync, sanitizeURL, sanitizeURLSync
+  default,
+  isURI,
+  isURISync,
+  parseURL,
+  parseURLSync,
+  sanitizeURL,
+  sanitizeURLSync
 } from './src/mjs/uri-util.js';
