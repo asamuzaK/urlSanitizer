@@ -608,12 +608,36 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('http://example.com', {
+          only: ['git', 'https']
+        });
+        assert.isNull(res, 'result');
+      });
+
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', {
           only: ['git', 'https']
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar', {
+          only: ['foo', 'git', 'https']
+        });
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('should get null', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar', {
+          only: ['foo', 'git', 'https']
+        });
+        assert.isNull(res, 'result');
       });
 
       it('should get value', () => {
@@ -626,8 +650,8 @@ describe('uri-scheme', () => {
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('http://example.com', {
-          only: ['git', 'https']
+        const res = sanitizer.sanitize('Foo:bar', {
+          only: ['Foo', 'git', 'https']
         });
         assert.isNull(res, 'result');
       });
