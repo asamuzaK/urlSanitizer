@@ -237,11 +237,13 @@ Instance of the sanitizer.
 
 ### urlSanitizer.get()
 
-Get an array of URI schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml "Uniform Resource Identifier (URI) Schemes").
-* Historical schemes omitted.
-* `moz-extension` scheme added.
+Get an array of registered URI schemes.
 
 Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
+* Includes schemes registered at [iana.org](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml "Uniform Resource Identifier (URI) Schemes") by default.
+  * Historical schemes omitted.
+  * `moz-extension` scheme added.
+* Also includes custom schemes added via [urlSanitizer.add()](#urlsanitizeraddscheme).
 
 ```javascript
 const schemes = urlSanitizer.get();
