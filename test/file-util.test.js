@@ -9,12 +9,40 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  createFile, fetchText
+  createFile, fetchText, getStat, isFile
 } from '../modules/file-util.js';
 
 /* constants */
 const TMPDIR = process.env.TMP || process.env.TMPDIR || process.env.TEMP ||
                os.tmpdir();
+
+describe('getStat', () => {
+  it('should be an object', () => {
+    const p = path.resolve('test', 'file', 'test.txt');
+    assert.property(getStat(p), 'mode');
+  });
+
+  it('should get null if given argument is not string', () => {
+    assert.isNull(getStat());
+  });
+
+  it('should get null if file does not exist', () => {
+    const p = path.resolve('test', 'file', 'foo.txt');
+    assert.isNull(getStat(p));
+  });
+});
+
+describe('isFile', () => {
+  it('should get true if file exists', () => {
+    const p = path.resolve('test', 'file', 'test.txt');
+    assert.isTrue(isFile(p));
+  });
+
+  it('should get false if file does not exist', () => {
+    const p = path.resolve('test', 'file', 'foo.txt');
+    assert.isFalse(isFile(p));
+  });
+});
 
 describe('createFile', () => {
   const dirPath = path.join(TMPDIR, 'sidebartabs');

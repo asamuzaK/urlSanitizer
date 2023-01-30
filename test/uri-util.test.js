@@ -5,6 +5,7 @@
 /* api */
 import { assert } from 'chai';
 import { describe, it } from 'mocha';
+import { isString } from '../modules/common.js';
 
 /* test */
 import urlSanitizer, * as mjs from '../src/mjs/uri-util.js';
@@ -92,6 +93,65 @@ describe('uri-scheme', () => {
     });
   });
 
+  describe('unescape URL encoded HTML special chars', () => {
+    const func = mjs.unescapeUrlEncodedHtmlChars;
+
+    it('should get undefined', () => {
+      const res = func();
+      assert.isUndefined(res, 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%20');
+      assert.strictEqual(res, '%20', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26amp;');
+      assert.strictEqual(res, '%26amp;', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26lt');
+      assert.strictEqual(res, '<', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26lt;');
+      assert.strictEqual(res, '<', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26gt');
+      assert.strictEqual(res, '>', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26gt;');
+      assert.strictEqual(res, '>', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26quot');
+      assert.strictEqual(res, '"', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26quot;');
+      assert.strictEqual(res, '"', 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26%2339');
+      assert.strictEqual(res, "'", 'result');
+    });
+
+    it('should get value', () => {
+      const res = func('%26%2339;');
+      assert.strictEqual(res, "'", 'result');
+    });
+  });
+
   describe('parse base64 encoded data', () => {
     const func = mjs.parseBase64;
 
@@ -176,6 +236,37 @@ describe('uri-scheme', () => {
       }
       const str = `j${nest}#x61${semi}vascript:alert(1)`;
       assert.throws(() => func(str), 'Character references nested too deeply.');
+    });
+  });
+
+  describe('purify URL encoded DOM', () => {
+    const func = mjs.purifyUrlEncodedDom;
+
+    it('should throw', () => {
+      assert.throws(() => func(), 'Expected String but got Undefined.');
+    });
+
+    it('should get value', () => {
+      const data = '<script>alert(1)</script>';
+      const encData = encodeURIComponent(data);
+      const res = func(encData);
+      assert.strictEqual(res, '', 'result');
+    });
+
+    it('should get value', () => {
+      const data = '<div><script>alert(1)</script></div>';
+      const encData = encodeURIComponent(data);
+      const res = func(encData);
+      assert.strictEqual(res, '%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+    });
+
+    it('should get value', async () => {
+      const data =
+        '<svg><g id="foo" onclick="alert(1)"><path/><path/></g></svg>';
+      const encData = encodeURIComponent(data);
+      const res = func(encData);
+      assert.strictEqual(res, '%3Csvg%3E%3Cg%20id%3D%22foo%22%3E%3Cpath%3E%3C%2Fpath%3E%3Cpath%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        'result');
     });
   });
 
@@ -1101,7 +1192,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1119,7 +1210,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1143,7 +1234,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1161,14 +1252,41 @@ describe('uri-scheme', () => {
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const encodedData = '%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;';
+        const encodedData = encodeURIComponent('<svg><g></g></svg>');
+        const url = `data:image/svg+xml,${encodeURIComponent(data)}`;
+        const obj = new URL(`data:image/svg+xml,${encodedData}`);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'image/svg+xml',
+          data: encodedData,
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        for (const i in res) {
+          assert.deepEqual(res[i], items[i]);
+        }
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const encodedData = encodeURIComponent('<svg><g></g></svg>');
         const base64Data = btoa(data);
         const url = `data:image/svg+xml;base64,${base64Data}`;
         const obj = new URL(`data:image/svg+xml,${encodedData}`);
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1190,7 +1308,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1244,7 +1362,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }
@@ -1265,7 +1383,7 @@ describe('uri-scheme', () => {
         const items = {};
         for (const key in obj) {
           const value = obj[key];
-          if (typeof value !== 'function') {
+          if (isString(value)) {
             items[key] = value;
           }
         }

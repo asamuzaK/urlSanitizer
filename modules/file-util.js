@@ -2,7 +2,7 @@
  * file-util.js
  */
 
-import { promises as fsPromise } from 'node:fs';
+import fs, { promises as fsPromise } from 'node:fs';
 import path from 'node:path';
 
 import { getType, isString } from './common.js';
@@ -10,6 +10,26 @@ import { getType, isString } from './common.js';
 /* constants */
 const CHAR = 'utf8';
 const PERM_FILE = 0o644;
+
+/**
+ * get stat
+ *
+ * @param {string} file - file path
+ * @returns {object} - file stat
+ */
+export const getStat = file =>
+  isString(file) && fs.existsSync(file) ? fs.statSync(file) : null;
+
+/**
+ * the file is a file
+ *
+ * @param {string} file - file path
+ * @returns {boolean} - result
+ */
+export const isFile = file => {
+  const stat = getStat(file);
+  return stat ? stat.isFile() : false;
+};
 
 /**
  * create a file

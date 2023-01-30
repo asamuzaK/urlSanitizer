@@ -20,13 +20,15 @@
     "index.js"
   ],
   "scripts": {
-    "build": "npm run include && npm run char && npm run lint && npm test && npm run bundle",
+    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run rename && npm run bundle",
     "bundle": "npm-run-all -s bundle-*",
-    "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./index.js",
-    "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./index.js",
+    "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./bundle/index.js",
+    "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./bundle/index.js",
     "char": "node ./modules/index char -i",
+    "copy": "copyfiles --verbose index.js src/**/* --exclude=src/mjs/dompurify.js bundle",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
+    "rename": "node ./modules/index rename --oldpath=./bundle/src/mjs/dompurify.esm.js --newpath=./bundle/src/mjs/dompurify.js -i",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
     "c8": "^7.12.0",
     "chai": "^4.3.7",
     "commander": "^10.0.0",
+    "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
     "esbuild": "^0.17.5",
     "eslint": "^8.32.0",
@@ -54,5 +57,5 @@
     "sinon": "^15.0.1",
     "undici": "^5.16.0"
   },
-  "version": "0.5.7"
+  "version": "0.5.8-a.1"
 }
