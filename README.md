@@ -49,47 +49,65 @@ Sanitize the given URL.
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
 ```javascript
-const res1 = await sanitizeURL('http://example.com/?<script>alert(1);</script>')
-  .then(res => decodeURIComponent(res));
-// => 'http://example.com/?&lt;script&gt;alert(1);&lt;/script&gt;'
+// Sanitize tags and quotes
+const res1 = await sanitizeURL('http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>');
+// => 'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;'
 
-const res2 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
+console.log(decodeURIComponent(res1));
+// => 'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;'
+
+// Parse and purify data URL
+const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
-}).then(res => decodeURIComponent(res));
-// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+})
+// -> 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E'
 
-// Can parse and sanitize base64 encoded data
-const base64data3 = btoa('<script>alert(1);</script>');
+console.log(decodeURIComponent(res2));
+// => 'data:text/html,<div></div><p></p>'
+
+// Can also parse and purify base64 encoded data
+const base64data3 = btoa('<div><script>alert(1);</script></div>');
 const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
-}).then(res => decodeURIComponent(res));
-// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
+})
+// => 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E'
 
-const res4 = await sanitizeURL('web+foo://example.com', {
+console.log(decodeURIComponent(res3));
+// => 'data:text/html,<div></div>'
+
+const base64data4 = btoa('<div><iframe src="javascript:alert(1)"></iframe></div>');
+const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`);
+// => 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E'
+
+console.log(decodeURIComponent(res4));
+// => 'data:text/html,<div></div>'
+
+const res5 = await sanitizeURL('web+foo://example.com', {
   deny: ['web+foo']
 });
 // => null
 
-const res5 = await sanitizeURL('http://example.com', {
+const res6 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
 // => null
 
-const res6 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
+const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
-}).then(res => decodeURIComponent(res));
+});
+// => 'https://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;'
+
+console.log(decodeURIComponent(res7));
 // => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
 
-const res7 = await sanitizeURL('data:text/html,<script>alert(1);</script>', {
-  only: ['data', 'git', 'https']
-}).then(res => decodeURIComponent(res));
-// => 'data:text/html,&lt;script&gt;alert(1);&lt;/script&gt;'
-
 // `only` option also allows combinations of the specified schemes
-const res8 = await sanitizeURL('git+https://example.com', {
+const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
-}).then(res => decodeURIComponent(res));;
-// => 'git+https://example.com'
+});
+// => 'git+https://example.com/foo.git?%26lt;script%26gt;alert(1)%26lt;/script%26gt;'
+
+console.log(decodeURIComponent(res8));
+// => 'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;'
 ```
 
 
@@ -144,50 +162,52 @@ const res1 = await parseURL('javascript:alert(1)');
 
 const res2 = await parseURL('https://example.com/?foo=bar#baz');
 /* => {
-  input: 'https://www.example.com/?foo=bar#baz',
-  valid: true,
-  data: null,
-  href: 'https://www.example.com/?foo=bar#baz',
-  origin: 'https://www.example.com',
-  protocol: 'https:',
-  hostname: 'www.example.com',
-  pathname: '/',
-  search: '?foo=bar',
-  hash: '#baz',
-  ...
-} */
+        input: 'https://www.example.com/?foo=bar#baz',
+        valid: true,
+        data: null,
+        href: 'https://www.example.com/?foo=bar#baz',
+        origin: 'https://www.example.com',
+        protocol: 'https:',
+        hostname: 'www.example.com',
+        pathname: '/',
+        search: '?foo=bar',
+        hash: '#baz',
+        ...
+      } */
 
-// base64 encoded svg '<svg><g onload="alert(1)"/></svg>'
-const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+');
+// base64 encoded SVG '<svg><g onclick="alert(1)"/></svg>'
+const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
 /* => {
-  input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+PC9zdmc+',
-  valid: true,
-  data: {
-    mime: 'image/svg+xml',
-    base64: false,
-    data: '%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;'
-  },
-  href: 'data:image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
-  protocol: 'data:',
-  pathname: 'image/svg+xml,%26lt;svg%26gt;%26lt;g%20onload=%26quot;alert(1)%26quot;/%26gt;%26lt;/svg%26gt;',
-  ...
-} */
+        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+        valid: true,
+        data: {
+          mime: 'image/svg+xml',
+          base64: false,
+          data: '%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E'
+        },
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        origin: 'null',
+        protocol: 'data:',
+        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        ...
+      } */
 
 // base64 encoded png
 const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
 /* => {
-  input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-  valid: true,
-  data: {
-    mime: 'image/png',
-    base64: true,
-    data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
-  },
-  href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-  protocol: 'data:',
-  pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-  ...
-} */
+        input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+        valid: true,
+        data: {
+          mime: 'image/png',
+          base64: true,
+          data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+        },
+        href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+        origin: 'null',
+        protocol: 'data:',
+        pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+        ...
+      } */
 ```
 
 
@@ -211,16 +231,19 @@ Returns **[Promise][5]<[boolean][2]>** Result.
 const res1 = await isURI('https://example.com/foo');
 // => true
 
-const res2 = await isURI('mailto:foo@example.com');
-// => true
-
-const res3 = await isURI('foo:bar');
+const res2 = await isURI('javascript:alert(1)');
 // => false
 
-const res4 = await isURI('web+foo:bar');
+const res3 = await isURI('mailto:foo@example.com');
 // => true
 
-const res5 = await isURI('web+javascript:alert(1)');
+const res4 = await isURI('foo:bar');
+// => false
+
+const res5 = await isURI('web+foo:bar');
+// => true
+
+const res6 = await isURI('web+javascript:alert(1)');
 // => false
 ```
 
@@ -280,13 +303,13 @@ Add a scheme to the list of registered URI schemes.
 Returns **[Array][4]<[string][1]>** Array of registered URI schemes.
 
 ```javascript
-console.log(isURISync('foo'));
+console.log(urlSanitizer.has('foo'));
 // => false
 
 const res = urlSanitizer.add('foo');
 // => ['aaa', 'aaas', 'about', 'acap', ... 'foo', ...]
 
-console.log(isURISync('foo'));
+console.log(urlSanitizer.has('foo'));
 // => true
 ```
 
@@ -302,13 +325,13 @@ Returns **[boolean][2]** Result.
 * `true` if the scheme is successfully removed, `false` otherwise.
 
 ```javascript
-console.log(isURISync('aaa'));
+console.log(urlSanitizer.has('aaa'));
 // => true
 
 const res1 = urlSanitizer.remove('aaa');
 // => true
 
-console.log(isURISync('aaa'));
+console.log(urlSanitizer.has('aaa'));
 // => false
 
 const res2 = urlSanitizer.remove('foo');
@@ -317,87 +340,11 @@ const res2 = urlSanitizer.remove('foo');
 
 ---
 
-## Reactivate tags and purify DOM
-
-It's outside the scope of the URL Sanitizer, but escaped tags in sanitized data URL can be inconvenient.
-For example, embedded SVG in a data URL.
-
-For such cases, here is a sample code that reactivate tags and purify the DOM.
-
-* [DOMPurify](https://www.npmjs.com/package/dompurify) is required.
-* If you're using Node.js, [jsdom](https://www.npmjs.com/package/jsdom) is also required.
-
-```shell
-npm i dompurify jsdom
-```
-
-### Sample
-
-```javascript
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
-import { parseURL } from 'url-sanitizer';
-
-const { window } = new JSDOM('');
-const domPurify = DOMPurify(window);
-
-/**
- * get purified DOM from a data URL
- *
- * @param {string} url - URL input
- * @returns {?string} - purified DOM, `null` if the given URL is not a data URL
- */
-const getPurifiedDOMFromDataURL = async url => {
-  const parsedURL = await parseURL(url);
-  const { data: parsedDataURL } = parsedURL;
-  let purifiedDOM;
-  if (parsedDataURL) {
-    const { base64, data, mime } = parsedDataURL;
-    if (!base64 &&
-        /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/
-          .test(mime)) {
-      let parsedData = data;
-      const matchedHTMLChars =
-        parsedData.matchAll(/%26(?:(?:l|g|quo)t|%2339);?/g);
-      const items = [...matchedHTMLChars].reverse();
-      const unescapeURLEncodedHTMLChars = ch => {
-        let unescapedChar;
-        if (/%26lt;?/.test(ch)) {
-          unescapedChar = '<';
-        } else if (/%26gt;?/.test(ch)) {
-          unescapedChar = '>';
-        } else if (/%26quot;?/.test(ch)) {
-          unescapedChar = '"';
-        } else if (/%26%2339;?/.test(ch)) {
-          unescapedChar = "'";
-        } else {
-          unescapedChar = ch;
-        }
-        return unescapedChar;
-      };
-      for (const item of items) {
-        const [htmlChar] = item;
-        const { index } = item;
-        const [preHTMLChar, postHTMLChar] = [
-          parsedData.substring(0, index),
-          parsedData.substring(index + htmlChar.length)
-        ];
-        const unescapedHTMLChar = unescapeURLEncodedHTMLChars(htmlChar);
-        parsedData = `${preHTMLChar}${unescapedHTMLChar}${postHTMLChar}`;
-      }
-      purifiedDOM = domPurify.sanitize(decodeURIComponent(parsedData));
-    }
-  }
-  return purifiedDOM ?? null;
-};
-```
-
----
-
 ## Acknowledgments
 
 The following resources have been of great help in the development of the URL Sanitizer.
 
+* [DOMPurify](https://www.npmjs.com/package/dompurify?activeTab=readme)
 * [Uniform Resource Identifier (URI) Schemes - IANA](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)
 * [Encoding -- determine the character encoding of a text file. - file/file](https://github.com/file/file/blob/master/src/encoding.c)
 

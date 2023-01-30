@@ -1,17 +1,16 @@
 /* api */
+import { assert } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'mocha';
+import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
+import sinon from 'sinon';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { assert } from 'chai';
-import { afterEach, beforeEach, describe, it } from 'mocha';
-import sinon from 'sinon';
-import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
-
 /* test */
 import {
-  commander, createCharTable, includeLibraries, parseCommand, saveUriSchemes,
-  storeTextChars
+  commander, createCharTable, includeLibraries, parseCommand, renameFile,
+  saveUriSchemes, storeTextChars
 } from '../modules/commander.js';
 
 const BASE_URL_IANA = 'https://www.iana.org';
@@ -231,6 +230,52 @@ describe('create a table of chars', () => {
     assert.strictEqual(writeCallCount, i + 1, 'write');
     assert.strictEqual(infoCallCount, j, 'info');
     assert.strictEqual(res, filePath, 'result');
+  });
+});
+
+describe('rename file', () => {
+  it('should throw', () => {
+    assert.throws(() => renameFile(),
+      'No such file: undefined');
+  });
+
+  it('should throw if file does not exist', () => {
+    const oldpath = path.resolve('test', 'file', 'foo.txt');
+    const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
+    assert.throws(() => renameFile({ oldpath, newpath }),
+      `No such file: ${oldpath}`);
+  });
+
+  it('should call function', () => {
+    const stubRename = sinon.stub(fs, 'renameSync');
+    const stubInfo = sinon.stub(console, 'info');
+    const oldpath = path.resolve('test', 'file', 'test.txt');
+    const newpath = path.resolve('test', 'file', 'test-renamed.txt');
+    renameFile({ oldpath, newpath });
+    const { calledOnce: calledRename } = stubRename;
+    const { called: calledInfo } = stubInfo;
+    stubRename.restore();
+    stubInfo.restore();
+    assert.isTrue(calledRename, 'called');
+    assert.isFalse(calledInfo, 'called');
+  });
+
+  it('should call function', () => {
+    const stubRename = sinon.stub(fs, 'renameSync');
+    const stubInfo = sinon.stub(console, 'info');
+    const oldpath = path.resolve('test', 'file', 'test.txt');
+    const newpath = path.resolve('test', 'file', 'test-renamed.txt');
+    renameFile({
+      oldpath,
+      newpath,
+      info: true
+    });
+    const { calledOnce: calledRename } = stubRename;
+    const { calledOnce: calledInfo } = stubInfo;
+    stubRename.restore();
+    stubInfo.restore();
+    assert.isTrue(calledRename, 'called');
+    assert.isTrue(calledInfo, 'called');
   });
 });
 

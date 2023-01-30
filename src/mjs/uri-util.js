@@ -4,6 +4,7 @@
 
 /* shared */
 import { getType, isString } from './common.js';
+import domPurify from './dompurify.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 
@@ -12,6 +13,8 @@ const HEX = 16;
 const REG_BASE64 = /^[\da-z+/\-_=]+$/i;
 const REG_DATA_URL = /data:[^,]*,[^"]+/g;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
+const REG_MIME_DOM =
+  /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 const REG_HTML_SP = /[<>"'\s]/g;
 const REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
 const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
@@ -20,6 +23,7 @@ const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 const REG_SCRIPT = /(?:java|vb)script/;
 const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 const REG_URL_ENC_AMP = /%26/g;
+const REG_URL_ENC_HTML_SP = /%26(?:(?:l|g|quo)t|%2339);?/g;
 
 /**
  * get URL encoded string
@@ -71,6 +75,28 @@ export const escapeUrlEncodedHtmlChars = ch => {
     escapedChar = ch;
   }
   return escapedChar;
+};
+
+/**
+ * unescape URL encoded HTML special chars
+ *
+ * @param {string} ch - URL encoded char
+ * @returns {string} - unescaped HTML special char
+ */
+export const unescapeUrlEncodedHtmlChars = ch => {
+  let unescapedChar;
+  if (/%26lt;?/.test(ch)) {
+    unescapedChar = '<';
+  } else if (/%26gt;?/.test(ch)) {
+    unescapedChar = '>';
+  } else if (/%26quot;?/.test(ch)) {
+    unescapedChar = '"';
+  } else if (/%26%2339;?/.test(ch)) {
+    unescapedChar = "'";
+  } else {
+    unescapedChar = ch;
+  }
+  return unescapedChar;
 };
 
 /**
@@ -143,6 +169,19 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
     }
   }
   return res;
+};
+
+/**
+ * purify URL encoded DOM
+ *
+ * @param {string} dom - DOM input
+ * @returns {string} - purified DOM
+ */
+export const purifyUrlEncodedDom = dom => {
+  if (!isString(dom)) {
+    throw new TypeError(`Expected String but got ${getType(dom)}.`);
+  }
+  return encodeURIComponent(domPurify.sanitize(decodeURIComponent(dom)));
 };
 
 /**
@@ -492,15 +531,51 @@ export class URLSanitizer extends URISchemes {
         }
         dataUrl.set('mime', mediaType.join(';'));
         dataUrl.set('base64', isBase64);
-        dataUrl.set('data', data);
+        let purifiedDom;
+        if (!isBase64 && REG_MIME_DOM.test(head)) {
+          let parsedData = data;
+          const matchedHtmlChars = parsedData.matchAll(REG_URL_ENC_HTML_SP);
+          const items = [...matchedHtmlChars].reverse();
+          for (const item of items) {
+            const [htmlChar] = item;
+            const { index } = item;
+            const [preHtmlChar, postHtmlChar] = [
+              parsedData.substring(0, index),
+              parsedData.substring(index + htmlChar.length)
+            ];
+            const unescapedHTMLChar = unescapeUrlEncodedHtmlChars(htmlChar);
+            parsedData = `${preHtmlChar}${unescapedHTMLChar}${postHtmlChar}`;
+          }
+          purifiedDom = purifyUrlEncodedDom(parsedData);
+          dataUrl.set('data', purifiedDom);
+        } else {
+          dataUrl.set('data', data);
+        }
         parsedUrl.set('data', Object.fromEntries(dataUrl));
+        for (const key in urlObj) {
+          let value = urlObj[key];
+          if (isString(value)) {
+            if (isString(purifiedDom)) {
+              switch (key) {
+                case 'href':
+                  value = `${protocol}${mediaType.join(';')},${purifiedDom}`;
+                  break;
+                case 'pathname':
+                  value = `${mediaType.join(';')},${purifiedDom}`;
+                  break;
+                default:
+              }
+            }
+            parsedUrl.set(key, value);
+          }
+        }
       } else {
         parsedUrl.set('data', null);
-      }
-      for (const key in urlObj) {
-        const value = urlObj[key];
-        if (typeof value !== 'function') {
-          parsedUrl.set(key, value);
+        for (const key in urlObj) {
+          const value = urlObj[key];
+          if (isString(value)) {
+            parsedUrl.set(key, value);
+          }
         }
       }
     } else {

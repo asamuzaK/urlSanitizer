@@ -3,10 +3,11 @@
  */
 
 /* api */
-import { throwErr } from './common.js';
-import { createFile, fetchText } from './file-util.js';
+import { isString, throwErr } from './common.js';
+import { createFile, fetchText, isFile } from './file-util.js';
 import { program as commander } from 'commander';
 import csvToJson from 'csvtojson';
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -93,13 +94,33 @@ export const createCharTable = cmdOpts =>
   storeTextChars(cmdOpts).catch(throwErr);
 
 /**
+ * rename file
+ *
+ * @param {object} cmdOpts - command options
+ * @returns {void}
+ */
+export const renameFile = (cmdOpts = {}) => {
+  const { newpath, oldpath, info } = cmdOpts;
+  if (!isFile(oldpath)) {
+    throw new Error(`No such file: ${oldpath}`);
+  }
+  if (isString(newpath)) {
+    fs.renameSync(oldpath, newpath);
+    if (info) {
+      console.info(`Renamed: ${oldpath} to ${newpath}`);
+    }
+  }
+};
+
+/**
  * parse command
  *
  * @param {Array} args - process.argv
  * @returns {void}
  */
 export const parseCommand = args => {
-  const reg = /^(?:(?:--)?help|-[h|v]|--version|c(?:har)?|i(?:nclude)?)$/;
+  const reg =
+    /^(?:(?:--)?help|-[h|v]|--version|c(?:har)?|i(?:nclude)?|r(?:ename))$/;
   if (Array.isArray(args) && args.some(arg => reg.test(arg))) {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
@@ -112,6 +133,12 @@ export const parseCommand = args => {
       .option('-d, --dir <name>', 'specify library directory')
       .option('-i, --info', 'console info')
       .action(includeLibraries);
+    commander.command('rename').alias('r')
+      .description('rename file')
+      .option('-o, --oldpath <name>', 'old path')
+      .option('-n, --newpath <name>', 'new path')
+      .option('-i, --info', 'console info')
+      .action(renameFile);
     commander.parse(args);
   }
 };
