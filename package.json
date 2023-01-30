@@ -44,10 +44,10 @@
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
     "esbuild": "^0.17.5",
-    "eslint": "^8.32.0",
+    "eslint": "^8.33.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-jsdoc": "^39.7.0",
+    "eslint-plugin-jsdoc": "^39.7.4",
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
@@ -57,5 +57,5 @@
     "sinon": "^15.0.1",
     "undici": "^5.16.0"
   },
-  "version": "0.5.8-a.1"
+  "version": "0.6.0"
 }
