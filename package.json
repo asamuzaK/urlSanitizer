@@ -20,7 +20,7 @@
     "index.js"
   ],
   "scripts": {
-    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run rename && npm run bundle",
+    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run bundle",
     "bundle": "npm-run-all -s bundle-*",
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./bundle/index.js",
     "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./bundle/index.js",
@@ -28,7 +28,6 @@
     "copy": "copyfiles --verbose index.js src/**/* --exclude=src/mjs/dompurify.js bundle",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
-    "rename": "node ./modules/index rename --oldpath=./bundle/src/mjs/dompurify.esm.js --newpath=./bundle/src/mjs/dompurify.js -i",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"
   },
   "dependencies": {
