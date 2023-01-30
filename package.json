@@ -17,8 +17,7 @@
   },
   "files": [
     "dist",
-    "src",
-    "index.js"
+    "src"
   ],
   "scripts": {
     "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run bundle",
@@ -57,5 +56,5 @@
     "sinon": "^15.0.1",
     "undici": "^5.16.0"
   },
-  "version": "0.6.1"
+  "version": "0.7.0"
 }

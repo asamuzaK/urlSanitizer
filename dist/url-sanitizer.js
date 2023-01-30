@@ -998,16 +998,16 @@ var require_purify = __commonJS({
   }
 });
 
-// bundle/src/mjs/common.js
+// bundle/mjs/common.js
 var TYPE_FROM = 8;
 var TYPE_TO = -1;
 var getType = (o) => Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
 var isString = (o) => typeof o === "string" || o instanceof String;
 
-// bundle/src/mjs/dompurify.js
+// bundle/mjs/dompurify.js
 var import_dompurify = __toESM(require_purify(), 1);
 
-// bundle/src/lib/file/text-chars.json
+// bundle/lib/file/text-chars.json
 var text_chars_default = [
   7,
   8,
@@ -1242,7 +1242,7 @@ var text_chars_default = [
   255
 ];
 
-// bundle/src/lib/iana/uri-schemes.json
+// bundle/lib/iana/uri-schemes.json
 var uri_schemes_default = [
   "aaa",
   "aaas",
@@ -1592,7 +1592,7 @@ var uri_schemes_default = [
   "z39.50s"
 ];
 
-// bundle/src/mjs/uri-util.js
+// bundle/mjs/uri-util.js
 var HEX = 16;
 var REG_BASE64 = /^[\da-z+/\-_=]+$/i;
 var REG_DATA_URL = /data:[^,]*,[^"]+/g;
@@ -2136,6 +2136,12 @@ export {
   sanitizeURL,
   sanitizeUrl as sanitizeURLSync
 };
+/*!
+ * URL Sanitizer
+ * @license MIT
+ * @copyright asamuzaK (Kazz)
+ * @see {@link https://github.com/asamuzaK/urlSanitizer/blob/main/LICENSE}
+ */
 /*! Bundled license information:
 
 dompurify/dist/purify.js:
