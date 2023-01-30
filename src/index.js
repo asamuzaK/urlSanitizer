@@ -8,4 +8,4 @@
 export {
   default,
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
-} from './src/mjs/uri-util.js';
+} from './mjs/uri-util.js';

@@ -9,7 +9,8 @@
     "url": "https://github.com/asamuzaK/urlSanitizer.git"
   },
   "license": "MIT",
-  "main": "index.js",
+  "main": "src/index.js",
+  "browser": "dist/url-sanitizer.js",
   "type": "module",
   "engines": {
     "node": ">=18"
@@ -25,7 +26,7 @@
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./bundle/index.js",
     "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./bundle/index.js",
     "char": "node ./modules/index char -i",
-    "copy": "copyfiles --verbose index.js src/**/* --exclude=src/mjs/dompurify.js bundle",
+    "copy": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js bundle",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"

@@ -5,7 +5,7 @@ import { describe, it } from 'mocha';
 /* test */
 import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
-} from '../index.js';
+} from '../src/index.js';
 
 describe('URL Sanitizer', () => {
   describe('urlSanitizer', () => {
