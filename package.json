@@ -28,7 +28,7 @@
     "copy": "copyfiles --verbose index.js src/**/* --exclude=src/mjs/dompurify.js bundle",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
-    "rename": "node ./modules/index rename -o ./bundle/src/mjs/dompurify.esm.js -n ./bundle/src/mjs/dompurify.js -i",
+    "rename": "node ./modules/index rename --oldpath=./bundle/src/mjs/dompurify.esm.js --newpath=./bundle/src/mjs/dompurify.js -i",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"
   },
   "dependencies": {
