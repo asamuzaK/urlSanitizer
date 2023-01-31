@@ -19,7 +19,7 @@ describe('uri-scheme', () => {
   });
 
   describe('get URL encoded string', () => {
-    const func = mjs.getUrlEncodedString;
+    const func = mjs.getURLEncodedString;
 
     it('should throw', () => {
       assert.throws(() => func(), 'Expected String but got Undefined.');
@@ -42,7 +42,7 @@ describe('uri-scheme', () => {
   });
 
   describe('escape URL encoded HTML special chars', () => {
-    const func = mjs.escapeUrlEncodedHtmlChars;
+    const func = mjs.escapeURLEncodedHTMLChars;
 
     it('should get undefined', () => {
       const res = func();
@@ -96,7 +96,7 @@ describe('uri-scheme', () => {
   });
 
   describe('unescape URL encoded HTML special chars', () => {
-    const func = mjs.unescapeUrlEncodedHtmlChars;
+    const func = mjs.unescapeURLEncodedHTMLChars;
 
     it('should get undefined', () => {
       const res = func();
@@ -180,7 +180,7 @@ describe('uri-scheme', () => {
   });
 
   describe('parse URL encoded numeric character reference', () => {
-    const func = mjs.parseUrlEncodedNumCharRef;
+    const func = mjs.parseURLEncodedNumCharRef;
 
     it('should throw', () => {
       assert.throws(() => func(), 'Expected String but got Undefined.');
@@ -242,7 +242,7 @@ describe('uri-scheme', () => {
   });
 
   describe('purify URL encoded DOM', () => {
-    const func = mjs.purifyUrlEncodedDom;
+    const func = mjs.purifyURLEncodedDOM;
 
     it('should throw', () => {
       assert.throws(() => func(), 'Expected String but got Undefined.');

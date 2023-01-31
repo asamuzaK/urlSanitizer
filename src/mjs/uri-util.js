@@ -31,7 +31,7 @@ const REG_URL_ENC_HTML_SP = /%26(?:(?:l|g|quo)t|%2339);?/g;
  * @param {string} str - string
  * @returns {string} - URL encoded string
  */
-export const getUrlEncodedString = str => {
+export const getURLEncodedString = str => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
@@ -48,12 +48,12 @@ export const getUrlEncodedString = str => {
  * @param {string} ch - URL encoded (percent encoded) char
  * @returns {string} - escaped URL encoded HTML special char / URL encoded char
  */
-export const escapeUrlEncodedHtmlChars = ch => {
+export const escapeURLEncodedHTMLChars = ch => {
   if (isString(ch) && REG_URL_ENC.test(ch)) {
     ch = ch.toUpperCase();
   }
   const [amp, num, lt, gt, quot, apos] =
-    ['&', '#', '<', '>', '"', "'"].map(getUrlEncodedString);
+    ['&', '#', '<', '>', '"', "'"].map(getURLEncodedString);
   let escapedChar;
   if (ch === amp) {
     escapedChar = `${amp}amp;`;
@@ -77,7 +77,7 @@ export const escapeUrlEncodedHtmlChars = ch => {
  * @param {string} ch - URL encoded char
  * @returns {string} - unescaped HTML special char
  */
-export const unescapeUrlEncodedHtmlChars = ch => {
+export const unescapeURLEncodedHTMLChars = ch => {
   let unescapedChar;
   if (/%26lt;?/.test(ch)) {
     unescapedChar = '<';
@@ -110,7 +110,7 @@ export const parseBase64 = data => {
   const textCharCodes = new Set(textChars);
   let parsedData;
   if (uint8arr.every(c => textCharCodes.has(c))) {
-    parsedData = bin.replace(/\s/g, getUrlEncodedString);
+    parsedData = bin.replace(/\s/g, getURLEncodedString);
   } else {
     parsedData = data;
   }
@@ -124,7 +124,7 @@ export const parseBase64 = data => {
  * @param {number} nest - nest level
  * @returns {string} - parsed string
  */
-export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
+export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
@@ -154,7 +154,7 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
           if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
-            res = parseUrlEncodedNumCharRef(res, ++nest);
+            res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
           res = `${preNum}${postNum}`;
@@ -171,7 +171,7 @@ export const parseUrlEncodedNumCharRef = (str, nest = 0) => {
  * @param {string} dom - DOM input
  * @returns {string} - purified DOM
  */
-export const purifyUrlEncodedDom = dom => {
+export const purifyURLEncodedDOM = dom => {
   if (!isString(dom)) {
     throw new TypeError(`Expected String but got ${getType(dom)}.`);
   }
@@ -397,7 +397,7 @@ export class URLSanitizer extends URISchemes {
             parsedData = parseBase64(data);
           } else {
             try {
-              const decodedData = parseUrlEncodedNumCharRef(parsedData);
+              const decodedData = parseURLEncodedNumCharRef(parsedData);
               const { protocol: dataScheme } = new URL(decodedData.trim());
               const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
               if (dataSchemeParts.some(s => REG_SCRIPT.test(s))) {
@@ -452,11 +452,11 @@ export class URLSanitizer extends URISchemes {
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize
-            .replace(REG_HTML_SP, getUrlEncodedString)
-            .replace(REG_URL_ENC_AMP, escapeUrlEncodedHtmlChars);
+            .replace(REG_HTML_SP, getURLEncodedString)
+            .replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
           if (escapeHtml) {
             sanitizedUrl = sanitizedUrl
-              .replace(REG_HTML_SP_URL_ENC, escapeUrlEncodedHtmlChars);
+              .replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
             this.#nest = 0;
           }
         } else {
@@ -537,10 +537,10 @@ export class URLSanitizer extends URISchemes {
               parsedData.substring(0, index),
               parsedData.substring(index + htmlChar.length)
             ];
-            const unescapedHTMLChar = unescapeUrlEncodedHtmlChars(htmlChar);
+            const unescapedHTMLChar = unescapeURLEncodedHTMLChars(htmlChar);
             parsedData = `${preHtmlChar}${unescapedHTMLChar}${postHtmlChar}`;
           }
-          purifiedDom = purifyUrlEncodedDom(parsedData);
+          purifiedDom = purifyURLEncodedDOM(parsedData);
           dataUrl.set('data', purifiedDom);
         } else {
           dataUrl.set('data', data);
