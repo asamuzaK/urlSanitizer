@@ -59,7 +59,7 @@ describe('uri-scheme', () => {
       assert.strictEqual(res, '%3g', 'result');
     });
 
-    it('should get unescaped char', () => {
+    it('should get value', () => {
       const res = func('%20');
       assert.strictEqual(res, '%20', 'result');
     });
