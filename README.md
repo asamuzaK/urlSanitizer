@@ -130,7 +130,7 @@ Returns **[Promise][5]<[ParsedURL](#parsedurl)>** Result.
 
 ### ParsedURL
 
-Object with extended properties based on [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API.
+Object with enhanced properties based on [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API.
 
 Type: [object][3]
 
