@@ -152,7 +152,6 @@ Type: [object][3]
 * `port` **[string][1]** Port number of the sanitized URL.
 * `pathname` **[string][1]** Path of the sanitized URL.
 * `search` **[string][1]** Query string of the sanitized URL.
-* `searchParams` **[object][3]** [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams) object.
 * `hash` **[string][1]** Fragment identifier of the sanitized URL.
 
 ```javascript
