@@ -1597,9 +1597,9 @@ var HEX = 16;
 var REG_BASE64 = /^[\da-z+/\-_=]+$/i;
 var REG_DATA_URL = /data:[^,]*,[^"]+/g;
 var REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 var REG_HTML_SP = /[<>"'\s]/g;
 var REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
+var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 var REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
@@ -1607,7 +1607,7 @@ var REG_SCRIPT = /(?:java|vb)script/;
 var REG_URL_ENC = /^%[\dA-F]{2}$/i;
 var REG_URL_ENC_AMP = /%26/g;
 var REG_URL_ENC_HTML_SP = /%26(?:(?:l|g|quo)t|%2339);?/g;
-var getUrlEncodedString = (str) => {
+var getURLEncodedString = (str) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
@@ -1617,17 +1617,11 @@ var getUrlEncodedString = (str) => {
   }
   return chars.join("");
 };
-var escapeUrlEncodedHtmlChars = (ch) => {
-  if (isString(ch)) {
-    if (REG_URL_ENC.test(ch)) {
-      ch = ch.toUpperCase();
-    } else {
-      throw new Error(`Invalid URL encoded character: ${ch}`);
-    }
-  } else {
-    throw new TypeError(`Expected String but got ${getType(ch)}.`);
+var escapeURLEncodedHTMLChars = (ch) => {
+  if (isString(ch) && REG_URL_ENC.test(ch)) {
+    ch = ch.toUpperCase();
   }
-  const [amp, num, lt, gt, quot, apos] = ["&", "#", "<", ">", '"', "'"].map(getUrlEncodedString);
+  const [amp, num, lt, gt, quot, apos] = ["&", "#", "<", ">", '"', "'"].map(getURLEncodedString);
   let escapedChar;
   if (ch === amp) {
     escapedChar = `${amp}amp;`;
@@ -1644,7 +1638,7 @@ var escapeUrlEncodedHtmlChars = (ch) => {
   }
   return escapedChar;
 };
-var unescapeUrlEncodedHtmlChars = (ch) => {
+var unescapeURLEncodedHTMLChars = (ch) => {
   let unescapedChar;
   if (/%26lt;?/.test(ch)) {
     unescapedChar = "<";
@@ -1670,13 +1664,13 @@ var parseBase64 = (data) => {
   const textCharCodes = new Set(text_chars_default);
   let parsedData;
   if (uint8arr.every((c) => textCharCodes.has(c))) {
-    parsedData = bin.replace(/\s/g, getUrlEncodedString);
+    parsedData = bin.replace(/\s/g, getURLEncodedString);
   } else {
     parsedData = data;
   }
   return parsedData;
 };
-var parseUrlEncodedNumCharRef = (str, nest = 0) => {
+var parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
@@ -1706,7 +1700,7 @@ var parseUrlEncodedNumCharRef = (str, nest = 0) => {
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
           if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
-            res = parseUrlEncodedNumCharRef(res, ++nest);
+            res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
           res = `${preNum}${postNum}`;
@@ -1716,7 +1710,7 @@ var parseUrlEncodedNumCharRef = (str, nest = 0) => {
   }
   return res;
 };
-var purifyUrlEncodedDom = (dom) => {
+var purifyURLEncodedDOM = (dom) => {
   if (!isString(dom)) {
     throw new TypeError(`Expected String but got ${getType(dom)}.`);
   }
@@ -1777,12 +1771,12 @@ var URISchemes = class {
     return this.#schemes.delete(scheme);
   }
   /**
-   * is URI
+   * verify URI
    *
    * @param {string} uri - URI input
    * @returns {boolean} - result
    */
-  isURI(uri) {
+  verify(uri) {
     let res;
     if (isString(uri)) {
       try {
@@ -1896,7 +1890,7 @@ var URLSanitizer = class extends URISchemes {
       }
     }
     let sanitizedUrl;
-    if (super.isURI(url)) {
+    if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
@@ -1924,7 +1918,7 @@ var URLSanitizer = class extends URISchemes {
             parsedData = parseBase64(data);
           } else {
             try {
-              const decodedData = parseUrlEncodedNumCharRef(parsedData);
+              const decodedData = parseURLEncodedNumCharRef(parsedData);
               const { protocol: dataScheme } = new URL(decodedData.trim());
               const dataSchemeParts = dataScheme.replace(/:$/, "").split("+");
               if (dataSchemeParts.some((s) => REG_SCRIPT.test(s))) {
@@ -1977,9 +1971,9 @@ var URLSanitizer = class extends URISchemes {
           escapeHtml = true;
         }
         if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize.replace(REG_HTML_SP, getUrlEncodedString).replace(REG_URL_ENC_AMP, escapeUrlEncodedHtmlChars);
+          sanitizedUrl = urlToSanitize.replace(REG_HTML_SP, getURLEncodedString).replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
           if (escapeHtml) {
-            sanitizedUrl = sanitizedUrl.replace(REG_HTML_SP_URL_ENC, escapeUrlEncodedHtmlChars);
+            sanitizedUrl = sanitizedUrl.replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
             this.#nest = 0;
           }
         } else {
@@ -2018,7 +2012,7 @@ var URLSanitizer = class extends URISchemes {
    *
    * @param {string} url - URL input
    * @param {object} opt - options
-   * @returns {ParsedURL} - result with extended props based on URL API
+   * @returns {ParsedURL} - result with enhanced props based on URL API
    */
   parse(url, opt) {
     if (!isString(url)) {
@@ -2058,10 +2052,10 @@ var URLSanitizer = class extends URISchemes {
               parsedData.substring(0, index),
               parsedData.substring(index + htmlChar.length)
             ];
-            const unescapedHTMLChar = unescapeUrlEncodedHtmlChars(htmlChar);
+            const unescapedHTMLChar = unescapeURLEncodedHTMLChars(htmlChar);
             parsedData = `${preHtmlChar}${unescapedHTMLChar}${postHtmlChar}`;
           }
-          purifiedDom = purifyUrlEncodedDom(parsedData);
+          purifiedDom = purifyURLEncodedDOM(parsedData);
           dataUrl.set("data", purifiedDom);
         } else {
           dataUrl.set("data", data);
@@ -2100,12 +2094,17 @@ var URLSanitizer = class extends URISchemes {
   }
 };
 var urlSanitizer = new URLSanitizer();
-var isUri = (uri) => urlSanitizer.isURI(uri);
+var isURISync = (uri) => urlSanitizer.verify(uri);
 var isURI = async (uri) => {
-  const res = await isUri(uri);
+  const res = await isURISync(uri);
   return res;
 };
-var sanitizeUrl = (url, opt) => {
+var parseURLSync = (url) => urlSanitizer.parse(url);
+var parseURL = async (url) => {
+  const res = await parseURLSync(url);
+  return res;
+};
+var sanitizeURLSync = (url, opt) => {
   const parsedUrl = urlSanitizer.parse(url, opt ?? {
     allow: [],
     deny: [],
@@ -2119,22 +2118,17 @@ var sanitizeUrl = (url, opt) => {
   return res ?? null;
 };
 var sanitizeURL = async (url, opt) => {
-  const res = await sanitizeUrl(url, opt);
-  return res;
-};
-var parseUrl = (url) => urlSanitizer.parse(url);
-var parseURL = async (url) => {
-  const res = await parseUrl(url);
+  const res = await sanitizeURLSync(url, opt);
   return res;
 };
 export {
   urlSanitizer as default,
   isURI,
-  isUri as isURISync,
+  isURISync,
   parseURL,
-  parseUrl as parseURLSync,
+  parseURLSync,
   sanitizeURL,
-  sanitizeUrl as sanitizeURLSync
+  sanitizeURLSync
 };
 /*!
  * URL Sanitizer
