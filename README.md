@@ -82,16 +82,19 @@ const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`);
 console.log(decodeURIComponent(res4));
 // => 'data:text/html,<div></div>'
 
+// Deny if the scheme matches the `deny` list
 const res5 = await sanitizeURL('web+foo://example.com', {
   deny: ['web+foo']
 });
 // => null
 
+// Deny if the scheme does not match the `only` list
 const res6 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
 // => null
 
+// Allow only if the scheme matches the `only` list
 const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 });
@@ -100,7 +103,7 @@ const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
 console.log(decodeURIComponent(res7));
 // => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
 
-// `only` option also allows combinations of the specified schemes
+// `only` also allows combinations of the specified schemes
 const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
 });
