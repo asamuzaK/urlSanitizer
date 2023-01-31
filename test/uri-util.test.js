@@ -113,42 +113,42 @@ describe('uri-scheme', () => {
       assert.strictEqual(res, '%26amp;', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26lt');
       assert.strictEqual(res, '<', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26lt;');
       assert.strictEqual(res, '<', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26gt');
       assert.strictEqual(res, '>', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26gt;');
       assert.strictEqual(res, '>', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26quot');
       assert.strictEqual(res, '"', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26quot;');
       assert.strictEqual(res, '"', 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26%2339');
       assert.strictEqual(res, "'", 'result');
     });
 
-    it('should get value', () => {
+    it('should get unescaped char', () => {
       const res = func('%26%2339;');
       assert.strictEqual(res, "'", 'result');
     });
