@@ -219,7 +219,7 @@ Synchronous version of the [parseURL()](#parseURL).
 
 ## isURI(uri)
 
-Determines whether the given URI is valid.
+Verify if the given URI is valid.
 
 ### Parameters
 
