@@ -88,13 +88,12 @@ const res5 = await sanitizeURL('web+foo://example.com', {
 });
 // => null
 
-// Deny if the scheme does not match the `only` list
+// Allow only if the scheme matches the `only` list
 const res6 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
 // => null
 
-// Allow only if the scheme matches the `only` list
 const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 });
@@ -103,7 +102,7 @@ const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
 console.log(decodeURIComponent(res7));
 // => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
 
-// `only` also allows combinations of the specified schemes
+// `only` also allows combination of the schemes in the list
 const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
 });
