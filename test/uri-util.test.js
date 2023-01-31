@@ -44,17 +44,19 @@ describe('uri-scheme', () => {
   describe('escape URL encoded HTML special chars', () => {
     const func = mjs.escapeUrlEncodedHtmlChars;
 
-    it('should throw', () => {
-      assert.throws(() => func(),
-        'Expected String but got Undefined.');
+    it('should get undefined', () => {
+      const res = func();
+      assert.isUndefined(res, 'result');
     });
 
-    it('should throw', () => {
-      assert.throws(() => func('foo'), 'Invalid URL encoded character: foo');
+    it('should get value', () => {
+      const res = func('foo');
+      assert.strictEqual(res, 'foo', 'result');
     });
 
-    it('should throw', () => {
-      assert.throws(() => func('%3G'), 'Invalid URL encoded character: %3G');
+    it('should get value', () => {
+      const res = func('%3g');
+      assert.strictEqual(res, '%3g', 'result');
     });
 
     it('should get unescaped char', () => {

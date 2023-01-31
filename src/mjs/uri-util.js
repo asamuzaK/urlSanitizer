@@ -49,14 +49,8 @@ export const getUrlEncodedString = str => {
  * @returns {string} - escaped URL encoded HTML special char / URL encoded char
  */
 export const escapeUrlEncodedHtmlChars = ch => {
-  if (isString(ch)) {
-    if (REG_URL_ENC.test(ch)) {
-      ch = ch.toUpperCase();
-    } else {
-      throw new Error(`Invalid URL encoded character: ${ch}`);
-    }
-  } else {
-    throw new TypeError(`Expected String but got ${getType(ch)}.`);
+  if (isString(ch) && REG_URL_ENC.test(ch)) {
+    ch = ch.toUpperCase();
   }
   const [amp, num, lt, gt, quot, apos] =
     ['&', '#', '<', '>', '"', "'"].map(getUrlEncodedString);
