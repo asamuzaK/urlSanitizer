@@ -375,164 +375,164 @@ describe('uri-scheme', () => {
     describe('is URI', () => {
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI();
+        const res = schemes.verify();
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('foo');
+        const res = schemes.verify('foo');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('foo:bar');
+        const res = schemes.verify('foo:bar');
         assert.isFalse(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
         schemes.add('foo');
-        const res = schemes.isURI('foo:bar');
+        const res = schemes.verify('foo:bar');
         assert.isTrue(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('javascript:alert(1)');
+        const res = schemes.verify('javascript:alert(1)');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('web+javascript:alert(1)');
+        const res = schemes.verify('web+javascript:alert(1)');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('Javas&#99;ript:alert(1)');
+        const res = schemes.verify('Javas&#99;ript:alert(1)');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('/../');
+        const res = schemes.verify('/../');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('../../');
+        const res = schemes.verify('../../');
         assert.isFalse(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('https://example.com');
+        const res = schemes.verify('https://example.com');
         assert.isTrue(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI(' https://example.com ');
+        const res = schemes.verify(' https://example.com ');
         assert.isTrue(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('https://example.com:8000/#foo?bar=baz');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get false', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('https://example.com foo');
-        assert.isFalse(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('https://127.0.0.1');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('https://[::1]/');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('file:///C:/Users/Foo/');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('mailto:foo@example.com');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('ext+foo://example.com/');
-        assert.isTrue(res, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('web+foo://example.com/');
+        const res = schemes.verify('https://example.com:8000/#foo?bar=baz');
         assert.isTrue(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('ext+javascript:alert(1)');
-        assert.isFalse(res, 'result');
-      });
-
-      it('should get false', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('web+javascript:alert(1)');
-        assert.isFalse(res, 'result');
-      });
-
-      it('should get false', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
-        assert.isFalse(res, 'result');
-      });
-
-      it('should get false', () => {
-        const schemes = new URISchemes();
-        const res = schemes.isURI('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        const res = schemes.verify('https://example.com foo');
         assert.isFalse(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('git+https://example.com/');
+        const res = schemes.verify('https://127.0.0.1');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('https://[::1]/');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('file:///C:/Users/Foo/');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('mailto:foo@example.com');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('ext+foo://example.com/');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('web+foo://example.com/');
         assert.isTrue(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('foo+https://example.com/');
+        const res = schemes.verify('ext+javascript:alert(1)');
         assert.isFalse(res, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('git+foo://example.com/');
+        const res = schemes.verify('web+javascript:alert(1)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
         assert.isFalse(res, 'result');
       });
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        const res = schemes.isURI('URN:ISBN:4-8399-0454-5');
+        const res = schemes.verify('git+https://example.com/');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('foo+https://example.com/');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get false', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('git+foo://example.com/');
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('URN:ISBN:4-8399-0454-5');
         assert.isTrue(res, 'result');
       });
     });

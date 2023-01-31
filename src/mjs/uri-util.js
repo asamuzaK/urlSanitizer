@@ -13,10 +13,10 @@ const HEX = 16;
 const REG_BASE64 = /^[\da-z+/\-_=]+$/i;
 const REG_DATA_URL = /data:[^,]*,[^"]+/g;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-const REG_MIME_DOM =
-  /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 const REG_HTML_SP = /[<>"'\s]/g;
 const REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
+const REG_MIME_DOM =
+  /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 const REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
@@ -249,12 +249,12 @@ export class URISchemes {
   }
 
   /**
-   * is URI
+   * verify URI
    *
    * @param {string} uri - URI input
    * @returns {boolean} - result
    */
-  isURI(uri) {
+  verify(uri) {
     let res;
     if (isString(uri)) {
       try {
@@ -375,7 +375,7 @@ export class URLSanitizer extends URISchemes {
       }
     }
     let sanitizedUrl;
-    if (super.isURI(url)) {
+    if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
       const scheme = protocol.replace(/:$/, '');
       const schemeParts = scheme.split('+');
@@ -595,7 +595,7 @@ const urlSanitizer = new URLSanitizer();
  * @param {string} uri - URI input
  * @returns {boolean} - result
  */
-const isUri = uri => urlSanitizer.isURI(uri);
+export const isURISync = uri => urlSanitizer.verify(uri);
 
 /**
  * is URI async
@@ -604,7 +604,26 @@ const isUri = uri => urlSanitizer.isURI(uri);
  * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
-  const res = await isUri(uri);
+  const res = await isURISync(uri);
+  return res;
+};
+
+/**
+ * parse URL sync
+ *
+ * @param {string} url - URL input
+ * @returns {ParsedURL} - result with extended props based on URL API
+ */
+export const parseURLSync = url => urlSanitizer.parse(url);
+
+/**
+ * parse URL async
+ *
+ * @param {string} url - URL input
+ * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
+ */
+export const parseURL = async url => {
+  const res = await parseURLSync(url);
   return res;
 };
 
@@ -615,7 +634,7 @@ export const isURI = async uri => {
  * @param {object} opt - options
  * @returns {?string} - sanitized URL
  */
-const sanitizeUrl = (url, opt) => {
+export const sanitizeURLSync = (url, opt) => {
   const parsedUrl = urlSanitizer.parse(url, opt ?? {
     allow: [],
     deny: [],
@@ -637,33 +656,11 @@ const sanitizeUrl = (url, opt) => {
  * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt) => {
-  const res = await sanitizeUrl(url, opt);
+  const res = await sanitizeURLSync(url, opt);
   return res;
 };
 
-/**
- * parse URL sync
- *
- * @param {string} url - URL input
- * @returns {ParsedURL} - result with extended props based on URL API
- */
-const parseUrl = url => urlSanitizer.parse(url);
-
-/**
- * parse URL async
- *
- * @param {string} url - URL input
- * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
- */
-export const parseURL = async url => {
-  const res = await parseUrl(url);
-  return res;
-};
-
-/* export instance and aliases */
+/* export instance */
 export {
-  urlSanitizer as default,
-  isUri as isURISync,
-  parseUrl as parseURLSync,
-  sanitizeUrl as sanitizeURLSync
+  urlSanitizer as default
 };
