@@ -157,9 +157,9 @@ Type: [object][3]
 ```javascript
 const res1 = await parseURL('javascript:alert(1)');
 /* => {
-  input: 'javascript:alert(1)',
-  valid: false
-} */
+        input: 'javascript:alert(1)',
+        valid: false
+      } */
 
 const res2 = await parseURL('https://www.example.com/?foo=bar#baz');
 /* => {
