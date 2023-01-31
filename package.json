@@ -25,7 +25,9 @@
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./bundle/index.js",
     "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./bundle/index.js",
     "char": "node ./modules/index char -i",
-    "copy": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js bundle",
+    "copy": "npm-run-all -s copy-*",
+    "copy-src": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js bundle",
+    "copy-repl": "copyfiles --up=1 --verbose repl/dompurify.js bundle/mjs",
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js"
