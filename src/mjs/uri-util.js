@@ -469,7 +469,7 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * object with extended props based on URL API
+   * object with additional properties based on URL API
    *
    * @typedef {object} ParsedURL
    * @property {string} input - URL input
@@ -537,8 +537,8 @@ export class URLSanitizer extends URISchemes {
               parsedData.substring(0, index),
               parsedData.substring(index + htmlChar.length)
             ];
-            const unescapedHTMLChar = unescapeURLEncodedHTMLChars(htmlChar);
-            parsedData = `${preHtmlChar}${unescapedHTMLChar}${postHtmlChar}`;
+            const unescapedHtmlChar = unescapeURLEncodedHTMLChars(htmlChar);
+            parsedData = `${preHtmlChar}${unescapedHtmlChar}${postHtmlChar}`;
           }
           purifiedDom = purifyURLEncodedDOM(parsedData);
           dataUrl.set('data', purifiedDom);
