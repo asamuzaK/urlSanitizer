@@ -1168,6 +1168,46 @@ describe('uri-scheme', () => {
         assert.strictEqual(decodeURIComponent(res), 'data:text/html,&lt;iframe src=&quot;data:,javascript:alert(1)&quot;&gt;&lt;/iframe&gt;',
           'decode');
       });
+
+      it('should get sanitized value', () => {
+        const xss = '" onclick="alert(1)"';
+        const url = `https://example.com/${xss}`;
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          truncate: true
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const xss = '" onclick="alert(1)"';
+        const url = `https://example.com/${encodeURIComponent(xss)}`;
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          truncate: true
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const xss = '<script>alert(1)</script>';
+        const url = `https://example.com/?${xss}`;
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          truncate: true
+        });
+        assert.strictEqual(res, 'https://example.com/?', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const xss = '<script>alert(1)</script>';
+        const url = `https://example.com/?${encodeURIComponent(xss)}`;
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          truncate: true
+        });
+        assert.strictEqual(res, 'https://example.com/?', 'result');
+      });
     });
 
     describe('parse sanitized URL', () => {

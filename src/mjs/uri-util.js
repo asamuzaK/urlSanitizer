@@ -15,6 +15,7 @@ const REG_DATA_URL = /data:[^,]*,[^"]+/g;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
 const REG_HTML_SP = /[<>"'\s]/g;
 const REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
+const REG_HTML_SP_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
 const REG_MIME_DOM =
   /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
@@ -290,6 +291,7 @@ export class URLSanitizer extends URISchemes {
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
    * @param {Array.<string>} opt.only - array of specific schemes to allow
+   * @param {boolean} opt.truncate - truncate strings matching tags and quotes
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {
@@ -297,7 +299,7 @@ export class URLSanitizer extends URISchemes {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only } = opt ?? {};
+    const { allow, deny, only, truncate } = opt ?? {};
     const schemeMap = new Map([
       ['data', false],
       ['file', false],
@@ -449,6 +451,12 @@ export class URLSanitizer extends URISchemes {
           }
         } else {
           escapeHtml = true;
+        }
+        if (!schemeParts.includes('data') && truncate &&
+            REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
+          const item = REG_HTML_SP_URL_ENC_SHORT.exec(urlToSanitize);
+          const { index } = item;
+          urlToSanitize = urlToSanitize.substring(0, index);
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize
