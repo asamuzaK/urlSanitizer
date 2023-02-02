@@ -45,6 +45,7 @@ Sanitize the given URL.
   * `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`.
   * `opt.only` **[Array][4]<[string][1]>** Array of specific schemes to allow, e.g. `['git', 'https']`.
     `only` takes precedence over `allow` and `deny`.
+  * `opt.truncate` **[boolean][2]** Truncate strings matching tags and quotes.
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
@@ -110,6 +111,19 @@ const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)
 
 console.log(decodeURIComponent(res8));
 // => 'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;'
+
+// `truncate` strips string matching tags and quotes
+const res8 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
+  truncate: true
+});
+// => 'https://example.com/'
+
+const res9 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
+  truncate: true
+});
+// => 'https://example.com/?'
+
+
 ```
 
 
