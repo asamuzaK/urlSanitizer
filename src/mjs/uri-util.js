@@ -291,7 +291,7 @@ export class URLSanitizer extends URISchemes {
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
    * @param {Array.<string>} opt.only - array of specific schemes to allow
-   * @param {boolean} opt.truncate - truncate tags and/or quotes and the rest
+   * @param {boolean} opt.truncate - truncate tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {

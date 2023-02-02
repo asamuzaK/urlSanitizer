@@ -112,13 +112,13 @@ const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)
 console.log(decodeURIComponent(res8));
 // => 'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;'
 
-// Truncates tags or quotes and the rest of the URL that follows.
-const res8 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
+// Truncate the tag or quote and the rest of the URL following it.
+const res9 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
   truncate: true
 });
 // => 'https://example.com/'
 
-const res9 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
+const res10 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
   truncate: true
 });
 // => 'https://example.com/?'
