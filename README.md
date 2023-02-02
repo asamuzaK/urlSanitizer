@@ -122,8 +122,6 @@ const res9 = await sanitizeURL('https://example.com/?<script>alert(1)</script>',
   truncate: true
 });
 // => 'https://example.com/?'
-
-
 ```
 
 
