@@ -24,7 +24,6 @@ const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 const REG_SCRIPT = /(?:java|vb)script/;
 const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 const REG_URL_ENC_AMP = /%26/g;
-const REG_URL_ENC_HTML_SP = /%26(?:(?:l|g|quo)t|%2339);?/g;
 
 /**
  * get URL encoded string
@@ -167,19 +166,6 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
 };
 
 /**
- * purify URL encoded DOM
- *
- * @param {string} dom - DOM input
- * @returns {string} - purified DOM
- */
-export const purifyURLEncodedDOM = dom => {
-  if (!isString(dom)) {
-    throw new TypeError(`Expected String but got ${getType(dom)}.`);
-  }
-  return encodeURIComponent(domPurify.sanitize(decodeURIComponent(dom)));
-};
-
-/**
  * URI schemes
  *
  */
@@ -280,6 +266,45 @@ export class URLSanitizer extends URISchemes {
     this.#nest = 0;
     this.#recurse = new Set();
   }
+
+  /**
+   * purify URL encoded DOM
+   *
+   * @param {string} dom - DOM input
+   * @returns {string} - purified DOM
+   */
+  purify(dom) {
+    if (!isString(dom)) {
+      throw new TypeError(`Expected String but got ${getType(dom)}.`);
+    }
+    let purifiedDom = domPurify.sanitize(decodeURIComponent(dom));
+    if (purifiedDom) {
+      const matchedDataUrls = purifiedDom.matchAll(REG_DATA_URL);
+      const items = [...matchedDataUrls].reverse();
+      for (const item of items) {
+        let [dataUrl] = item;
+        if (REG_DATA_URL_BASE64.test(dataUrl)) {
+          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+        }
+        this.#nest++;
+        this.#recurse.add(dataUrl);
+        const parsedDataUrl = this.sanitize(dataUrl, {
+          allow: ['data']
+        });
+        const { index } = item;
+        const [preDataUrl, postDataUrl] = [
+          purifiedDom.substring(0, index),
+          purifiedDom.substring(index + dataUrl.length)
+        ];
+        if (parsedDataUrl) {
+          purifiedDom = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
+        } else {
+          purifiedDom = `${preDataUrl}${postDataUrl}`;
+        }
+      }
+    }
+    return encodeURIComponent(purifiedDom);
+  };
 
   /**
    * sanitize URL
@@ -393,9 +418,9 @@ export class URLSanitizer extends URISchemes {
           const [head, ...body] = pathname.split(',');
           const data = `${body.join(',')}${search}${hash}`;
           const mediaType = head.split(';');
+          const isBase64 = mediaType[mediaType.length - 1] === 'base64';
           let parsedData = data;
-          if (mediaType[mediaType.length - 1] === 'base64') {
-            mediaType.pop();
+          if (isBase64) {
             parsedData = parseBase64(data);
           } else {
             try {
@@ -443,11 +468,22 @@ export class URLSanitizer extends URISchemes {
             } else {
               escapeHtml = true;
             }
-            urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
             escapeHtml = true;
+          }
+          if (REG_MIME_DOM.test(head)) {
+            parsedData =
+              this.purify(parsedData).replace(/%23$/, '').replace(/%3F$/, '');
+          }
+          if (urlToSanitize && parsedData) {
+            if (isBase64 && parsedData !== data) {
+              mediaType.pop();
+            }
+            urlToSanitize = `${scheme}:${mediaType.join(';')},${parsedData}`;
+          } else {
+            urlToSanitize = '';
           }
         } else {
           escapeHtml = true;
@@ -463,8 +499,10 @@ export class URLSanitizer extends URISchemes {
             .replace(REG_HTML_SP, getURLEncodedString)
             .replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
           if (escapeHtml) {
-            sanitizedUrl = sanitizedUrl
-              .replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+            if (!schemeParts.includes('data')) {
+              sanitizedUrl = sanitizedUrl
+                .replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+            }
             this.#nest = 0;
           }
         } else {
@@ -533,51 +571,15 @@ export class URLSanitizer extends URISchemes {
         }
         dataUrl.set('mime', mediaType.join(';'));
         dataUrl.set('base64', isBase64);
-        let purifiedDom;
-        if (!isBase64 && REG_MIME_DOM.test(head)) {
-          let parsedData = data;
-          const matchedHtmlChars = parsedData.matchAll(REG_URL_ENC_HTML_SP);
-          const items = [...matchedHtmlChars].reverse();
-          for (const item of items) {
-            const [htmlChar] = item;
-            const { index } = item;
-            const [preHtmlChar, postHtmlChar] = [
-              parsedData.substring(0, index),
-              parsedData.substring(index + htmlChar.length)
-            ];
-            const unescapedHtmlChar = unescapeURLEncodedHTMLChars(htmlChar);
-            parsedData = `${preHtmlChar}${unescapedHtmlChar}${postHtmlChar}`;
-          }
-          purifiedDom = purifyURLEncodedDOM(parsedData);
-          dataUrl.set('data', purifiedDom);
-        } else {
-          dataUrl.set('data', data);
-        }
+        dataUrl.set('data', data);
         parsedUrl.set('data', Object.fromEntries(dataUrl));
-        for (const key in urlObj) {
-          let value = urlObj[key];
-          if (isString(value)) {
-            if (isString(purifiedDom)) {
-              switch (key) {
-                case 'href':
-                  value = `${protocol}${mediaType.join(';')},${purifiedDom}`;
-                  break;
-                case 'pathname':
-                  value = `${mediaType.join(';')},${purifiedDom}`;
-                  break;
-                default:
-              }
-            }
-            parsedUrl.set(key, value);
-          }
-        }
       } else {
         parsedUrl.set('data', null);
-        for (const key in urlObj) {
-          const value = urlObj[key];
-          if (isString(value)) {
-            parsedUrl.set(key, value);
-          }
+      }
+      for (const key in urlObj) {
+        const value = urlObj[key];
+        if (isString(value)) {
+          parsedUrl.set(key, value);
         }
       }
     } else {

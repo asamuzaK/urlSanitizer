@@ -69,7 +69,7 @@ describe('URL Sanitizer', () => {
       assert.strictEqual(res,
         'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>', 'result');
+        'data:text/html,<div></div><p></p>', 'decode');
     });
 
     it('should get result', async () => {
@@ -80,19 +80,20 @@ describe('URL Sanitizer', () => {
       });
       assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'result');
+        'data:text/html,<div></div>', 'decode');
     });
 
     it('should get result', async () => {
       const base64data =
-        btoa('<div><iframe src="javascript:alert(1)"></iframe></div>');
+        btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
       const res = await sanitizeURL(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E',
+        'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'result');
+        'data:text/html,<div><img></div>', 'decode');
     });
 
     it('should get null', async () => {
@@ -158,7 +159,7 @@ describe('URL Sanitizer', () => {
       assert.strictEqual(res,
         'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>', 'result');
+        'data:text/html,<div></div><p></p>', 'decode');
     });
 
     it('should get result', () => {
@@ -169,19 +170,20 @@ describe('URL Sanitizer', () => {
       });
       assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'result');
+        'data:text/html,<div></div>', 'decode');
     });
 
     it('should get result', () => {
       const base64data =
-        btoa('<div><iframe src="javascript:alert(1)"></iframe></div>');
+        btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
       const res = sanitizeURLSync(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E',
+        'result');
       assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'result');
+        'data:text/html,<div><img></div>', 'decode');
     });
 
     it('should get null', () => {

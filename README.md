@@ -76,12 +76,12 @@ const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
 console.log(decodeURIComponent(res3));
 // => 'data:text/html,<div></div>'
 
-const base64data4 = btoa('<div><iframe src="javascript:alert(1)"></iframe></div>');
+const base64data4 = btoa('<div><img src="javascript:alert(1)"></div>');
 const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`);
-// => 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E'
+// => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E'
 
 console.log(decodeURIComponent(res4));
-// => 'data:text/html,<div></div>'
+// => 'data:text/html,<div><img></div>'
 
 // Deny if the scheme matches the `deny` list
 const res5 = await sanitizeURL('web+foo://example.com', {
