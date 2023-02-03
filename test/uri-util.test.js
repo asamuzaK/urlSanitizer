@@ -1219,7 +1219,7 @@ describe('uri-scheme', () => {
         const url = `https://example.com/${xss}`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
-          truncate: true
+          remove: true
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
@@ -1229,7 +1229,7 @@ describe('uri-scheme', () => {
         const url = `https://example.com/${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
-          truncate: true
+          remove: true
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
@@ -1239,7 +1239,7 @@ describe('uri-scheme', () => {
         const url = `https://example.com/?${xss}`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
-          truncate: true
+          remove: true
         });
         assert.strictEqual(res, 'https://example.com/?', 'result');
       });
@@ -1249,7 +1249,7 @@ describe('uri-scheme', () => {
         const url = `https://example.com/?${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
-          truncate: true
+          remove: true
         });
         assert.strictEqual(res, 'https://example.com/?', 'result');
       });

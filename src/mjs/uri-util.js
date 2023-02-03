@@ -316,7 +316,7 @@ export class URLSanitizer extends URISchemes {
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
    * @param {Array.<string>} opt.only - array of specific schemes to allow
-   * @param {boolean} opt.truncate - truncate tag and/or quote and the rest
+   * @param {boolean} opt.remove - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {
@@ -324,7 +324,7 @@ export class URLSanitizer extends URISchemes {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only, truncate } = opt ?? {};
+    const { allow, deny, only, remove } = opt ?? {};
     const schemeMap = new Map([
       ['data', false],
       ['file', false],
@@ -488,7 +488,7 @@ export class URLSanitizer extends URISchemes {
         } else {
           escapeHtml = true;
         }
-        if (!schemeParts.includes('data') && truncate &&
+        if (!schemeParts.includes('data') && remove &&
             REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
           const item = REG_HTML_SP_URL_ENC_SHORT.exec(urlToSanitize);
           const { index } = item;
