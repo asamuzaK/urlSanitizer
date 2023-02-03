@@ -1607,7 +1607,6 @@ var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 var REG_SCRIPT = /(?:java|vb)script/;
 var REG_URL_ENC = /^%[\dA-F]{2}$/i;
 var REG_URL_ENC_AMP = /%26/g;
-var REG_URL_ENC_HTML_SP = /%26(?:(?:l|g|quo)t|%2339);?/g;
 var getURLEncodedString = (str) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
@@ -1638,21 +1637,6 @@ var escapeURLEncodedHTMLChars = (ch) => {
     escapedChar = ch;
   }
   return escapedChar;
-};
-var unescapeURLEncodedHTMLChars = (ch) => {
-  let unescapedChar;
-  if (/%26lt;?/.test(ch)) {
-    unescapedChar = "<";
-  } else if (/%26gt;?/.test(ch)) {
-    unescapedChar = ">";
-  } else if (/%26quot;?/.test(ch)) {
-    unescapedChar = '"';
-  } else if (/%26%2339;?/.test(ch)) {
-    unescapedChar = "'";
-  } else {
-    unescapedChar = ch;
-  }
-  return unescapedChar;
 };
 var parseBase64 = (data) => {
   if (!isString(data)) {
@@ -1710,12 +1694,6 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
     }
   }
   return res;
-};
-var purifyURLEncodedDOM = (dom) => {
-  if (!isString(dom)) {
-    throw new TypeError(`Expected String but got ${getType(dom)}.`);
-  }
-  return encodeURIComponent(import_dompurify.default.sanitize(decodeURIComponent(dom)));
 };
 var URISchemes = class {
   /* private fields */
@@ -1805,6 +1783,44 @@ var URLSanitizer = class extends URISchemes {
     this.#recurse = /* @__PURE__ */ new Set();
   }
   /**
+   * purify URL encoded DOM
+   *
+   * @param {string} dom - DOM input
+   * @returns {string} - purified DOM
+   */
+  purify(dom) {
+    if (!isString(dom)) {
+      throw new TypeError(`Expected String but got ${getType(dom)}.`);
+    }
+    let purifiedDom = import_dompurify.default.sanitize(decodeURIComponent(dom));
+    if (purifiedDom) {
+      const matchedDataUrls = purifiedDom.matchAll(REG_DATA_URL);
+      const items = [...matchedDataUrls].reverse();
+      for (const item of items) {
+        let [dataUrl] = item;
+        if (REG_DATA_URL_BASE64.test(dataUrl)) {
+          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+        }
+        this.#nest++;
+        this.#recurse.add(dataUrl);
+        const parsedDataUrl = this.sanitize(dataUrl, {
+          allow: ["data"]
+        });
+        const { index } = item;
+        const [preDataUrl, postDataUrl] = [
+          purifiedDom.substring(0, index),
+          purifiedDom.substring(index + dataUrl.length)
+        ];
+        if (parsedDataUrl) {
+          purifiedDom = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
+        } else {
+          purifiedDom = `${preDataUrl}${postDataUrl}`;
+        }
+      }
+    }
+    return encodeURIComponent(purifiedDom);
+  }
+  /**
    * sanitize URL
    * NOTE: `data` and/or `file` schemes must be explicitly allowed
    *       `javascript` and/or `vbscript` schemes can not be allowed
@@ -1814,7 +1830,7 @@ var URLSanitizer = class extends URISchemes {
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
    * @param {Array.<string>} opt.only - array of specific schemes to allow
-   * @param {boolean} opt.truncate - truncate tag and/or quote and the rest
+   * @param {boolean} opt.remove - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {
@@ -1822,7 +1838,7 @@ var URLSanitizer = class extends URISchemes {
       this.#nest = 0;
       throw new Error("Data URLs nested too deeply.");
     }
-    const { allow, deny, only, truncate } = opt ?? {};
+    const { allow, deny, only, remove } = opt ?? {};
     const schemeMap = /* @__PURE__ */ new Map([
       ["data", false],
       ["file", false],
@@ -1914,9 +1930,9 @@ var URLSanitizer = class extends URISchemes {
           const [head, ...body] = pathname.split(",");
           const data = `${body.join(",")}${search}${hash}`;
           const mediaType = head.split(";");
+          const isBase64 = mediaType[mediaType.length - 1] === "base64";
           let parsedData = data;
-          if (mediaType[mediaType.length - 1] === "base64") {
-            mediaType.pop();
+          if (isBase64) {
             parsedData = parseBase64(data);
           } else {
             try {
@@ -1963,16 +1979,26 @@ var URLSanitizer = class extends URISchemes {
             } else {
               escapeHtml = true;
             }
-            urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
             escapeHtml = true;
           }
+          if (REG_MIME_DOM.test(head)) {
+            parsedData = this.purify(parsedData).replace(/%23$/, "").replace(/%3F$/, "");
+          }
+          if (urlToSanitize && parsedData) {
+            if (isBase64 && parsedData !== data) {
+              mediaType.pop();
+            }
+            urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
+          } else {
+            urlToSanitize = "";
+          }
         } else {
           escapeHtml = true;
         }
-        if (!schemeParts.includes("data") && truncate && REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
+        if (!schemeParts.includes("data") && remove && REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
           const item = REG_HTML_SP_URL_ENC_SHORT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
@@ -1980,7 +2006,9 @@ var URLSanitizer = class extends URISchemes {
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize.replace(REG_HTML_SP, getURLEncodedString).replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
           if (escapeHtml) {
-            sanitizedUrl = sanitizedUrl.replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+            if (!schemeParts.includes("data")) {
+              sanitizedUrl = sanitizedUrl.replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+            }
             this.#nest = 0;
           }
         } else {
@@ -2047,51 +2075,15 @@ var URLSanitizer = class extends URISchemes {
         }
         dataUrl.set("mime", mediaType.join(";"));
         dataUrl.set("base64", isBase64);
-        let purifiedDom;
-        if (!isBase64 && REG_MIME_DOM.test(head)) {
-          let parsedData = data;
-          const matchedHtmlChars = parsedData.matchAll(REG_URL_ENC_HTML_SP);
-          const items = [...matchedHtmlChars].reverse();
-          for (const item of items) {
-            const [htmlChar] = item;
-            const { index } = item;
-            const [preHtmlChar, postHtmlChar] = [
-              parsedData.substring(0, index),
-              parsedData.substring(index + htmlChar.length)
-            ];
-            const unescapedHtmlChar = unescapeURLEncodedHTMLChars(htmlChar);
-            parsedData = `${preHtmlChar}${unescapedHtmlChar}${postHtmlChar}`;
-          }
-          purifiedDom = purifyURLEncodedDOM(parsedData);
-          dataUrl.set("data", purifiedDom);
-        } else {
-          dataUrl.set("data", data);
-        }
+        dataUrl.set("data", data);
         parsedUrl.set("data", Object.fromEntries(dataUrl));
-        for (const key in urlObj) {
-          let value = urlObj[key];
-          if (isString(value)) {
-            if (isString(purifiedDom)) {
-              switch (key) {
-                case "href":
-                  value = `${protocol}${mediaType.join(";")},${purifiedDom}`;
-                  break;
-                case "pathname":
-                  value = `${mediaType.join(";")},${purifiedDom}`;
-                  break;
-                default:
-              }
-            }
-            parsedUrl.set(key, value);
-          }
-        }
       } else {
         parsedUrl.set("data", null);
-        for (const key in urlObj) {
-          const value = urlObj[key];
-          if (isString(value)) {
-            parsedUrl.set(key, value);
-          }
+      }
+      for (const key in urlObj) {
+        const value = urlObj[key];
+        if (isString(value)) {
+          parsedUrl.set(key, value);
         }
       }
     } else {
