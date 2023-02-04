@@ -487,7 +487,7 @@ describe('uri-scheme', () => {
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src%3D%22%22%3E',
+        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res), 'data:text/html,<img src="">',
           'decode');
@@ -502,7 +502,7 @@ describe('uri-scheme', () => {
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src%3D%22%22%3E',
+        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src="">', 'decode');
@@ -525,7 +525,7 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
         assert.strictEqual(res,
-          'data:text/html,%3Cimg%20src%3D%22%22%3E%3Cimg%20src%3D%22%22%3E%3Cimg%20src%3D%22%22%3E',
+          'data:text/html,%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src=""><img src=""><img src="">',
@@ -539,10 +539,10 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.replace(url);
         assert.strictEqual(res,
-          'data:text/html,%3Cdiv%3E%3Cimg%20src%3D%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%253E%253C%252Fsvg%253E%22%3E%3C%2Fdiv%3E',
+          'data:text/html,%3Cdiv%3E%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253C/svg%253E%22%3E%3C/div%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C%2Fsvg%3E"></div>',
+          'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E"></div>',
           'decode');
       });
 
@@ -560,10 +560,10 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.replace(url);
         assert.strictEqual(res,
-          'data:text/html,%3Cimg%20src%3D%22data%3Atext%2Fhtml%2C%253Cimg%2520src%253D%2522data%253Atext%252Fhtml%252C%25253Cimg%252520src%25253D%252522%252522%25253E%2522%253E%22%3E',
+          'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522data:text/html,%25253Cimg%252520src=%252522%252522%25253E%2522%253E%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<img src="data:text/html,%3Cimg%20src%3D%22data%3Atext%2Fhtml%2C%253Cimg%2520src%253D%2522%2522%253E%22%3E">',
+          'data:text/html,<img src="data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%22%3E">',
           'decode');
       });
     });
@@ -588,7 +588,7 @@ describe('uri-scheme', () => {
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.purify(encData);
-        assert.strictEqual(res, '%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+        assert.strictEqual(res, '%3Cdiv%3E%3C/div%3E', 'result');
       });
 
       it('should get value', async () => {
@@ -597,7 +597,7 @@ describe('uri-scheme', () => {
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.purify(encData);
-        assert.strictEqual(res, '%3Csvg%3E%3Cg%20id%3D%22foo%22%3E%3Cpath%3E%3C%2Fpath%3E%3Cpath%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        assert.strictEqual(res, '%3Csvg%3E%3Cg%20id=%22foo%22%3E%3Cpath%3E%3C/path%3E%3Cpath%3E%3C/path%3E%3C/g%3E%3C/svg%3E',
           'result');
       });
 
@@ -615,7 +615,7 @@ describe('uri-scheme', () => {
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.purify(encData);
-        assert.strictEqual(res, '%3Cimg%20src%3D%22%22%3E', 'result');
+        assert.strictEqual(res, '%3Cimg%20src=%22%22%3E', 'result');
         assert.strictEqual(decodeURIComponent(res), '<img src="">', 'decode');
       });
 
@@ -628,11 +628,32 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.purify(encData);
         assert.strictEqual(res,
-          '%3Cimg%20src%3D%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%253E%253Cg%2520id%253D%2522foo%2522%253E%253Cpath%253E%253C%252Fpath%253E%253Cpath%253E%253C%252Fpath%253E%253C%252Fg%253E%253C%252Fsvg%253E%22%3E',
+          '%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253Cg%2520id=%2522foo%2522%253E%253Cpath%253E%253C/path%253E%253Cpath%253E%253C/path%253E%253C/g%253E%253C/svg%253E%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
-          '<img src="data:image/svg+xml,%3Csvg%3E%3Cg%20id%3D%22foo%22%3E%3Cpath%3E%3C%2Fpath%3E%3Cpath%3E%3C%2Fpath%3E%3C%2Fg%3E%3C%2Fsvg%3E">',
+          '<img src="data:image/svg+xml,%3Csvg%3E%3Cg%20id=%22foo%22%3E%3Cpath%3E%3C/path%3E%3Cpath%3E%3C/path%3E%3C/g%3E%3C/svg%3E">',
           'decode');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.purify('data:,https://example.com/?foo=bar&baz=qux');
+        assert.strictEqual(res, 'data:,https://example.com/?foo=bar&baz=qux',
+          'result');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.purify('data:,https://example.com/?foo=bar&baz=<script>alert(1)</script>');
+        assert.strictEqual(res, 'data:,https://example.com/?foo=bar&amp;baz=',
+          'result');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.purify('data:,https://example.com/?<script>alert(1)</script>');
+        assert.strictEqual(res, 'data:,https://example.com/',
+          'result');
       });
     });
 
@@ -979,7 +1000,7 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:,Hello%2C%20World!', 'result');
+        assert.strictEqual(res, 'data:,Hello,%20World!', 'result');
         assert.strictEqual(decodeURIComponent(res), 'data:,Hello, World!',
           'decode');
       });
@@ -1025,12 +1046,36 @@ describe('uri-scheme', () => {
           'data:text/plain;charset=UTF-8,Hello, World!', 'decode');
       });
 
-      it('should get sanitized value', () => {
+      it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize("data:text/html,<script>alert('XSS');</script>?<script>alert(1);</script>", {
+        const res = sanitizer.sanitize('data:,https://example.com/#foo?', {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.strictEqual(res, 'data:,https://example.com/#foo?', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('data:,https://example.com/#<script>alert(1);</script>', {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:,https://example.com/', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('data:,https://example.com/?<script>alert(1);</script>', {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:,https://example.com/', 'result');
+      });
+
+      it('should get sanitized value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('data:,https://example.com/?<script>alert(1);</script>#<script>alert(1)</script>', {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
       it('should get sanitized value', () => {
@@ -1071,7 +1116,7 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src%3D%22%22%3E',
+        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res), 'data:text/html,<img src="">',
           'decode');
@@ -1088,7 +1133,7 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src%3D%22%22%3E',
+        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src="">', 'decode');
@@ -1113,7 +1158,7 @@ describe('uri-scheme', () => {
           allow: ['data']
         });
         assert.strictEqual(res,
-          'data:text/html,%3Cimg%20src%3D%22%22%3E%3Cimg%20src%3D%22%22%3E%3Cimg%20src%3D%22%22%3E',
+          'data:text/html,%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src=""><img src=""><img src="">',
@@ -1129,10 +1174,10 @@ describe('uri-scheme', () => {
           allow: ['data']
         });
         assert.strictEqual(res,
-          'data:text/html,%3Cdiv%3E%3Cimg%20src%3D%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%253E%253C%252Fsvg%253E%22%3E%3C%2Fdiv%3E',
+          'data:text/html,%3Cdiv%3E%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253C/svg%253E%22%3E%3C/div%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C%2Fsvg%3E"></div>',
+          'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E"></div>',
           'decode');
       });
 
@@ -1152,10 +1197,10 @@ describe('uri-scheme', () => {
           allow: ['data']
         });
         assert.strictEqual(res,
-          'data:text/html,%3Cimg%20src%3D%22data%3Atext%2Fhtml%2C%253Cimg%2520src%253D%2522data%253Atext%252Fhtml%252C%25253Cimg%252520src%25253D%252522%252522%25253E%2522%253E%22%3E',
+          'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522data:text/html,%25253Cimg%252520src=%252522%252522%25253E%2522%253E%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<img src="data:text/html,%3Cimg%20src%3D%22data%3Atext%2Fhtml%2C%253Cimg%2520src%253D%2522%2522%253E%22%3E">',
+          'data:text/html,<img src="data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%22%3E">',
           'decode');
       });
 
@@ -1279,7 +1324,7 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src%3D%22%22%3E',
+        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src="">', 'decode');
@@ -1363,7 +1408,7 @@ describe('uri-scheme', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const url = 'data:,Hello%2C%20World!';
+        const url = 'data:,Hello,%20World!';
         const obj = new URL(url);
         const items = {};
         for (const key in obj) {
@@ -1376,7 +1421,7 @@ describe('uri-scheme', () => {
         items.valid = true;
         items.data = {
           mime: '',
-          data: 'Hello%2C%20World!',
+          data: 'Hello,%20World!',
           base64: false
         };
         const res = sanitizer.parse(url);
@@ -1385,7 +1430,7 @@ describe('uri-scheme', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const data = 'Hello%2C%20World!';
+        const data = 'Hello,%20World!';
         const base64Data = btoa(data);
         const url = `data:text/plain;charset=UTF-8;base64,${base64Data}`;
         const obj = new URL(`data:text/plain;charset=UTF-8,${data}`);
@@ -1400,7 +1445,7 @@ describe('uri-scheme', () => {
         items.valid = true;
         items.data = {
           mime: 'text/plain;charset=UTF-8',
-          data: 'Hello%2C%20World!',
+          data: 'Hello,%20World!',
           base64: false
         };
         const res = sanitizer.parse(url);
@@ -1410,8 +1455,8 @@ describe('uri-scheme', () => {
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const encodedData = encodeURIComponent('<svg><g></g></svg>');
-        const url = `data:image/svg+xml,${encodeURIComponent(data)}`;
+        const encodedData = encodeURI('<svg><g></g></svg>');
+        const url = `data:image/svg+xml,${encodeURI(data)}`;
         const obj = new URL(`data:image/svg+xml,${encodedData}`);
         const items = {};
         for (const key in obj) {
@@ -1428,16 +1473,13 @@ describe('uri-scheme', () => {
           base64: false
         };
         const res = sanitizer.parse(url);
-        for (const i in res) {
-          assert.deepEqual(res[i], items[i]);
-        }
         assert.deepEqual(res, items, 'result');
       });
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const encodedData = encodeURIComponent('<svg><g></g></svg>');
+        const encodedData = encodeURI('<svg><g></g></svg>');
         const base64Data = btoa(data);
         const url = `data:image/svg+xml;base64,${base64Data}`;
         const obj = new URL(`data:image/svg+xml,${encodedData}`);

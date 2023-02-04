@@ -67,7 +67,7 @@ describe('URL Sanitizer', () => {
         allow: ['data']
       });
       assert.strictEqual(res,
-        'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E', 'result');
+        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div></div><p></p>', 'decode');
     });
@@ -78,7 +78,7 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div></div>', 'decode');
     });
@@ -90,7 +90,7 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E',
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
         'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div><img></div>', 'decode');
@@ -157,7 +157,7 @@ describe('URL Sanitizer', () => {
         allow: ['data']
       });
       assert.strictEqual(res,
-        'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E', 'result');
+        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div></div><p></p>', 'decode');
     });
@@ -168,7 +168,7 @@ describe('URL Sanitizer', () => {
       const res = sanitizeURLSync(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E', 'result');
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div></div>', 'decode');
     });
@@ -180,7 +180,7 @@ describe('URL Sanitizer', () => {
       const res = sanitizeURLSync(url, {
         allow: ['data']
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E',
+      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
         'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div><img></div>', 'decode');
@@ -265,9 +265,9 @@ describe('URL Sanitizer', () => {
         data: {
           mime: 'image/svg+xml',
           base64: false,
-          data: '%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E'
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
         },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
         protocol: 'data:',
         username: '',
@@ -275,7 +275,7 @@ describe('URL Sanitizer', () => {
         host: '',
         port: '',
         hostname: '',
-        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         search: '',
         hash: ''
       }, 'result');
@@ -345,9 +345,9 @@ describe('URL Sanitizer', () => {
         data: {
           mime: 'image/svg+xml',
           base64: false,
-          data: '%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E'
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
         },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
         protocol: 'data:',
         username: '',
@@ -355,7 +355,7 @@ describe('URL Sanitizer', () => {
         host: '',
         port: '',
         hostname: '',
-        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         search: '',
         hash: ''
       }, 'result');

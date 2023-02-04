@@ -298,7 +298,11 @@ export class URLSanitizer extends URISchemes {
     if (purifiedDom && /data:[^,]*,/.test(purifiedDom)) {
       purifiedDom = this.replace(purifiedDom);
     }
-    return encodeURIComponent(purifiedDom);
+    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '');
+    if (/(?<!(?:#|%23).*)(?:\?|%3F)$/.test(purifiedDom)) {
+      purifiedDom = purifiedDom.replace(/(?:\?|%3F)$/, '');
+    }
+    return encodeURI(purifiedDom);
   };
 
   /**
@@ -444,9 +448,8 @@ export class URLSanitizer extends URISchemes {
           } else {
             finalize = true;
           }
-          if (REG_MIME_DOM.test(head)) {
-            parsedData =
-              this.purify(parsedData).replace(/%23$/, '').replace(/%3F$/, '');
+          if (!head || REG_MIME_DOM.test(head)) {
+            parsedData = this.purify(parsedData);
           }
           if (urlToSanitize && parsedData) {
             if (isBase64 && parsedData !== data) {

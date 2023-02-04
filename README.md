@@ -61,7 +61,7 @@ console.log(decodeURIComponent(res1));
 const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
 })
-// -> 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E%3Cp%3E%3C%2Fp%3E'
+// -> 'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E'
 
 console.log(decodeURIComponent(res2));
 // => 'data:text/html,<div></div><p></p>'
@@ -71,14 +71,14 @@ const base64data3 = btoa('<div><script>alert(1);</script></div>');
 const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
 })
-// => 'data:text/html,%3Cdiv%3E%3C%2Fdiv%3E'
+// => 'data:text/html,%3Cdiv%3E%3C/div%3E'
 
 console.log(decodeURIComponent(res3));
 // => 'data:text/html,<div></div>'
 
 const base64data4 = btoa('<div><img src="javascript:alert(1)"></div>');
 const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`);
-// => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C%2Fdiv%3E'
+// => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E'
 
 console.log(decodeURIComponent(res4));
 // => 'data:text/html,<div><img></div>'
@@ -196,12 +196,12 @@ const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhb
         data: {
           mime: 'image/svg+xml',
           base64: false,
-          data: '%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E'
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
         },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
         protocol: 'data:',
-        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C%2Fg%3E%3C%2Fsvg%3E',
+        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         ...
       } */
 
