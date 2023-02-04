@@ -288,7 +288,7 @@ export class URLSanitizer extends URISchemes {
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
-        let parsedDataUrl = this.sanitize(dataUrl, {
+        const parsedDataUrl = this.sanitize(dataUrl, {
           allow: ['data']
         });
         const { index } = item;
