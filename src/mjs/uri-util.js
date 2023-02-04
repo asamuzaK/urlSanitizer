@@ -72,28 +72,6 @@ export const escapeURLEncodedHTMLChars = ch => {
 };
 
 /**
- * unescape URL encoded HTML special chars
- *
- * @param {string} ch - URL encoded char
- * @returns {string} - unescaped HTML special char
- */
-export const unescapeURLEncodedHTMLChars = ch => {
-  let unescapedChar;
-  if (/%26lt;?/.test(ch)) {
-    unescapedChar = '<';
-  } else if (/%26gt;?/.test(ch)) {
-    unescapedChar = '>';
-  } else if (/%26quot;?/.test(ch)) {
-    unescapedChar = '"';
-  } else if (/%26%2339;?/.test(ch)) {
-    unescapedChar = "'";
-  } else {
-    unescapedChar = ch;
-  }
-  return unescapedChar;
-};
-
-/**
  * parse base64 encoded data
  *
  * @param {string} data - base64 encoded data
@@ -232,7 +210,7 @@ export class URISchemes {
   /**
    * verify URI
    *
-   * @param {string} uri - URI input
+   * @param {string} uri - URI
    * @returns {boolean} - result
    */
   verify(uri) {
@@ -309,8 +287,8 @@ export class URLSanitizer extends URISchemes {
   /**
    * purify URL encoded DOM
    *
-   * @param {string} dom - DOM input
-   * @returns {string} - purified DOM
+   * @param {string} dom - DOM string
+   * @returns {string} - purified DOM string
    */
   purify(dom) {
     if (!isString(dom)) {
@@ -328,7 +306,7 @@ export class URLSanitizer extends URISchemes {
    * NOTE: `data` and/or `file` schemes must be explicitly allowed
    *       `javascript` and/or `vbscript` schemes can not be allowed
    *
-   * @param {string} url - URL input
+   * @param {string} url - URL
    * @param {object} opt - options
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
@@ -526,14 +504,13 @@ export class URLSanitizer extends URISchemes {
    * @property {string} port - port number of the sanitized URL
    * @property {string} pathname - path of the sanitized URL
    * @property {string} search - query string of the sanitized URL
-   * @property {object} searchParams - URLSearchParams object
    * @property {string} hash - fragment identifier of the sanitized URL
    */
 
   /**
    * parse sanitized URL
    *
-   * @param {string} url - URL input
+   * @param {string} url - URL
    * @param {object} opt - options
    * @returns {ParsedURL} - result with enhanced props based on URL API
    */
@@ -589,7 +566,7 @@ const urlSanitizer = new URLSanitizer();
 /**
  * is URI sync
  *
- * @param {string} uri - URI input
+ * @param {string} uri - URI
  * @returns {boolean} - result
  */
 export const isURISync = uri => urlSanitizer.verify(uri);
@@ -597,7 +574,7 @@ export const isURISync = uri => urlSanitizer.verify(uri);
 /**
  * is URI async
  *
- * @param {string} uri - URI input
+ * @param {string} uri - URI
  * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
@@ -608,7 +585,7 @@ export const isURI = async uri => {
 /**
  * parse URL sync
  *
- * @param {string} url - URL input
+ * @param {string} url - URL
  * @returns {ParsedURL} - result with extended props based on URL API
  */
 export const parseURLSync = url => urlSanitizer.parse(url);
@@ -616,7 +593,7 @@ export const parseURLSync = url => urlSanitizer.parse(url);
 /**
  * parse URL async
  *
- * @param {string} url - URL input
+ * @param {string} url - URL
  * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
  */
 export const parseURL = async url => {
@@ -627,7 +604,7 @@ export const parseURL = async url => {
 /**
  * sanitize URL sync
  *
- * @param {string} url - URL input
+ * @param {string} url - URL
  * @param {object} opt - options
  * @returns {?string} - sanitized URL
  */
@@ -648,7 +625,7 @@ export const sanitizeURLSync = (url, opt) => {
 /**
  * sanitize URL async
  *
- * @param {string} url - URL input
+ * @param {string} url - URL
  * @param {object} opt - options
  * @returns {Promise.<?string>} - sanitized URL
  */

@@ -95,65 +95,6 @@ describe('uri-scheme', () => {
     });
   });
 
-  describe('unescape URL encoded HTML special chars', () => {
-    const func = mjs.unescapeURLEncodedHTMLChars;
-
-    it('should get undefined', () => {
-      const res = func();
-      assert.isUndefined(res, 'result');
-    });
-
-    it('should get value', () => {
-      const res = func('%20');
-      assert.strictEqual(res, '%20', 'result');
-    });
-
-    it('should get value', () => {
-      const res = func('%26amp;');
-      assert.strictEqual(res, '%26amp;', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26lt');
-      assert.strictEqual(res, '<', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26lt;');
-      assert.strictEqual(res, '<', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26gt');
-      assert.strictEqual(res, '>', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26gt;');
-      assert.strictEqual(res, '>', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26quot');
-      assert.strictEqual(res, '"', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26quot;');
-      assert.strictEqual(res, '"', 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26%2339');
-      assert.strictEqual(res, "'", 'result');
-    });
-
-    it('should get unescaped char', () => {
-      const res = func('%26%2339;');
-      assert.strictEqual(res, "'", 'result');
-    });
-  });
-
   describe('parse base64 encoded data', () => {
     const func = mjs.parseBase64;
 
@@ -522,6 +463,20 @@ describe('uri-scheme', () => {
         const sanitizer = new URLSanitizer();
         assert.throws(() => sanitizer.replace(),
           'Expected String but got Undefined.');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.replace('https://example.com');
+        assert.strictEqual(res, 'https://example.com',
+          'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.replace('data:,https://example.com');
+        assert.strictEqual(res, 'data:,https://example.com',
+          'result');
       });
 
       it('should get sanitized value', () => {
