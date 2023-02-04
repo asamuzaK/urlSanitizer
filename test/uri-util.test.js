@@ -765,6 +765,28 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
+      it('should get null if blob scheme is not explicitly allowed', () => {
+        const blob = new Blob(['<script>alert(1)</script>'], {
+          type: 'text/html'
+        });
+        const url = URL.createObjectURL(blob);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url);
+        assert.isNull(res, 'result');
+      });
+
+      it('should get value, NOTE: currently no-op for blob scheme', () => {
+        const blob = new Blob(['<script>alert(1)</script>'], {
+          type: 'text/html'
+        });
+        const url = URL.createObjectURL(blob);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          allow: ['blob']
+        });
+        assert.strictEqual(res, url, 'result');
+      });
+
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar', {

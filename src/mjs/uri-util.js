@@ -303,8 +303,8 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * sanitize URL
-   * NOTE: `data` and/or `file` schemes must be explicitly allowed
-   *       `javascript` and/or `vbscript` schemes can not be allowed
+   * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
+   *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL
    * @param {object} opt - options
@@ -321,6 +321,7 @@ export class URLSanitizer extends URISchemes {
     }
     const { allow, deny, only, remove } = opt ?? {};
     const schemeMap = new Map([
+      ['blob', false],
       ['data', false],
       ['file', false],
       ['javascrpt', false],
@@ -519,7 +520,7 @@ export class URLSanitizer extends URISchemes {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
     const sanitizedUrl = this.sanitize(url, opt ?? {
-      allow: ['data', 'file']
+      allow: ['blob', 'data', 'file']
     });
     const parsedUrl = new Map([
       ['input', url]

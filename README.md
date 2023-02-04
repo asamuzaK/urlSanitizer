@@ -35,7 +35,7 @@ import urlSanitizer, {
 ## sanitizeURL(url, opt)
 
 Sanitize the given URL.
-* `data` and `file` schemes must be explicitly allowed.
+* `blob`, `data` and `file` schemes must be explicitly allowed.
 
 ### Parameters
 
