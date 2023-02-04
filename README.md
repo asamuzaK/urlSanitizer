@@ -231,7 +231,7 @@ Synchronous version of the [parseURL()](#parseURL).
 
 ## isURI(uri)
 
-Verify if the given URI is valid.
+Verify if the given URI is valid and registered.
 
 ### Parameters
 
@@ -239,6 +239,7 @@ Verify if the given URI is valid.
 
 Returns **[Promise][5]<[boolean][2]>** Result.
 * Always `true` for `web+*` and `ext+*` schemes, except `web+javascript`, `web+vbscript`, `ext+javascript`, `ext+vbscript`.
+* `false` for `javascript` and `vbscript` schemes.
 
 ```javascript
 const res1 = await isURI('https://example.com/foo');
