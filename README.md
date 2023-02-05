@@ -152,7 +152,7 @@ Type: [object][3]
 * `valid` **[boolean][2]** Is valid URI.
 * `data` **[object][3]** Parsed result of data URL, `null`able.
   * `data.mime` **[string][1]** MIME type.
-  * `data.base64` **[boolean][2]** `true` if base64 encoded.
+  * `data.base64` **[boolean][2]** Is base64 encoded.
   * `data.data` **[string][1]** Data part of the data URL.
 * `href` **[string][1]** Sanitized URL input.
 * `origin` **[string][1]** Scheme, domain and port of the sanitized URL.

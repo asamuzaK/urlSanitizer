@@ -503,7 +503,7 @@ export class URLSanitizer extends URISchemes {
    * @property {boolean} valid - is valid URI
    * @property {object} data - parsed result of data URL, `null`able
    * @property {string} data.mime - MIME type
-   * @property {boolean} data.base64 - `true` if base64 encoded
+   * @property {boolean} data.base64 - is base64 encoded
    * @property {string} data.data - data part of the data URL
    * @property {string} href - sanitized URL input
    * @property {string} origin - scheme, domain and port of the sanitized URL
@@ -619,19 +619,11 @@ export const parseURL = async url => {
  * @param {object} opt - options
  * @returns {?string} - sanitized URL
  */
-export const sanitizeURLSync = (url, opt) => {
-  const parsedUrl = urlSanitizer.parse(url, opt ?? {
-    allow: [],
-    deny: [],
-    only: []
-  });
-  let res;
-  if (parsedUrl) {
-    const { href } = parsedUrl;
-    res = href;
-  }
-  return res ?? null;
-};
+export const sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
+  allow: [],
+  deny: [],
+  only: []
+});
 
 /**
  * sanitize URL async
