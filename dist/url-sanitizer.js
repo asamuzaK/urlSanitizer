@@ -1595,12 +1595,20 @@ var uri_schemes_default = [
 // bundle/mjs/uri-util.js
 var HEX = 16;
 var REG_BASE64 = /^[\da-z+/\-_=]+$/i;
-var REG_DATA_URL = /data:[^,]*,[^"]+/g;
+var REG_DATA_URL = /data:[^,]*,/;
 var REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
+var REG_DATA_URL_G = /data:[^,]*,[^"]+/g;
+var REG_END_COLON = /:$/;
+var REG_END_NUM = /(?:#|%23)$/;
+var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 var REG_HTML_SP = /[<>"'\s]/g;
-var REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-var REG_HTML_SP_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
+var REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
+var REG_HTML_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
 var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
+var REG_NUM_DECI = /^\d+/;
+var REG_NUM_HEAD = /#x?$/;
+var REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
+var REG_NUM_HEX = /^x[\dA-F]+/i;
 var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 var REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
@@ -1671,9 +1679,9 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
     for (const item of items) {
       const [numCharRef, value] = item;
       let num;
-      if (/^x[\dA-F]+/i.test(value)) {
+      if (REG_NUM_HEX.test(value)) {
         num = parseInt(`0${value}`, HEX);
-      } else if (/^[\d]+/.test(value)) {
+      } else if (REG_NUM_DECI.test(value)) {
         num = parseInt(value);
       }
       if (Number.isInteger(num)) {
@@ -1684,7 +1692,7 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
         ];
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
+          if (REG_NUM_HEAD.test(preNum) || REG_NUM_HEAD_ASCII.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
@@ -1752,7 +1760,7 @@ var URISchemes = class {
   /**
    * verify URI
    *
-   * @param {string} uri - URI input
+   * @param {string} uri - URI
    * @returns {boolean} - result
    */
   verify(uri) {
@@ -1760,7 +1768,7 @@ var URISchemes = class {
     if (isString(uri)) {
       try {
         const { protocol } = new URL(uri);
-        const scheme = protocol.replace(/:$/, "");
+        const scheme = protocol.replace(REG_END_COLON, "");
         const schemeParts = scheme.split("+");
         res = !REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme) || schemeParts.every((s) => this.#schemes.has(s));
       } catch (e) {
@@ -1783,18 +1791,18 @@ var URLSanitizer = class extends URISchemes {
     this.#recurse = /* @__PURE__ */ new Set();
   }
   /**
-   * purify URL encoded DOM
+   * replace matched data URLs
    *
-   * @param {string} dom - DOM input
-   * @returns {string} - purified DOM
+   * @param {string} data - data URL
+   * @returns {string} - replaced data URL
    */
-  purify(dom) {
-    if (!isString(dom)) {
-      throw new TypeError(`Expected String but got ${getType(dom)}.`);
+  replace(data) {
+    if (!isString(data)) {
+      throw new TypeError(`Expected String but got ${getType(data)}.`);
     }
-    let purifiedDom = import_dompurify.default.sanitize(decodeURIComponent(dom));
-    if (purifiedDom) {
-      const matchedDataUrls = purifiedDom.matchAll(REG_DATA_URL);
+    let replacedData = data;
+    if (REG_DATA_URL.test(replacedData)) {
+      const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
@@ -1808,24 +1816,41 @@ var URLSanitizer = class extends URISchemes {
         });
         const { index } = item;
         const [preDataUrl, postDataUrl] = [
-          purifiedDom.substring(0, index),
-          purifiedDom.substring(index + dataUrl.length)
+          replacedData.substring(0, index),
+          replacedData.substring(index + dataUrl.length)
         ];
         if (parsedDataUrl) {
-          purifiedDom = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
+          replacedData = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
         } else {
-          purifiedDom = `${preDataUrl}${postDataUrl}`;
+          replacedData = `${preDataUrl}${postDataUrl}`;
         }
       }
     }
-    return encodeURIComponent(purifiedDom);
+    return replacedData;
+  }
+  /**
+   * purify URL encoded DOM
+   *
+   * @param {string} dom - DOM string
+   * @returns {string} - purified DOM string
+   */
+  purify(dom) {
+    if (!isString(dom)) {
+      throw new TypeError(`Expected String but got ${getType(dom)}.`);
+    }
+    let purifiedDom = import_dompurify.default.sanitize(decodeURIComponent(dom));
+    if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
+      purifiedDom = this.replace(purifiedDom);
+    }
+    purifiedDom = purifiedDom.replace(REG_END_NUM, "").replace(REG_END_QUEST, "");
+    return encodeURI(purifiedDom);
   }
   /**
    * sanitize URL
-   * NOTE: `data` and/or `file` schemes must be explicitly allowed
-   *       `javascript` and/or `vbscript` schemes can not be allowed
+   * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
+   *       `javascript` and `vbscript` schemes can not be allowed
    *
-   * @param {string} url - URL input
+   * @param {string} url - URL
    * @param {object} opt - options
    * @param {Array.<string>} opt.allow - array of allowed schemes
    * @param {Array.<string>} opt.deny - array of denied schemes
@@ -1840,6 +1865,7 @@ var URLSanitizer = class extends URISchemes {
     }
     const { allow, deny, only, remove } = opt ?? {};
     const schemeMap = /* @__PURE__ */ new Map([
+      ["blob", false],
       ["data", false],
       ["file", false],
       ["javascrpt", false],
@@ -1910,7 +1936,7 @@ var URLSanitizer = class extends URISchemes {
     let sanitizedUrl;
     if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(/:$/, "");
+      const scheme = protocol.replace(REG_END_COLON, "");
       const schemeParts = scheme.split("+");
       let bool;
       if (restrictScheme) {
@@ -1924,9 +1950,10 @@ var URLSanitizer = class extends URISchemes {
         }
       }
       if (bool) {
-        let escapeHtml;
+        const isDataUrl = schemeParts.includes("data");
+        let finalize;
         let urlToSanitize = href;
-        if (schemeParts.includes("data")) {
+        if (isDataUrl) {
           const [head, ...body] = pathname.split(",");
           const data = `${body.join(",")}${search}${hash}`;
           const mediaType = head.split(";");
@@ -1934,58 +1961,32 @@ var URLSanitizer = class extends URISchemes {
           let parsedData = data;
           if (isBase64) {
             parsedData = parseBase64(data);
-          } else {
-            try {
-              const decodedData = parseURLEncodedNumCharRef(parsedData);
-              const { protocol: dataScheme } = new URL(decodedData.trim());
-              const dataSchemeParts = dataScheme.replace(/:$/, "").split("+");
-              if (dataSchemeParts.some((s) => REG_SCRIPT.test(s))) {
-                urlToSanitize = "";
-              }
-            } catch (e) {
-            }
           }
-          const containsDataUrl = /data:[^,]*,/.test(parsedData);
+          try {
+            const decodedData = parseURLEncodedNumCharRef(parsedData);
+            const { protocol: dataScheme } = new URL(decodedData.trim());
+            const dataSchemeParts = dataScheme.replace(REG_END_COLON, "").split("+");
+            if (dataSchemeParts.some((s) => REG_SCRIPT.test(s))) {
+              urlToSanitize = "";
+            }
+          } catch (e) {
+          }
+          const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
-              const matchedDataUrls = parsedData.matchAll(REG_DATA_URL);
-              const items = [...matchedDataUrls].reverse();
-              for (const item of items) {
-                let [dataUrl] = item;
-                if (REG_DATA_URL_BASE64.test(dataUrl)) {
-                  [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
-                }
-                this.#nest++;
-                this.#recurse.add(dataUrl);
-                const parsedDataUrl = this.sanitize(dataUrl, {
-                  allow: ["data"]
-                });
-                if (parsedDataUrl) {
-                  const { index } = item;
-                  const [preDataUrl, postDataUrl] = [
-                    parsedData.substring(0, index),
-                    parsedData.substring(index + dataUrl.length)
-                  ];
-                  parsedData = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
-                }
-              }
-              if (this.#recurse.has(url)) {
-                this.#recurse.delete(url);
-              } else {
-                escapeHtml = true;
-              }
+              parsedData = this.replace(parsedData);
             } else if (this.#recurse.has(url)) {
               this.#recurse.delete(url);
             } else {
-              escapeHtml = true;
+              finalize = true;
             }
           } else if (this.#recurse.has(url)) {
             this.#recurse.delete(url);
           } else {
-            escapeHtml = true;
+            finalize = true;
           }
-          if (REG_MIME_DOM.test(head)) {
-            parsedData = this.purify(parsedData).replace(/%23$/, "").replace(/%3F$/, "");
+          if (!head || REG_MIME_DOM.test(head)) {
+            parsedData = this.purify(parsedData);
           }
           if (urlToSanitize && parsedData) {
             if (isBase64 && parsedData !== data) {
@@ -1996,18 +1997,18 @@ var URLSanitizer = class extends URISchemes {
             urlToSanitize = "";
           }
         } else {
-          escapeHtml = true;
+          finalize = true;
         }
-        if (!schemeParts.includes("data") && remove && REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
-          const item = REG_HTML_SP_URL_ENC_SHORT.exec(urlToSanitize);
+        if (!isDataUrl && remove && REG_HTML_URL_ENC_SHORT.test(urlToSanitize)) {
+          const item = REG_HTML_URL_ENC_SHORT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize.replace(REG_HTML_SP, getURLEncodedString).replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
-          if (escapeHtml) {
-            if (!schemeParts.includes("data")) {
-              sanitizedUrl = sanitizedUrl.replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+          if (finalize) {
+            if (!isDataUrl) {
+              sanitizedUrl = sanitizedUrl.replace(REG_HTML_URL_ENC, escapeURLEncodedHTMLChars);
             }
             this.#nest = 0;
           }
@@ -2027,7 +2028,7 @@ var URLSanitizer = class extends URISchemes {
    * @property {boolean} valid - is valid URI
    * @property {object} data - parsed result of data URL, `null`able
    * @property {string} data.mime - MIME type
-   * @property {boolean} data.base64 - `true` if base64 encoded
+   * @property {boolean} data.base64 - is base64 encoded
    * @property {string} data.data - data part of the data URL
    * @property {string} href - sanitized URL input
    * @property {string} origin - scheme, domain and port of the sanitized URL
@@ -2039,13 +2040,12 @@ var URLSanitizer = class extends URISchemes {
    * @property {string} port - port number of the sanitized URL
    * @property {string} pathname - path of the sanitized URL
    * @property {string} search - query string of the sanitized URL
-   * @property {object} searchParams - URLSearchParams object
    * @property {string} hash - fragment identifier of the sanitized URL
    */
   /**
    * parse sanitized URL
    *
-   * @param {string} url - URL input
+   * @param {string} url - URL
    * @param {object} opt - options
    * @returns {ParsedURL} - result with enhanced props based on URL API
    */
@@ -2054,7 +2054,7 @@ var URLSanitizer = class extends URISchemes {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
     const sanitizedUrl = this.sanitize(url, opt ?? {
-      allow: ["data", "file"]
+      allow: ["blob", "data", "file"]
     });
     const parsedUrl = /* @__PURE__ */ new Map([
       ["input", url]
@@ -2062,9 +2062,10 @@ var URLSanitizer = class extends URISchemes {
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
       const { pathname, protocol } = urlObj;
-      const schemeParts = protocol.replace(/:$/, "").split("+");
+      const schemeParts = protocol.replace(REG_END_COLON, "").split("+");
+      const isDataUrl = schemeParts.includes("data");
       parsedUrl.set("valid", true);
-      if (schemeParts.includes("data")) {
+      if (isDataUrl) {
         const dataUrl = /* @__PURE__ */ new Map();
         const [head, ...body] = pathname.split(",");
         const data = `${body.join(",")}`;
@@ -2103,19 +2104,11 @@ var parseURL = async (url) => {
   const res = await parseURLSync(url);
   return res;
 };
-var sanitizeURLSync = (url, opt) => {
-  const parsedUrl = urlSanitizer.parse(url, opt ?? {
-    allow: [],
-    deny: [],
-    only: []
-  });
-  let res;
-  if (parsedUrl) {
-    const { href } = parsedUrl;
-    res = href;
-  }
-  return res ?? null;
-};
+var sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
+  allow: [],
+  deny: [],
+  only: []
+});
 var sanitizeURL = async (url, opt) => {
   const res = await sanitizeURLSync(url, opt);
   return res;
