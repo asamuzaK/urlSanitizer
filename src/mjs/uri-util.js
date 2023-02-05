@@ -11,13 +11,21 @@ import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 /* constants */
 const HEX = 16;
 const REG_BASE64 = /^[\da-z+/\-_=]+$/i;
-const REG_DATA_URL = /data:[^,]*,[^"]+/g;
+const REG_DATA_URL = /data:[^,]*,/;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
+const REG_DATA_URL_G = /data:[^,]*,[^"]+/g;
+const REG_END_COLON = /:$/;
+const REG_END_NUM = /(?:#|%23)$/;
+const REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 const REG_HTML_SP = /[<>"'\s]/g;
-const REG_HTML_SP_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-const REG_HTML_SP_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
+const REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
+const REG_HTML_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
 const REG_MIME_DOM =
   /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
+const REG_NUM_DECI = /^\d+/;
+const REG_NUM_HEAD = /#x?$/;
+const REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
+const REG_NUM_HEX = /^x[\dA-F]+/i;
 const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 const REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
@@ -118,9 +126,9 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
     for (const item of items) {
       const [numCharRef, value] = item;
       let num;
-      if (/^x[\dA-F]+/i.test(value)) {
+      if (REG_NUM_HEX.test(value)) {
         num = parseInt(`0${value}`, HEX);
-      } else if (/^[\d]+/.test(value)) {
+      } else if (REG_NUM_DECI.test(value)) {
         num = parseInt(value);
       }
       if (Number.isInteger(num)) {
@@ -131,7 +139,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
         ];
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
+          if (REG_NUM_HEAD.test(preNum) || REG_NUM_HEAD_ASCII.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
@@ -218,7 +226,7 @@ export class URISchemes {
     if (isString(uri)) {
       try {
         const { protocol } = new URL(uri);
-        const scheme = protocol.replace(/:$/, '');
+        const scheme = protocol.replace(REG_END_COLON, '');
         const schemeParts = scheme.split('+');
         res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
@@ -256,8 +264,8 @@ export class URLSanitizer extends URISchemes {
       throw new TypeError(`Expected String but got ${getType(data)}.`);
     }
     let replacedData = data;
-    if (/data:[^,]*,/.test(replacedData)) {
-      const matchedDataUrls = replacedData.matchAll(REG_DATA_URL);
+    if (REG_DATA_URL.test(replacedData)) {
+      const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
@@ -295,13 +303,11 @@ export class URLSanitizer extends URISchemes {
       throw new TypeError(`Expected String but got ${getType(dom)}.`);
     }
     let purifiedDom = domPurify.sanitize(decodeURIComponent(dom));
-    if (purifiedDom && /data:[^,]*,/.test(purifiedDom)) {
+    if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
       purifiedDom = this.replace(purifiedDom);
     }
-    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '');
-    if (/(?<!(?:#|%23).*)(?:\?|%3F)$/.test(purifiedDom)) {
-      purifiedDom = purifiedDom.replace(/(?:\?|%3F)$/, '');
-    }
+    purifiedDom =
+      purifiedDom.replace(REG_END_NUM, '').replace(REG_END_QUEST, '');
     return encodeURI(purifiedDom);
   };
 
@@ -398,7 +404,7 @@ export class URLSanitizer extends URISchemes {
     let sanitizedUrl;
     if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(/:$/, '');
+      const scheme = protocol.replace(REG_END_COLON, '');
       const schemeParts = scheme.split('+');
       let bool;
       if (restrictScheme) {
@@ -427,14 +433,15 @@ export class URLSanitizer extends URISchemes {
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData);
             const { protocol: dataScheme } = new URL(decodedData.trim());
-            const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
+            const dataSchemeParts =
+              dataScheme.replace(REG_END_COLON, '').split('+');
             if (dataSchemeParts.some(s => REG_SCRIPT.test(s))) {
               urlToSanitize = '';
             }
           } catch (e) {
             // fall through
           }
-          const containsDataUrl = /data:[^,]*,/.test(parsedData);
+          const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
               parsedData = this.replace(parsedData);
@@ -463,8 +470,8 @@ export class URLSanitizer extends URISchemes {
           finalize = true;
         }
         if (!isDataUrl && remove &&
-            REG_HTML_SP_URL_ENC_SHORT.test(urlToSanitize)) {
-          const item = REG_HTML_SP_URL_ENC_SHORT.exec(urlToSanitize);
+            REG_HTML_URL_ENC_SHORT.test(urlToSanitize)) {
+          const item = REG_HTML_URL_ENC_SHORT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
@@ -475,7 +482,7 @@ export class URLSanitizer extends URISchemes {
           if (finalize) {
             if (!isDataUrl) {
               sanitizedUrl = sanitizedUrl
-                .replace(REG_HTML_SP_URL_ENC, escapeURLEncodedHTMLChars);
+                .replace(REG_HTML_URL_ENC, escapeURLEncodedHTMLChars);
             }
             this.#nest = 0;
           }
@@ -531,7 +538,7 @@ export class URLSanitizer extends URISchemes {
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
       const { pathname, protocol } = urlObj;
-      const schemeParts = protocol.replace(/:$/, '').split('+');
+      const schemeParts = protocol.replace(REG_END_COLON, '').split('+');
       const isDataUrl = schemeParts.includes('data');
       parsedUrl.set('valid', true);
       if (isDataUrl) {
