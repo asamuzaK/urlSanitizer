@@ -523,7 +523,7 @@ export class URLSanitizer extends URISchemes {
    *
    * @param {string} url - URL
    * @param {object} opt - options
-   * @returns {ParsedURL} - result with enhanced props based on URL API
+   * @returns {ParsedURL} - result with additional props based on URL API
    */
   parse(url, opt) {
     if (!isString(url)) {
