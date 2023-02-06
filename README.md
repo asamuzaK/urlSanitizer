@@ -61,7 +61,7 @@ console.log(decodeURIComponent(res1));
 const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
 })
-// -> 'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E'
+// => 'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E'
 
 console.log(decodeURIComponent(res2));
 // => 'data:text/html,<div></div><p></p>'
