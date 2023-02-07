@@ -1613,6 +1613,7 @@ var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
 var REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 var REG_SCRIPT = /(?:java|vb)script/;
+var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 var REG_URL_ENC = /^%[\dA-F]{2}$/i;
 var REG_URL_ENC_AMP = /%26/g;
 var getURLEncodedString = (str) => {
@@ -1881,7 +1882,7 @@ var URLSanitizer = class extends URISchemes {
       for (let item of items) {
         if (isString(item)) {
           item = item.trim();
-          if (!REG_SCRIPT.test(item)) {
+          if (!REG_SCRIPT_BLOB.test(item)) {
             if (super.has(item)) {
               schemeMap.set(item, true);
             } else {
@@ -1905,7 +1906,7 @@ var URLSanitizer = class extends URISchemes {
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
-            if (!REG_SCRIPT.test(item)) {
+            if (!REG_SCRIPT_BLOB.test(item)) {
               if (super.has(item)) {
                 schemeMap.set(item, true);
               } else {
@@ -1966,7 +1967,7 @@ var URLSanitizer = class extends URISchemes {
             const decodedData = parseURLEncodedNumCharRef(parsedData);
             const { protocol: dataScheme } = new URL(decodedData.trim());
             const dataSchemeParts = dataScheme.replace(REG_END_COLON, "").split("+");
-            if (dataSchemeParts.some((s) => REG_SCRIPT.test(s))) {
+            if (dataSchemeParts.some((s) => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = "";
             }
           } catch (e) {
@@ -2047,7 +2048,7 @@ var URLSanitizer = class extends URISchemes {
    *
    * @param {string} url - URL
    * @param {object} opt - options
-   * @returns {ParsedURL} - result with enhanced props based on URL API
+   * @returns {ParsedURL} - result with additional props based on URL API
    */
   parse(url, opt) {
     if (!isString(url)) {
