@@ -786,7 +786,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('should get null if blob scheme is not explicitly allowed', () => {
+      it('should get null', () => {
         const blob = new Blob(['<script>alert(1)</script>'], {
           type: 'text/html'
         });
@@ -796,7 +796,7 @@ describe('uri-scheme', () => {
         assert.isNull(res, 'result');
       });
 
-      it('should get value, NOTE: currently no-op for blob scheme', () => {
+      it('should get null even if blob scheme is in the allowed list', () => {
         const blob = new Blob(['<script>alert(1)</script>'], {
           type: 'text/html'
         });
@@ -805,7 +805,19 @@ describe('uri-scheme', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['blob']
         });
-        assert.strictEqual(res, url, 'result');
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null even if blob scheme is in the only list', () => {
+        const blob = new Blob(['<script>alert(1)</script>'], {
+          type: 'text/html'
+        });
+        const url = URL.createObjectURL(blob);
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize(url, {
+          only: ['blob']
+        });
+        assert.isNull(res, 'result');
       });
 
       it('should get value', () => {
