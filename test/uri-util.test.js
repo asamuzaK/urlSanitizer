@@ -10,7 +10,7 @@ import { isString } from '../modules/common.js';
 /* test */
 import urlSanitizer, * as mjs from '../src/mjs/uri-util.js';
 
-describe('uri-scheme', () => {
+describe('uri-util', () => {
   describe('default', () => {
     it('should be instance of URLSanitizer', () => {
       assert.instanceOf(urlSanitizer, mjs.URISchemes, 'instance');
