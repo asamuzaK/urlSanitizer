@@ -314,7 +314,8 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * sanitize URL
-   * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
+   * NOTE: `data` and `file` schemes must be explicitly allowed
+   *       `blob` scheme is not allowed at the moment and returns `null`
    *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL

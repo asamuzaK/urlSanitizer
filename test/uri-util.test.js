@@ -1,5 +1,5 @@
 /**
- * uri-scheme.test.js
+ * uri-util.test.js
  */
 
 /* api */
