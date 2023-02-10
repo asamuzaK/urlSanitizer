@@ -1664,6 +1664,18 @@ describe('uri-util', () => {
     describe('sanitize URL async', () => {
       const func = mjs.sanitizeURL;
 
+      it('should throw', async () => {
+        await func().catch(e => {
+          assert.instanceOf(e, Error, 'error');
+        });
+      });
+
+      it('should throw', async () => {
+        await func('foo').catch(e => {
+          assert.instanceOf(e, Error, 'error');
+        });
+      });
+
       it('should get null', async () => {
         const res = await func('javascript:alert(1)');
         assert.isNull(res, 'result');
@@ -1672,6 +1684,93 @@ describe('uri-util', () => {
       it('should get value', async () => {
         const res = await func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get null', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url);
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          deny: ['blob']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          only: ['https']
+        });
+        assert.isNull(res, 'result');
+      });
+
+      it('should get sanitized value', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob']
+        });
+        assert.strictEqual(res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded');
+      });
+
+      it('should get sanitized value', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          deny: ['data']
+        });
+        assert.strictEqual(res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded');
+      });
+
+      it('should get sanitized value', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          only: ['blob', 'https']
+        });
+        assert.strictEqual(res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result');
+        assert.strictEqual(decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded');
       });
     });
   });
