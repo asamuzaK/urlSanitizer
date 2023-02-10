@@ -658,7 +658,7 @@ export const sanitizeURL = async (url, opt = {
   deny: [],
   only: []
 }) => {
-  const { protocol } = await new URL(url);
+  const { protocol } = new URL(url);
   let res;
   if (protocol === 'blob:') {
     const { allow, deny, only } = opt;
