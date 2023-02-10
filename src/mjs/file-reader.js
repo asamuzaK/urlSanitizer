@@ -17,8 +17,46 @@ const REG_MIME_DOM =
 const REG_MIME_TEXT = /^text\/[\da-z][\da-z\-.][\da-z]+;?/i;
 
 /**
+ * progress event
+ *
+ * @see {@link https://xhr.spec.whatwg.org/#interface-progressevent}
+ */
+export class ProgressEvent extends Event {
+  /* private fields */
+  #lengthComputable;
+  #loaded;
+  #total;
+
+  /**
+   * construct
+   *
+   * @param {string} type - type
+   * @param {object} opt - init options
+   */
+  constructor(type, opt = {}) {
+    const { lengthComputable, loaded, total } = opt;
+    super(type, opt);
+    this.#lengthComputable = lengthComputable ?? false;
+    this.#loaded = loaded ?? 0;
+    this.#total = total ?? 0;
+  }
+
+  /* getter */
+  get lengthComputable() {
+    return this.#lengthComputable;
+  }
+
+  get loaded() {
+    return this.#loaded;
+  }
+
+  get total() {
+    return this.#total;
+  }
+}
+
+/**
  * file reader
- * implement HTML5 FileReader API
  *
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  */
@@ -78,9 +116,10 @@ export class FileReader extends EventTarget {
     if (type === 'error' && !this.#error) {
       this.#error = new Error('Unknown error.');
     }
-    const evt = new Event(type, {
+    const evt = new ProgressEvent(type, {
       bubbles: false,
-      cancelable: false
+      cancelable: false,
+      lengthComputable: false
     });
     return super.dispatchEvent(evt);
   }
@@ -146,10 +185,12 @@ export class FileReader extends EventTarget {
             case 'arrayBuffer':
             case 'buffer':
               res = buffer;
+              this._dispatchProgressEvent('progress');
               break;
             case 'binary':
             case 'binaryString':
               res = binary;
+              this._dispatchProgressEvent('progress');
               break;
             case 'data':
             case 'dataURL': {
@@ -157,6 +198,7 @@ export class FileReader extends EventTarget {
                 header.push('base64');
               }
               res = `data:${header.join(';')},${btoa(binary)}`;
+              this._dispatchProgressEvent('progress');
               break;
             }
             // NOTE: exec only if encoding matches
@@ -190,6 +232,7 @@ export class FileReader extends EventTarget {
                       (!encoding && charset === 'utf8') ||
                       (encoding === 'utf8' && !charset)) {
                     res = binary;
+                    this._dispatchProgressEvent('progress');
                   }
                 } else if (REG_MIME_TEXT.test(type)) {
                   if ((encoding && charset && encoding === charset) ||
@@ -197,6 +240,7 @@ export class FileReader extends EventTarget {
                       (!encoding && charset === 'utf8') ||
                       (encoding === 'utf8' && charset === 'us-ascii')) {
                     res = binary;
+                    this._dispatchProgressEvent('progress');
                   }
                 }
               }

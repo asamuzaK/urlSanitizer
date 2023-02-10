@@ -9,7 +9,9 @@ import { sleep } from '../modules/common.js';
 import sinon from 'sinon';
 
 /* test */
-import fileReader, { FileReader } from '../src/mjs/file-reader.js';
+import fileReader, {
+  FileReader, ProgressEvent
+} from '../src/mjs/file-reader.js';
 
 describe('file-reader', () => {
   describe('default', () => {
@@ -19,7 +21,34 @@ describe('file-reader', () => {
     });
   });
 
-  describe('File reader', () => {
+  describe('progress event', () => {
+    it('should create instance', () => {
+      const evt = new ProgressEvent('abort');
+      assert.instanceOf(evt, Event, 'instance');
+    });
+
+    describe('getter', () => {
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort');
+        const res = evt.lengthComputable;
+        assert.isFalse(res, 'result');
+      });
+
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort');
+        const res = evt.loaded;
+        assert.strictEqual(res, 0, 'result');
+      });
+
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort');
+        const res = evt.total;
+        assert.strictEqual(res, 0, 'result');
+      });
+    });
+  });
+
+  describe('file reader', () => {
     it('should create instance', () => {
       const reader = new FileReader();
       assert.instanceOf(reader, EventTarget, 'instance');
@@ -219,7 +248,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'buffer');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
 
@@ -234,7 +263,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'buffer');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
 
@@ -248,7 +277,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'arrayBuffer');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
 
@@ -263,7 +292,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'arrayBuffer');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
 
@@ -276,7 +305,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'binary');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -290,7 +319,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'binary');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -303,7 +332,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'binaryString');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -317,7 +346,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'binaryString');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -334,7 +363,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'binary');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, pngBin, 'result');
       });
 
@@ -346,7 +375,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'data');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:base64,${base64}`, 'result');
       });
 
@@ -360,7 +389,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'data');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
           'result');
       });
@@ -376,7 +405,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'data');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
           'result');
       });
@@ -391,7 +420,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'dataURL');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
           'result');
       });
@@ -407,7 +436,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(url, 'dataURL');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
           'result');
       });
@@ -421,11 +450,11 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
-      it('should get result', async () => {
+      it('should get null', async () => {
         const blob = new Blob(['Hello, world!'], {
           type: 'text/plain;charset=UTF-8'
         });
@@ -447,7 +476,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text', 'UTF-8');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -460,7 +489,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text', 'UTF-8');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -503,7 +532,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
       });
 
@@ -516,7 +545,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text', 'utf8');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
       });
 
@@ -529,7 +558,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
       });
 
@@ -542,7 +571,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader._read(blob, 'text', 'utf8');
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
       });
 
@@ -589,7 +618,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsArrayBuffer(blob);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
 
@@ -604,7 +633,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsArrayBuffer(url);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
       });
     });
@@ -619,7 +648,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsBinaryString(blob);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
@@ -633,7 +662,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsBinaryString(url);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
     });
@@ -649,7 +678,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsDataURL(blob);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/html;base64,${base64}`,
           'result');
       });
@@ -665,7 +694,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsDataURL(url);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:text/html;base64,${base64}`,
           'result');
       });
@@ -679,7 +708,7 @@ describe('file-reader', () => {
         const i = spyFunc.callCount;
         await reader.readAsText(blob);
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
       });
     });
