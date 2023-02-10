@@ -20,6 +20,7 @@ const REG_MIME_TEXT = /^text\/[\da-z][\da-z\-.][\da-z]+;?/i;
 /**
  * file reader
  *
+ * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  */
 export class FileReader extends EventTarget {
   /* private fields */
@@ -158,7 +159,7 @@ export class FileReader extends EventTarget {
               res = `data:${header.join(';')},${btoa(binary)}`;
               break;
             }
-            // NOTE: read only if encoding matches
+            // NOTE: exec only if encoding matches
             case 'text': {
               const textCharCodes = new Set(textChars);
               if (uint8arr.every(c => textCharCodes.has(c))) {
