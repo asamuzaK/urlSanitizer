@@ -1,6 +1,5 @@
 /**
  * file-reader.js
- * implement HTML5 FileReader API
  */
 
 /* shared */
@@ -19,6 +18,7 @@ const REG_MIME_TEXT = /^text\/[\da-z][\da-z\-.][\da-z]+;?/i;
 
 /**
  * file reader
+ * implement HTML5 FileReader API
  *
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  */
