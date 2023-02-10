@@ -16,6 +16,7 @@ const REG_CHARSET = /^charset=([\da-z\-_]+)$/i;
 const REG_MIME_DOM =
   /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml);?/;
 const REG_MIME_TEXT = /^text\/[\da-z][\da-z\-.][\da-z]+;?/i;
+
 /**
  * file reader
  *
