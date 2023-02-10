@@ -35,9 +35,8 @@ import urlSanitizer, {
 ## sanitizeURL(url, opt)
 
 Sanitize the given URL.
-* `data` and `file` schemes must be explicitly allowed.
-* `blob` URLs are not currently allowed and will return `null`.
-  See [Figure out how to sanitize the blob URL · Issue #4](https://github.com/asamuzaK/urlSanitizer/issues/4)
+* `blob`, `data` and `file` schemes must be explicitly allowed.
+* Given a `blob` URL, returns a sanitized `data` URL.
 
 ### Parameters
 
@@ -59,6 +58,7 @@ const res1 = await sanitizeURL('http://example.com/"onmouseover="alert(1)"?<scri
 console.log(decodeURIComponent(res1));
 // => 'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;'
 
+
 // Parse and purify data URL
 const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
@@ -68,7 +68,8 @@ const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></
 console.log(decodeURIComponent(res2));
 // => 'data:text/html,<div></div><p></p>'
 
-// Can also parse and purify base64 encoded data
+
+// Can parse and purify base64 encoded data
 const base64data3 = btoa('<div><script>alert(1);</script></div>');
 const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
@@ -78,12 +79,27 @@ const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
 console.log(decodeURIComponent(res3));
 // => 'data:text/html,<div></div>'
 
-const base64data4 = btoa('<div><img src="javascript:alert(1)"></div>');
-const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`);
+const base64data3_2 = btoa('<div><img src="javascript:alert(1)"></div>');
+const res3_2 = await sanitizeURL(`data:text/html;base64,${base64data3_2}`);
 // => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E'
 
-console.log(decodeURIComponent(res4));
+console.log(decodeURIComponent(res3_2));
 // => 'data:text/html,<div><img></div>'
+
+
+// Can parse and sanitize blob URL
+const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+  type: 'image/svg+xml'
+});
+const url4 = URL.createObjectURL(blob4);
+const res4 = await func(url, {
+ allow: ['blob']
+});
+// => 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+
+console.log(decodeURIComponent(res4));
+// => 'data:image/svg+xml,<svg><g></g></svg>'
+
 
 // Deny if the scheme matches the `deny` list
 const res5 = await sanitizeURL('web+foo://example.com', {
@@ -91,45 +107,51 @@ const res5 = await sanitizeURL('web+foo://example.com', {
 });
 // => null
 
+
 // Allow only if the scheme matches the `only` list
 const res6 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
 // => null
 
-const res7 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
+const res6_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 });
 // => 'https://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;'
 
-console.log(decodeURIComponent(res7));
+console.log(decodeURIComponent(res6_2));
 // => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
 
+
 // `only` also allows combination of the schemes in the list
-const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
+const res7 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
 });
 // => 'git+https://example.com/foo.git?%26lt;script%26gt;alert(1)%26lt;/script%26gt;'
 
-console.log(decodeURIComponent(res8));
+console.log(decodeURIComponent(res7));
 // => 'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;'
 
+
 // Remove the tag or quote and the rest of the URL following it.
-const res9 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
+const res8 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
   remove: true
 });
 // => 'https://example.com/'
 
-const res10 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
+const res8_2 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
   remove: true
 });
 // => 'https://example.com/?'
 ```
 
 
-## sanitizeURLSync
+## sanitizeURLSync(url, opt)
 
 Synchronous version of the [sanitizeURL()](#sanitizeurlurl-opt).
+* `data` and `file` schemes must be explicitly allowed.
+* `blob` scheme is not supported, returns `null`.
+  Use async [sanitizeURL()](#sanitizeurlurl-opt) for `blob`.
 
 
 ## parseURL(url)
