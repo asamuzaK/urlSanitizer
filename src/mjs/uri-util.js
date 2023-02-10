@@ -606,7 +606,7 @@ export const isURISync = uri => urlSanitizer.verify(uri);
  * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
-  const res = await urlSanitizer.verify(uri);
+  const res = urlSanitizer.verify(uri);
   return res;
 };
 
@@ -625,7 +625,7 @@ export const parseURLSync = url => urlSanitizer.parse(url);
  * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
  */
 export const parseURL = async url => {
-  const res = await urlSanitizer.parse(url);
+  const res = urlSanitizer.parse(url);
   return res;
 };
 
@@ -680,11 +680,11 @@ export const sanitizeURL = async (url, opt = {
             deny.splice(i, 1);
           }
         }
-        res = await urlSanitizer.sanitize(data, opt);
+        res = urlSanitizer.sanitize(data, opt);
       }
     }
   } else {
-    res = await urlSanitizer.sanitize(url, opt);
+    res = urlSanitizer.sanitize(url, opt);
   }
   return res || null;
 };
