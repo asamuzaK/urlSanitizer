@@ -64,3 +64,24 @@ export const getType = o => Object.prototype.toString.call(o).slice(TYPE_FROM, T
  * @returns {boolean} - result
  */
 export const isString = o => typeof o === 'string' || o instanceof String;
+
+/**
+ * sleep
+ *
+ * @param {number} msec - millisecond
+ * @param {boolean} doReject - reject instead of resolve
+ * @returns {?Function} - resolve / reject
+ */
+export const sleep = (msec = 0, doReject = false) => {
+  let func;
+  if (Number.isInteger(msec) && msec >= 0) {
+    func = new Promise((resolve, reject) => {
+      if (doReject) {
+        setTimeout(reject, msec);
+      } else {
+        setTimeout(resolve, msec);
+      }
+    });
+  }
+  return func || null;
+};

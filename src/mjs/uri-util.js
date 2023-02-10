@@ -3,6 +3,7 @@
  */
 
 /* shared */
+import { FileReader } from './file-reader.js';
 import { getType, isString } from './common.js';
 import domPurify from './dompurify.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
@@ -151,6 +152,20 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   return res;
 };
+
+/**
+ * create data URL from blob
+ *
+ * @param {object|string} blob - blob or blob URL
+ * @returns {Promise.<?string>} - data URL
+ */
+export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.addEventListener('error', () => reject(reader.error));
+  reader.addEventListener('abort', () => resolve(reader.result));
+  reader.addEventListener('load', () => resolve(reader.result));
+  reader.readAsDataURL(blob);
+});
 
 /**
  * URI schemes
@@ -315,7 +330,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * sanitize URL
    * NOTE: `data` and `file` schemes must be explicitly allowed
-   *       `blob` scheme is not allowed at the moment and returns `null`
+   *       `blob` URLs should be converted to `data` URLs
    *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL
@@ -572,10 +587,10 @@ export class URLSanitizer extends URISchemes {
   }
 };
 
+/* aliases and async wrappers */
 /* instance */
 const urlSanitizer = new URLSanitizer();
 
-/* aliases and async wrappers */
 /**
  * is URI sync
  *
@@ -591,7 +606,7 @@ export const isURISync = uri => urlSanitizer.verify(uri);
  * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
-  const res = await isURISync(uri);
+  const res = await urlSanitizer.verify(uri);
   return res;
 };
 
@@ -610,12 +625,14 @@ export const parseURLSync = url => urlSanitizer.parse(url);
  * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
  */
 export const parseURL = async url => {
-  const res = await parseURLSync(url);
+  const res = await urlSanitizer.parse(url);
   return res;
 };
 
 /**
  * sanitize URL sync
+ * NOTE: `data` and `file` schemes must be explicitly allowed
+ *       `blob` scheme returns `null`
  *
  * @param {string} url - URL
  * @param {object} opt - options
@@ -629,14 +646,47 @@ export const sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
 
 /**
  * sanitize URL async
+ * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
+ *       given a `blob` URL, returns a sanitized `data` URL
  *
  * @param {string} url - URL
  * @param {object} opt - options
  * @returns {Promise.<?string>} - sanitized URL
  */
-export const sanitizeURL = async (url, opt) => {
-  const res = await sanitizeURLSync(url, opt);
-  return res;
+export const sanitizeURL = async (url, opt = {
+  allow: [],
+  deny: [],
+  only: []
+}) => {
+  const { protocol } = await new URL(url);
+  let res;
+  if (protocol === 'blob:') {
+    const { allow, deny, only } = opt;
+    if ((Array.isArray(allow) && allow.includes('blob') &&
+         !(Array.isArray(deny) && deny.includes('blob'))) ||
+        (Array.isArray(only) && only.includes('blob'))) {
+      const data = await createDataURLFromBlob(url);
+      if (data) {
+        if (Array.isArray(only)) {
+          if (!only.includes('data')) {
+            only.push('data');
+          }
+        } else if (Array.isArray(allow)) {
+          if (!allow.includes('data')) {
+            allow.push('data');
+          }
+          if (Array.isArray(deny) && deny.includes('data')) {
+            const i = deny.indexOf('data');
+            deny.splice(i, 1);
+          }
+        }
+        res = await urlSanitizer.sanitize(data, opt);
+      }
+    }
+  } else {
+    res = await urlSanitizer.sanitize(url, opt);
+  }
+  return res || null;
 };
 
 /* export instance */
