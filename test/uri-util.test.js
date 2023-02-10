@@ -182,6 +182,46 @@ describe('uri-util', () => {
     });
   });
 
+  describe('create data URL from blob', () => {
+    const func = mjs.createDataURLFromBlob;
+
+    it('should get null', async () => {
+      const res = await func();
+      assert.isNull(res, 'result');
+    });
+
+    it('should get null', async () => {
+      const res = await func('');
+      assert.isNull(res, 'result');
+    });
+
+    it('should get null', async () => {
+      const res = await func('https://example.com');
+      assert.isNull(res, 'result');
+    });
+
+    it('should get result', async () => {
+      const data = '<p>Hello, world!</p>';
+      const base64Data = btoa(data);
+      const blob = new Blob([data], {
+        type: 'text/html'
+      });
+      const res = await func(blob);
+      assert.strictEqual(res, `data:text/html;base64,${base64Data}`, 'result');
+    });
+
+    it('should get result', async () => {
+      const data = '<p>Hello, world!</p>';
+      const base64Data = btoa(data);
+      const blob = new Blob([data], {
+        type: 'text/html'
+      });
+      const url = URL.createObjectURL(blob);
+      const res = await func(url);
+      assert.strictEqual(res, `data:text/html;base64,${base64Data}`, 'result');
+    });
+  });
+
   describe('URI schemes', () => {
     const { URISchemes } = mjs;
 

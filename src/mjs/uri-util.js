@@ -3,6 +3,7 @@
  */
 
 /* shared */
+import { FileReader } from './file-reader.js';
 import { getType, isString } from './common.js';
 import domPurify from './dompurify.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
@@ -151,6 +152,20 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   return res;
 };
+
+/**
+ * create data URL from blob
+ *
+ * @param {object|string} blob - blob or blob URL
+ * @returns {Promise.<?string>} - data URL
+ */
+export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.addEventListener('error', () => reject(reader.error));
+  reader.addEventListener('abort', () => resolve(reader.result));
+  reader.addEventListener('load', () => resolve(reader.result));
+  reader.readAsDataURL(blob);
+});
 
 /**
  * URI schemes
