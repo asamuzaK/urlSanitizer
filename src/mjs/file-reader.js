@@ -160,23 +160,20 @@ export class FileReader extends EventTarget {
       let res;
       try {
         const { type } = blob;
+        const header = type ? type.split(';') : [];
         const buffer = await blob.arrayBuffer();
         const uint8arr = new Uint8Array(buffer);
-        const header = type ? type.split(';') : [];
         const binary = String.fromCharCode(...uint8arr);
         this._dispatchProgressEvent('loadstart');
         switch (format) {
           case 'arrayBuffer':
-          case 'buffer':
             res = buffer;
             this._dispatchProgressEvent('progress');
             break;
-          case 'binary':
           case 'binaryString':
             res = binary;
             this._dispatchProgressEvent('progress');
             break;
-          case 'data':
           case 'dataURL': {
             if (!header.length || header[header.length - 1] !== 'base64') {
               header.push('base64');
@@ -256,7 +253,7 @@ export class FileReader extends EventTarget {
   /**
    * read as arrayBuffer
    *
-   * @param {object|string} blob - blob data or blob URL
+   * @param {object} blob - blob
    * @returns {void}
    */
   async readAsArrayBuffer(blob) {
@@ -266,7 +263,7 @@ export class FileReader extends EventTarget {
   /**
    * read as binary string
    *
-   * @param {object|string} blob - blob data or blob URL
+   * @param {object} blob - blob
    * @returns {void}
    */
   async readAsBinaryString(blob) {
@@ -276,7 +273,7 @@ export class FileReader extends EventTarget {
   /**
    * read as data URL
    *
-   * @param {object|string} blob - blob data or blob URL
+   * @param {object} blob - blob
    * @returns {void}
    */
   async readAsDataURL(blob) {
@@ -286,7 +283,7 @@ export class FileReader extends EventTarget {
   /**
    * read as text
    *
-   * @param {object|string} blob - blob data or blob URL
+   * @param {object} blob - blob
    * @param {string} encoding - encoding
    * @returns {void}
    */

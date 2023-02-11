@@ -189,8 +189,8 @@ describe('file-reader', () => {
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
         await Promise.all([
-          reader._read(blob, 'buffer'),
-          sleep(100).then(() => reader._read(blob, 'binary'))
+          reader._read(blob, 'arrayBuffer'),
+          sleep(100).then(() => reader._read(blob, 'binaryString'))
         ]).catch(e => {
           assert.instanceOf(e, DOMException, 'error');
           assert.strictEqual(e.message, 'Invalid state.', 'message');
@@ -207,23 +207,9 @@ describe('file-reader', () => {
         const reader = new FileReader();
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
-        await reader._read(blob, 'buffer');
+        await reader._read(blob, 'arrayBuffer');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 2, 'called');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const buffer = await blob.arrayBuffer();
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'buffer');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.deepEqual(reader.result, buffer, 'result');
       });
 
       it('should get result', async () => {
@@ -238,19 +224,6 @@ describe('file-reader', () => {
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, buffer, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'binary');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
       });
 
       it('should get result', async () => {
@@ -277,7 +250,7 @@ describe('file-reader', () => {
         const reader = new FileReader();
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
-        await reader._read(blob, 'binary');
+        await reader._read(blob, 'binaryString');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.deepEqual(reader.result, pngBin, 'result');
@@ -289,25 +262,10 @@ describe('file-reader', () => {
         const reader = new FileReader();
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
-        await reader._read(blob, 'data');
+        await reader._read(blob, 'dataURL');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 4, 'called');
         assert.strictEqual(reader.result, `data:base64,${base64}`, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const base64 = btoa('Hello, world!');
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'data');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
-          'result');
       });
 
       it('should get result', async () => {
