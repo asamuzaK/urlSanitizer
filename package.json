@@ -31,7 +31,7 @@
     "include": "node ./modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
-    "test-bdd": "http-server ./ --port 8080 -c-1 -o test/bdd/dist.url-sanitizer.test.html"
+    "test-bdd": "http-server ./ -c-1 -o test/bdd/dist.url-sanitizer.test.html"
   },
   "dependencies": {
     "dompurify": "^2.4.3",
@@ -46,7 +46,7 @@
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
     "esbuild": "^0.17.7",
-    "eslint": "^8.33.0",
+    "eslint": "^8.34.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-jsdoc": "^39.8.0",
@@ -60,5 +60,5 @@
     "sinon": "^15.0.1",
     "undici": "^5.18.0"
   },
-  "version": "0.7.6"
+  "version": "0.8.0"
 }

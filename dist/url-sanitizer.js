@@ -998,6 +998,10 @@ var require_purify = __commonJS({
   }
 });
 
+// bundle/mjs/file-reader.js
+var FileReader = window.FileReader;
+var fileReader = new FileReader();
+
 // bundle/mjs/common.js
 var TYPE_FROM = 8;
 var TYPE_TO = -1;
@@ -1704,6 +1708,13 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   return res;
 };
+var createDataURLFromBlob = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.addEventListener("error", () => reject(reader.error));
+  reader.addEventListener("abort", () => resolve(reader.result));
+  reader.addEventListener("load", () => resolve(reader.result));
+  reader.readAsDataURL(blob);
+});
 var URISchemes = class {
   /* private fields */
   #schemes;
@@ -1848,7 +1859,8 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * sanitize URL
-   * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
+   * NOTE: `data` and `file` schemes must be explicitly allowed
+   *       `blob` URLs should be converted to `data` URLs
    *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL
@@ -2097,12 +2109,12 @@ var URLSanitizer = class extends URISchemes {
 var urlSanitizer = new URLSanitizer();
 var isURISync = (uri) => urlSanitizer.verify(uri);
 var isURI = async (uri) => {
-  const res = await isURISync(uri);
+  const res = urlSanitizer.verify(uri);
   return res;
 };
 var parseURLSync = (url) => urlSanitizer.parse(url);
 var parseURL = async (url) => {
-  const res = await parseURLSync(url);
+  const res = urlSanitizer.parse(url);
   return res;
 };
 var sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
@@ -2110,9 +2122,39 @@ var sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
   deny: [],
   only: []
 });
-var sanitizeURL = async (url, opt) => {
-  const res = await sanitizeURLSync(url, opt);
-  return res;
+var sanitizeURL = async (url, opt = {
+  allow: [],
+  deny: [],
+  only: []
+}) => {
+  const { protocol } = new URL(url);
+  let res;
+  if (protocol === "blob:") {
+    const { allow, deny, only } = opt;
+    if (Array.isArray(allow) && allow.includes("blob") && !(Array.isArray(deny) && deny.includes("blob")) || Array.isArray(only) && only.includes("blob")) {
+      const blob = await fetch(url).then((r) => r.blob());
+      const data = await createDataURLFromBlob(blob);
+      if (data) {
+        if (Array.isArray(only)) {
+          if (!only.includes("data")) {
+            only.push("data");
+          }
+        } else if (Array.isArray(allow)) {
+          if (!allow.includes("data")) {
+            allow.push("data");
+          }
+          if (Array.isArray(deny) && deny.includes("data")) {
+            const i = deny.indexOf("data");
+            deny.splice(i, 1);
+          }
+        }
+        res = urlSanitizer.sanitize(data, opt);
+      }
+    }
+  } else {
+    res = urlSanitizer.sanitize(url, opt);
+  }
+  return res || null;
 };
 export {
   urlSanitizer as default,
