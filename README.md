@@ -8,7 +8,7 @@
 
 URL sanitizer for Node.js (>=18), browsers and web sites.
 Sanitize not only regular URLs, but also data URLs and blob URLs.
-Also ability to parse URLs and verify URIs.
+It also has the ability to parse URLs and verify URIs.
 **Experimental**
 
 
