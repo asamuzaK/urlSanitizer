@@ -139,7 +139,7 @@ export class FileReader extends EventTarget {
   /**
    * read blob
    *
-   * @param {object|string} blob - blob data or blob URL
+   * @param {object} blob - blob
    * @param {string} format - format to read as
    * @param {string} encoding - character encoding
    * @returns {void}
