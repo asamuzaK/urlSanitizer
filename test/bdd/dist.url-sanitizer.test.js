@@ -98,7 +98,7 @@ describe('dist URL Sanitizer', () => {
         'data:text/html,<div><img></div>', 'decode');
     });
 
-    it('should get sanitized value', async () => {
+    it('should get result', async () => {
       const data = '<svg><g onload="alert(1)"/></svg>';
       const blob = new Blob([data], {
         type: 'image/svg+xml'
