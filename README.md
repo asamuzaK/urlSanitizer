@@ -7,6 +7,7 @@
 [![license](https://img.shields.io/github/license/asamuzaK/urlSanitizer)](LICENSE)
 
 URL sanitizer for Node.js (>=18), browsers and web sites.
+Sanitize not only regular URLs, but also data URLs and blob URLs.
 **Experimental**
 
 
