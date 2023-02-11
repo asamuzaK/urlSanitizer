@@ -2132,8 +2132,12 @@ var sanitizeURL = async (url, opt = {
   if (protocol === "blob:") {
     const { allow, deny, only } = opt;
     if (Array.isArray(allow) && allow.includes("blob") && !(Array.isArray(deny) && deny.includes("blob")) || Array.isArray(only) && only.includes("blob")) {
-      const blob = await fetch(url).then((r) => r.blob());
-      const data = await createDataURLFromBlob(blob);
+      let data;
+      try {
+        data = await fetch(url).then((r) => r.blob()).then(createDataURLFromBlob);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+      }
       if (data) {
         if (Array.isArray(only)) {
           if (!only.includes("data")) {

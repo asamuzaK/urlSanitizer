@@ -2,16 +2,13 @@
   "name": "url-sanitizer",
   "description": "URL sanitizer for Node.js (>=18), browsers and web sites.",
   "author": "asamuzaK",
+  "license": "MIT",
   "homepage": "https://github.com/asamuzaK/urlSanitizer",
   "bugs": "https://github.com/asamuzaK/urlSanitizer/issues",
   "repository": {
     "type": "git",
     "url": "https://github.com/asamuzaK/urlSanitizer.git"
   },
-  "license": "MIT",
-  "main": "src/index.js",
-  "browser": "dist/url-sanitizer.js",
-  "type": "module",
   "engines": {
     "node": ">=18"
   },
@@ -19,20 +16,9 @@
     "dist",
     "src"
   ],
-  "scripts": {
-    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run bundle",
-    "bundle": "npm-run-all -s bundle-*",
-    "bundle-src": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.js --bundle --sourcemap ./bundle/index.js",
-    "bundle-min": "esbuild --format=esm --platform=browser --outfile=./dist/url-sanitizer.min.js --bundle --minify --sourcemap ./bundle/index.js",
-    "char": "node ./modules/index char -i",
-    "copy": "npm-run-all -s copy-*",
-    "copy-src": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/blob.js --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js bundle",
-    "copy-repl": "copyfiles --up=1 --verbose repl/blob.js repl/dompurify.js repl/file-reader.js bundle/mjs",
-    "include": "node ./modules/index include --dir=iana -i",
-    "lint": "eslint --fix .",
-    "test": "c8 --reporter=text mocha --exit test/*.test.js",
-    "test-bdd": "http-server ./ -c-1 -o test/bdd/dist.url-sanitizer.test.html"
-  },
+  "type": "module",
+  "main": "src/index.js",
+  "browser": "dist/url-sanitizer.js",
   "dependencies": {
     "dompurify": "^2.4.3",
     "jsdom": "^21.1.0"
@@ -49,7 +35,7 @@
     "eslint": "^8.34.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-jsdoc": "^39.8.0",
+    "eslint-plugin-jsdoc": "^40.0.0",
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
@@ -60,5 +46,19 @@
     "sinon": "^15.0.1",
     "undici": "^5.18.0"
   },
-  "version": "0.8.0"
+  "scripts": {
+    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run bundle",
+    "bundle": "npm-run-all -s bundle-*",
+    "bundle-src": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.js --bundle --sourcemap bundle/index.js",
+    "bundle-min": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.min.js --bundle --minify --sourcemap bundle/index.js",
+    "char": "node modules/index char -i",
+    "copy": "npm-run-all -s copy-*",
+    "copy-src": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js bundle",
+    "copy-repl": "copyfiles --up=1 --verbose repl/dompurify.js repl/file-reader.js bundle/mjs",
+    "include": "node modules/index include --dir=iana -i",
+    "lint": "eslint --fix .",
+    "test": "c8 --reporter=text mocha --exit test/*.test.js",
+    "test-bdd": "http-server ./ -c-1 -o test/bdd/dist.url-sanitizer.test.html"
+  },
+  "version": "0.8.1"
 }
