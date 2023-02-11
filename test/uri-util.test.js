@@ -1737,6 +1737,19 @@ describe('uri-util', () => {
           'decoded');
       });
 
+      it('should get null', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        URL.revokeObjectURL(url);
+        const res = await func(url, {
+          allow: ['blob']
+        });
+        assert.isNull(res, 'result');
+      });
+
       it('should get sanitized value', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
