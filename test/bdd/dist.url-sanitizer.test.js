@@ -7,7 +7,7 @@ import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
 } from '../../dist/url-sanitizer.js';
 
-const { assert } = chai;
+const { chai: { assert }, describe, it } = globalThis;
 
 describe('dist URL Sanitizer', () => {
   describe('urlSanitizer', () => {
