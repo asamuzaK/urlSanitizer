@@ -1264,7 +1264,7 @@ describe('uri-util', () => {
           } else {
             srcUrl = `https://example.com/?q=${i}`;
           }
-          const html = `<img src="${srcUrl}"></img>`;
+          const html = `<img src="${srcUrl}">`;
           const htmlBase64 = btoa(html);
           url = `data:text/html;base64,${htmlBase64}`;
         }
