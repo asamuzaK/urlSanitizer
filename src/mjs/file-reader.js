@@ -3,7 +3,6 @@
  */
 
 /* shared */
-import { Blob, resolveObjectURL } from 'node:buffer';
 import { getType, isString } from './common.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 
@@ -146,8 +145,7 @@ export class FileReader extends EventTarget {
    * @returns {void}
    */
   async _read(blob, format, encoding = '') {
-    if (!((blob instanceof Blob || isString(blob)) && isString(format) &&
-          isString(encoding))) {
+    if (!(blob instanceof Blob && isString(format) && isString(encoding))) {
       this.abort();
     }
     if (!this.#terminate) {
@@ -159,115 +157,98 @@ export class FileReader extends EventTarget {
       this.#state = this.LOADING;
       this.#result = null;
       this.#error = null;
-      let data;
-      if (blob instanceof Blob) {
-        data = blob;
-      } else if (isString(blob)) {
-        try {
-          const { protocol } = new URL(blob);
-          if (protocol === 'blob:') {
-            data = resolveObjectURL(blob);
+      let res;
+      try {
+        const { type } = blob;
+        const buffer = await blob.arrayBuffer();
+        const uint8arr = new Uint8Array(buffer);
+        const header = type ? type.split(';') : [];
+        const binary = String.fromCharCode(...uint8arr);
+        this._dispatchProgressEvent('loadstart');
+        switch (format) {
+          case 'arrayBuffer':
+          case 'buffer':
+            res = buffer;
+            this._dispatchProgressEvent('progress');
+            break;
+          case 'binary':
+          case 'binaryString':
+            res = binary;
+            this._dispatchProgressEvent('progress');
+            break;
+          case 'data':
+          case 'dataURL': {
+            if (!header.length || header[header.length - 1] !== 'base64') {
+              header.push('base64');
+            }
+            res = `data:${header.join(';')},${btoa(binary)}`;
+            this._dispatchProgressEvent('progress');
+            break;
           }
-        } catch (e) {
-          // fall through
+          // NOTE: exec only if encoding matches
+          case 'text': {
+            const textCharCodes = new Set(textChars);
+            if (uint8arr.every(c => textCharCodes.has(c))) {
+              let charset;
+              for (const head of header) {
+                if (REG_CHARSET.test(head)) {
+                  [, charset] = REG_CHARSET.exec(head);
+                  if (charset) {
+                    if (/utf-?8/i.test(charset)) {
+                      charset = 'utf8';
+                    } else {
+                      charset = charset.toLowerCase();
+                    }
+                    break;
+                  }
+                }
+              }
+              if (encoding) {
+                if (/utf-?8/i.test(encoding)) {
+                  encoding = 'utf8';
+                } else {
+                  encoding = encoding.toLowerCase();
+                }
+              }
+              if (REG_MIME_DOM.test(type)) {
+                if ((encoding && charset && encoding === charset) ||
+                    (!(encoding || charset)) ||
+                    (!encoding && charset === 'utf8') ||
+                    (encoding === 'utf8' && !charset)) {
+                  res = binary;
+                  this._dispatchProgressEvent('progress');
+                }
+              } else if (REG_MIME_TEXT.test(type)) {
+                if ((encoding && charset && encoding === charset) ||
+                    (!(encoding || charset)) ||
+                    (!encoding && charset === 'utf8') ||
+                    (encoding === 'utf8' && charset === 'us-ascii')) {
+                  res = binary;
+                  this._dispatchProgressEvent('progress');
+                }
+              }
+            }
+            break;
+          }
+          default:
+        }
+      } catch (e) {
+        if (!this.#terminate) {
+          this.#error = e;
+          this.#state = this.DONE;
+          this._dispatchProgressEvent('error');
+          this._dispatchProgressEvent('loadend');
         }
       }
-      if (data) {
-        this._dispatchProgressEvent('loadstart');
-        let res;
-        try {
-          const { type } = data;
-          const buffer = await data.arrayBuffer();
-          const uint8arr = new Uint8Array(buffer);
-          const header = type ? type.split(';') : [];
-          const binary = String.fromCharCode(...uint8arr);
-          switch (format) {
-            case 'arrayBuffer':
-            case 'buffer':
-              res = buffer;
-              this._dispatchProgressEvent('progress');
-              break;
-            case 'binary':
-            case 'binaryString':
-              res = binary;
-              this._dispatchProgressEvent('progress');
-              break;
-            case 'data':
-            case 'dataURL': {
-              if (!header.length || header[header.length - 1] !== 'base64') {
-                header.push('base64');
-              }
-              res = `data:${header.join(';')},${btoa(binary)}`;
-              this._dispatchProgressEvent('progress');
-              break;
-            }
-            // NOTE: exec only if encoding matches
-            case 'text': {
-              const textCharCodes = new Set(textChars);
-              if (uint8arr.every(c => textCharCodes.has(c))) {
-                let charset;
-                for (const head of header) {
-                  if (REG_CHARSET.test(head)) {
-                    [, charset] = REG_CHARSET.exec(head);
-                    if (charset) {
-                      if (/utf-?8/i.test(charset)) {
-                        charset = 'utf8';
-                      } else {
-                        charset = charset.toLowerCase();
-                      }
-                      break;
-                    }
-                  }
-                }
-                if (encoding) {
-                  if (/utf-?8/i.test(encoding)) {
-                    encoding = 'utf8';
-                  } else {
-                    encoding = encoding.toLowerCase();
-                  }
-                }
-                if (REG_MIME_DOM.test(type)) {
-                  if ((encoding && charset && encoding === charset) ||
-                      (!(encoding || charset)) ||
-                      (!encoding && charset === 'utf8') ||
-                      (encoding === 'utf8' && !charset)) {
-                    res = binary;
-                    this._dispatchProgressEvent('progress');
-                  }
-                } else if (REG_MIME_TEXT.test(type)) {
-                  if ((encoding && charset && encoding === charset) ||
-                      (!(encoding || charset)) ||
-                      (!encoding && charset === 'utf8') ||
-                      (encoding === 'utf8' && charset === 'us-ascii')) {
-                    res = binary;
-                    this._dispatchProgressEvent('progress');
-                  }
-                }
-              }
-              break;
-            }
-            default:
-          }
-        } catch (e) {
-          if (!this.#terminate) {
-            this.#error = e;
-            this.#state = this.DONE;
-            this._dispatchProgressEvent('error');
-            this._dispatchProgressEvent('loadend');
-          }
+      if (!(this.#terminate || this.#error)) {
+        if (res) {
+          this.#result = res;
+          this.#state = this.DONE;
+          this._dispatchProgressEvent('load');
+          this._dispatchProgressEvent('loadend');
+        } else {
+          this.abort();
         }
-        if (!(this.#terminate || this.#error)) {
-          if (res) {
-            this.#result = res;
-            this.#state = this.DONE;
-            this._dispatchProgressEvent('load');
-            this._dispatchProgressEvent('loadend');
-          } else {
-            this.abort();
-          }
-        }
-      } else {
-        this.abort();
       }
     }
   }

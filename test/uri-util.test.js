@@ -210,15 +210,14 @@ describe('uri-util', () => {
       assert.strictEqual(res, `data:text/html;base64,${base64Data}`, 'result');
     });
 
-    it('should get result', async () => {
+    it('should get null', async () => {
       const data = '<p>Hello, world!</p>';
-      const base64Data = btoa(data);
       const blob = new Blob([data], {
         type: 'text/html'
       });
       const url = URL.createObjectURL(blob);
       const res = await func(url);
-      assert.strictEqual(res, `data:text/html;base64,${base64Data}`, 'result');
+      assert.isNull(res, 'result');
     });
   });
 

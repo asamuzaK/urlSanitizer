@@ -156,7 +156,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
 /**
  * create data URL from blob
  *
- * @param {object|string} blob - blob or blob URL
+ * @param {object} blob - blob
  * @returns {Promise.<?string>} - data URL
  */
 export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
@@ -665,7 +665,8 @@ export const sanitizeURL = async (url, opt = {
     if ((Array.isArray(allow) && allow.includes('blob') &&
          !(Array.isArray(deny) && deny.includes('blob'))) ||
         (Array.isArray(only) && only.includes('blob'))) {
-      const data = await createDataURLFromBlob(url);
+      const blob = await fetch(url).then(r => r.blob());
+      const data = await createDataURLFromBlob(blob);
       if (data) {
         if (Array.isArray(only)) {
           if (!only.includes('data')) {
