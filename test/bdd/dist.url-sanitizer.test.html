@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
+  <script src="https://unpkg.com/mocha/mocha.js"></script>
+  <script src="https://unpkg.com/chai/chai.js"></script>
+  <script id="setup">
+    mocha.setup('bdd');
+    mocha.checkLeaks();
+    document.addEventListener('DOMContentLoaded', () => {
+      const elm = document.getElementById('runMocha');
+      if (elm) {
+        elm.addEventListener('click', () => {
+          mocha.run();
+        });
+      }
+    });
+  </script>
+  <script type="module" src="./dist.url-sanitizer.test.js"></script>
+</head>
+<body>
+  <button id="runMocha">Run</button>
+  <div id="mocha"></div>
+</body>
+</html>
