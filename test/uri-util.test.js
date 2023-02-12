@@ -1650,6 +1650,16 @@ describe('uri-util', () => {
       const func = mjs.sanitizeURLSync;
 
       it('should get null', () => {
+        const res = func();
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
+        const res = func('foo');
+        assert.isNull(res, 'result');
+      });
+
+      it('should get null', () => {
         const res = func('javascript:alert(1)');
         assert.isNull(res, 'result');
       });
@@ -1658,21 +1668,36 @@ describe('uri-util', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
+
+      it('should get null', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = func(url, {
+          allow: ['blob']
+        });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
+        assert.isNull(res, 'result');
+      });
     });
 
     describe('sanitize URL async', () => {
       const func = mjs.sanitizeURL;
 
-      it('should throw', async () => {
-        await func().catch(e => {
-          assert.instanceOf(e, Error, 'error');
-        });
+      it('should get null', async () => {
+        const res = await func();
+        assert.isNull(res, 'result');
       });
 
-      it('should throw', async () => {
-        await func('foo').catch(e => {
-          assert.instanceOf(e, Error, 'error');
-        });
+      it('should get null', async () => {
+        const res = await func('foo');
+        assert.isNull(res, 'result');
       });
 
       it('should get null', async () => {
