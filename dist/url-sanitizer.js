@@ -999,7 +999,7 @@ var require_purify = __commonJS({
 });
 
 // bundle/mjs/file-reader.js
-var FileReader = window.FileReader;
+var { FileReader } = window;
 var fileReader = new FileReader();
 
 // bundle/mjs/common.js
@@ -2135,7 +2135,6 @@ var sanitizeURL = async (url, opt = {
       let data;
       try {
         data = await fetch(url).then((r) => r.blob()).then(createDataURLFromBlob);
-        URL.revokeObjectURL(url);
       } catch (e) {
       }
       if (data) {
@@ -2155,6 +2154,7 @@ var sanitizeURL = async (url, opt = {
         res = urlSanitizer.sanitize(data, opt);
       }
     }
+    URL.revokeObjectURL(url);
   } else {
     res = urlSanitizer.sanitize(url, opt);
   }
