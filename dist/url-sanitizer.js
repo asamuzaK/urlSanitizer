@@ -2184,6 +2184,7 @@ export {
 };
 /*!
  * URL Sanitizer
+ *
  * @license MIT
  * @copyright asamuzaK (Kazz)
  * @see {@link https://github.com/asamuzaK/urlSanitizer/blob/main/LICENSE}
