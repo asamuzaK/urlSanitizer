@@ -1692,6 +1692,11 @@ describe('uri-util', () => {
         });
         const url = URL.createObjectURL(blob);
         const res = await func(url);
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.isNull(res, 'result');
       });
 
@@ -1705,6 +1710,11 @@ describe('uri-util', () => {
           allow: ['blob'],
           deny: ['blob']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.isNull(res, 'result');
       });
 
@@ -1717,6 +1727,11 @@ describe('uri-util', () => {
         const res = await func(url, {
           only: ['https']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.isNull(res, 'result');
       });
 
@@ -1729,6 +1744,11 @@ describe('uri-util', () => {
         const res = await func(url, {
           allow: ['blob']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1747,6 +1767,11 @@ describe('uri-util', () => {
         const res = await func(url, {
           allow: ['blob']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.isNull(res, 'result');
       });
 
@@ -1760,6 +1785,11 @@ describe('uri-util', () => {
           allow: ['blob'],
           deny: ['data']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1777,6 +1807,11 @@ describe('uri-util', () => {
         const res = await func(url, {
           only: ['blob', 'https']
         });
+        const revoked = await fetch(url).catch(e => {
+          assert.instanceOf(e, Error, 'error');
+          return (e instanceof Error);
+        });
+        assert.isTrue(revoked, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');

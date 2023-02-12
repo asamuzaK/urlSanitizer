@@ -668,7 +668,6 @@ export const sanitizeURL = async (url, opt = {
       let data;
       try {
         data = await fetch(url).then(r => r.blob()).then(createDataURLFromBlob);
-        URL.revokeObjectURL(url);
       } catch (e) {
         // fall through
       }
@@ -689,6 +688,7 @@ export const sanitizeURL = async (url, opt = {
         res = urlSanitizer.sanitize(data, opt);
       }
     }
+    URL.revokeObjectURL(url);
   } else {
     res = urlSanitizer.sanitize(url, opt);
   }
