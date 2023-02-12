@@ -2,7 +2,7 @@
  * file-reader.js
  */
 
-const FileReader = window.FileReader;
+const { FileReader } = window;
 const fileReader = new FileReader();
 
 export {
