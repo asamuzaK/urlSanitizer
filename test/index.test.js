@@ -105,6 +105,7 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url, {
         allow: ['blob']
       });
+      URL.revokeObjectURL(url);
       assert.strictEqual(res,
         'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         'result');
@@ -201,6 +202,19 @@ describe('URL Sanitizer', () => {
         'result');
       assert.strictEqual(decodeURIComponent(res),
         'data:text/html,<div><img></div>', 'decode');
+    });
+
+    it('should get null', async () => {
+      const data = '<svg><g onload="alert(1)"/></svg>';
+      const blob = new Blob([data], {
+        type: 'image/svg+xml'
+      });
+      const url = URL.createObjectURL(blob);
+      const res = sanitizeURLSync(url, {
+        allow: ['blob']
+      });
+      URL.revokeObjectURL(url);
+      assert.isNull(res, 'result');
     });
 
     it('should get null', () => {
