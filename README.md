@@ -21,6 +21,10 @@ npm i url-sanitizer
 For browsers and web sites, standalone ESM builds are available in `dist/` directory.
 * node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
+* node_modules/url-sanitizer/dist/url-sanitizer.wo.dompurify.js
+  Built without [DOMPurify](https://www.npmjs.com/package/dompurify).
+* node_modules/url-sanitizer/dist/url-sanitizer.wo.dompurify.min.js
+  Built without [DOMPurify](https://www.npmjs.com/package/dompurify).
 
 Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
@@ -384,7 +388,7 @@ const res2 = urlSanitizer.remove('foo');
 
 The following resources have been of great help in the development of the URL Sanitizer.
 
-* [DOMPurify](https://www.npmjs.com/package/dompurify?activeTab=readme)
+* [DOMPurify](https://www.npmjs.com/package/dompurify)
 * [Uniform Resource Identifier (URI) Schemes - IANA](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)
 * [Encoding -- determine the character encoding of a text file. - file/file](https://github.com/file/file/blob/master/src/encoding.c)
 
