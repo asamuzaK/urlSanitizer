@@ -1976,8 +1976,8 @@ var URLSanitizer = class extends URISchemes {
             parsedData = parseBase64(data);
           }
           try {
-            const decodedData = parseURLEncodedNumCharRef(parsedData);
-            const { protocol: dataScheme } = new URL(decodedData.trim());
+            const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
+            const { protocol: dataScheme } = new URL(decodedData);
             const dataSchemeParts = dataScheme.replace(REG_END_COLON, "").split("+");
             if (dataSchemeParts.some((s) => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = "";
@@ -2117,46 +2117,59 @@ var parseURL = async (url) => {
   const res = urlSanitizer.parse(url);
   return res;
 };
-var sanitizeURLSync = (url, opt) => urlSanitizer.sanitize(url, opt ?? {
-  allow: [],
-  deny: [],
-  only: []
-});
+var sanitizeURLSync = (url, opt) => {
+  let res;
+  if (urlSanitizer.verify(url)) {
+    const { protocol } = new URL(url);
+    if (protocol === "blob:") {
+      URL.revokeObjectURL(url);
+    } else {
+      res = urlSanitizer.sanitize(url, opt ?? {
+        allow: [],
+        deny: [],
+        only: []
+      });
+    }
+  }
+  return res || null;
+};
 var sanitizeURL = async (url, opt = {
   allow: [],
   deny: [],
   only: []
 }) => {
-  const { protocol } = new URL(url);
   let res;
-  if (protocol === "blob:") {
-    const { allow, deny, only } = opt;
-    if (Array.isArray(allow) && allow.includes("blob") && !(Array.isArray(deny) && deny.includes("blob")) || Array.isArray(only) && only.includes("blob")) {
-      let data;
-      try {
-        data = await fetch(url).then((r) => r.blob()).then(createDataURLFromBlob);
-      } catch (e) {
-      }
-      if (data) {
-        if (Array.isArray(only)) {
-          if (!only.includes("data")) {
-            only.push("data");
-          }
-        } else if (Array.isArray(allow)) {
-          if (!allow.includes("data")) {
-            allow.push("data");
-          }
-          if (Array.isArray(deny) && deny.includes("data")) {
-            const i = deny.indexOf("data");
-            deny.splice(i, 1);
-          }
+  if (urlSanitizer.verify(url)) {
+    const { protocol } = new URL(url);
+    if (protocol === "blob:") {
+      const { allow, deny, only } = opt;
+      if (Array.isArray(allow) && allow.includes("blob") && !(Array.isArray(deny) && deny.includes("blob")) || Array.isArray(only) && only.includes("blob")) {
+        let data;
+        try {
+          data = await fetch(url).then((r) => r.blob()).then(createDataURLFromBlob);
+        } catch (e) {
         }
-        res = urlSanitizer.sanitize(data, opt);
+        if (data) {
+          if (Array.isArray(only)) {
+            if (!only.includes("data")) {
+              only.push("data");
+            }
+          } else if (Array.isArray(allow)) {
+            if (!allow.includes("data")) {
+              allow.push("data");
+            }
+            if (Array.isArray(deny) && deny.includes("data")) {
+              const i = deny.indexOf("data");
+              deny.splice(i, 1);
+            }
+          }
+          res = urlSanitizer.sanitize(data, opt);
+        }
       }
+      URL.revokeObjectURL(url);
+    } else {
+      res = urlSanitizer.sanitize(url, opt);
     }
-    URL.revokeObjectURL(url);
-  } else {
-    res = urlSanitizer.sanitize(url, opt);
   }
   return res || null;
 };
