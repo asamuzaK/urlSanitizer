@@ -1894,7 +1894,7 @@ var URLSanitizer = class extends URISchemes {
       for (let item of items) {
         if (isString(item)) {
           item = item.trim();
-          if (!REG_SCRIPT_BLOB.test(item)) {
+          if (item === "data" && typeof import_dompurify.default?.sanitize === "function" || !REG_SCRIPT_BLOB.test(item)) {
             if (super.has(item)) {
               schemeMap.set(item, true);
             } else {
@@ -1918,7 +1918,7 @@ var URLSanitizer = class extends URISchemes {
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
-            if (!REG_SCRIPT_BLOB.test(item)) {
+            if (item === "data" && typeof import_dompurify.default?.sanitize === "function" || !REG_SCRIPT_BLOB.test(item)) {
               if (super.has(item)) {
                 schemeMap.set(item, true);
               } else {
