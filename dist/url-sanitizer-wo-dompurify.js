@@ -1189,4 +1189,4 @@ export {
  * @copyright asamuzaK (Kazz)
  * @see {@link https://github.com/asamuzaK/urlSanitizer/blob/main/LICENSE}
  */
-//# sourceMappingURL=url-sanitizer.wo.dompurify.js.map
+//# sourceMappingURL=url-sanitizer-wo-dompurify.js.map
