@@ -77,6 +77,9 @@ var require_purify = __commonJS({
         }
         return _construct.apply(null, arguments);
       }
+      function _slicedToArray(arr, i) {
+        return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+      }
       function _toConsumableArray(arr) {
         return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
       }
@@ -84,9 +87,41 @@ var require_purify = __commonJS({
         if (Array.isArray(arr))
           return _arrayLikeToArray(arr);
       }
+      function _arrayWithHoles(arr) {
+        if (Array.isArray(arr))
+          return arr;
+      }
       function _iterableToArray(iter) {
         if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null)
           return Array.from(iter);
+      }
+      function _iterableToArrayLimit(arr, i) {
+        var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+        if (_i == null)
+          return;
+        var _arr = [];
+        var _n = true;
+        var _d = false;
+        var _s, _e;
+        try {
+          for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
+            _arr.push(_s.value);
+            if (i && _arr.length === i)
+              break;
+          }
+        } catch (err) {
+          _d = true;
+          _e = err;
+        } finally {
+          try {
+            if (!_n && _i["return"] != null)
+              _i["return"]();
+          } finally {
+            if (_d)
+              throw _e;
+          }
+        }
+        return _arr;
       }
       function _unsupportedIterableToArray(o, minLen) {
         if (!o)
@@ -111,7 +146,64 @@ var require_purify = __commonJS({
       function _nonIterableSpread() {
         throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
       }
-      var hasOwnProperty = Object.hasOwnProperty, setPrototypeOf = Object.setPrototypeOf, isFrozen = Object.isFrozen, getPrototypeOf = Object.getPrototypeOf, getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+      function _nonIterableRest() {
+        throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+      }
+      function _createForOfIteratorHelper(o, allowArrayLike) {
+        var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+        if (!it) {
+          if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+            if (it)
+              o = it;
+            var i = 0;
+            var F = function() {
+            };
+            return {
+              s: F,
+              n: function() {
+                if (i >= o.length)
+                  return {
+                    done: true
+                  };
+                return {
+                  done: false,
+                  value: o[i++]
+                };
+              },
+              e: function(e) {
+                throw e;
+              },
+              f: F
+            };
+          }
+          throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+        }
+        var normalCompletion = true, didErr = false, err;
+        return {
+          s: function() {
+            it = it.call(o);
+          },
+          n: function() {
+            var step = it.next();
+            normalCompletion = step.done;
+            return step;
+          },
+          e: function(e) {
+            didErr = true;
+            err = e;
+          },
+          f: function() {
+            try {
+              if (!normalCompletion && it.return != null)
+                it.return();
+            } finally {
+              if (didErr)
+                throw err;
+            }
+          }
+        };
+      }
+      var entries = Object.entries, setPrototypeOf = Object.setPrototypeOf, isFrozen = Object.isFrozen, getPrototypeOf = Object.getPrototypeOf, getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
       var freeze = Object.freeze, seal = Object.seal, create = Object.create;
       var _ref = typeof Reflect !== "undefined" && Reflect, apply = _ref.apply, construct = _ref.construct;
       if (!apply) {
@@ -184,11 +276,16 @@ var require_purify = __commonJS({
       }
       function clone(object) {
         var newObject = create(null);
-        var property;
-        for (property in object) {
-          if (apply(hasOwnProperty, object, [property]) === true) {
-            newObject[property] = object[property];
+        var _iterator = _createForOfIteratorHelper(entries(object)), _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done; ) {
+            var _step$value = _slicedToArray(_step.value, 2), property = _step$value[0], value = _step$value[1];
+            newObject[property] = value;
           }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
         }
         return newObject;
       }
@@ -269,7 +366,7 @@ var require_purify = __commonJS({
         var DOMPurify = function DOMPurify2(root) {
           return createDOMPurify(root);
         };
-        DOMPurify.version = "2.4.3";
+        DOMPurify.version = "3.0.0";
         DOMPurify.removed = [];
         if (!window2 || !window2.document || window2.document.nodeType !== 9) {
           DOMPurify.isSupported = false;
@@ -293,13 +390,8 @@ var require_purify = __commonJS({
         var emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML("") : "";
         var _document = document, implementation = _document.implementation, createNodeIterator = _document.createNodeIterator, createDocumentFragment = _document.createDocumentFragment, getElementsByTagName = _document.getElementsByTagName;
         var importNode = originalDocument.importNode;
-        var documentMode = {};
-        try {
-          documentMode = clone(document).documentMode ? document.documentMode : {};
-        } catch (_) {
-        }
         var hooks = {};
-        DOMPurify.isSupported = typeof getParentNode === "function" && implementation && typeof implementation.createHTMLDocument !== "undefined" && documentMode !== 9;
+        DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && typeof implementation.createHTMLDocument !== "undefined";
         var MUSTACHE_EXPR$1 = MUSTACHE_EXPR, ERB_EXPR$1 = ERB_EXPR, TMPLIT_EXPR$1 = TMPLIT_EXPR, DATA_ATTR$1 = DATA_ATTR, ARIA_ATTR$1 = ARIA_ATTR, IS_SCRIPT_OR_DATA$1 = IS_SCRIPT_OR_DATA, ATTR_WHITESPACE$1 = ATTR_WHITESPACE;
         var IS_ALLOWED_URI$1 = IS_ALLOWED_URI;
         var ALLOWED_TAGS = null;
@@ -331,6 +423,7 @@ var require_purify = __commonJS({
         var ALLOW_ARIA_ATTR = true;
         var ALLOW_DATA_ATTR = true;
         var ALLOW_UNKNOWN_PROTOCOLS = false;
+        var ALLOW_SELF_CLOSE_IN_ATTR = true;
         var SAFE_FOR_TEMPLATES = false;
         var WHOLE_DOCUMENT = false;
         var SET_CONFIG = false;
@@ -403,6 +496,7 @@ var require_purify = __commonJS({
           ALLOW_ARIA_ATTR = cfg.ALLOW_ARIA_ATTR !== false;
           ALLOW_DATA_ATTR = cfg.ALLOW_DATA_ATTR !== false;
           ALLOW_UNKNOWN_PROTOCOLS = cfg.ALLOW_UNKNOWN_PROTOCOLS || false;
+          ALLOW_SELF_CLOSE_IN_ATTR = cfg.ALLOW_SELF_CLOSE_IN_ATTR !== false;
           SAFE_FOR_TEMPLATES = cfg.SAFE_FOR_TEMPLATES || false;
           WHOLE_DOCUMENT = cfg.WHOLE_DOCUMENT || false;
           RETURN_DOM = cfg.RETURN_DOM || false;
@@ -549,11 +643,7 @@ var require_purify = __commonJS({
           try {
             node.parentNode.removeChild(node);
           } catch (_) {
-            try {
-              node.outerHTML = emptyHTML;
-            } catch (_2) {
-              node.remove();
-            }
+            node.remove();
           }
         };
         var _removeAttribute = function _removeAttribute2(name, node) {
@@ -649,20 +739,12 @@ var require_purify = __commonJS({
             _forceRemove(currentNode);
             return true;
           }
-          if (regExpTest(/[\u0080-\uFFFF]/, currentNode.nodeName)) {
-            _forceRemove(currentNode);
-            return true;
-          }
           var tagName = transformCaseFunc(currentNode.nodeName);
           _executeHook("uponSanitizeElement", currentNode, {
             tagName,
             allowedTags: ALLOWED_TAGS
           });
           if (currentNode.hasChildNodes() && !_isNode(currentNode.firstElementChild) && (!_isNode(currentNode.content) || !_isNode(currentNode.content.firstElementChild)) && regExpTest(/<[/\w]/g, currentNode.innerHTML) && regExpTest(/<[/\w]/g, currentNode.textContent)) {
-            _forceRemove(currentNode);
-            return true;
-          }
-          if (tagName === "select" && regExpTest(/<template/i, currentNode.innerHTML)) {
             _forceRemove(currentNode);
             return true;
           }
@@ -783,7 +865,7 @@ var require_purify = __commonJS({
             if (!hookEvent.keepAttr) {
               continue;
             }
-            if (regExpTest(/\/>/i, value)) {
+            if (!ALLOW_SELF_CLOSE_IN_ATTR && regExpTest(/\/>/i, value)) {
               _removeAttribute(name, currentNode);
               continue;
             }
@@ -847,7 +929,6 @@ var require_purify = __commonJS({
           var body;
           var importedNode;
           var currentNode;
-          var oldNode;
           var returnNode;
           IS_EMPTY_INPUT = !dirty;
           if (IS_EMPTY_INPUT) {
@@ -864,14 +945,6 @@ var require_purify = __commonJS({
             }
           }
           if (!DOMPurify.isSupported) {
-            if (_typeof(window2.toStaticHTML) === "object" || typeof window2.toStaticHTML === "function") {
-              if (typeof dirty === "string") {
-                return window2.toStaticHTML(dirty);
-              }
-              if (_isNode(dirty)) {
-                return window2.toStaticHTML(dirty.outerHTML);
-              }
-            }
             return dirty;
           }
           if (!SET_CONFIG) {
@@ -913,9 +986,6 @@ var require_purify = __commonJS({
           }
           var nodeIterator = _createIterator(IN_PLACE ? dirty : body);
           while (currentNode = nodeIterator.nextNode()) {
-            if (currentNode.nodeType === 3 && currentNode === oldNode) {
-              continue;
-            }
             if (_sanitizeElements(currentNode)) {
               continue;
             }
@@ -923,9 +993,7 @@ var require_purify = __commonJS({
               _sanitizeShadowDOM(currentNode.content);
             }
             _sanitizeAttributes(currentNode);
-            oldNode = currentNode;
           }
-          oldNode = null;
           if (IN_PLACE) {
             return dirty;
           }
@@ -938,7 +1006,7 @@ var require_purify = __commonJS({
             } else {
               returnNode = body;
             }
-            if (ALLOWED_ATTR.shadowroot) {
+            if (ALLOWED_ATTR.shadowroot || ALLOWED_ATTR.shadowrootmod) {
               returnNode = importNode.call(originalDocument, returnNode, true);
             }
             return returnNode;
@@ -1894,7 +1962,7 @@ var URLSanitizer = class extends URISchemes {
       for (let item of items) {
         if (isString(item)) {
           item = item.trim();
-          if (item === "data" && typeof import_dompurify.default?.sanitize === "function" || !REG_SCRIPT_BLOB.test(item)) {
+          if (!REG_SCRIPT_BLOB.test(item)) {
             if (super.has(item)) {
               schemeMap.set(item, true);
             } else {
@@ -1918,7 +1986,7 @@ var URLSanitizer = class extends URISchemes {
         for (let item of items) {
           if (isString(item)) {
             item = item.trim();
-            if (item === "data" && typeof import_dompurify.default?.sanitize === "function" || !REG_SCRIPT_BLOB.test(item)) {
+            if (!REG_SCRIPT_BLOB.test(item)) {
               if (super.has(item)) {
                 schemeMap.set(item, true);
               } else {
@@ -2192,6 +2260,6 @@ export {
 /*! Bundled license information:
 
 dompurify/dist/purify.js:
-  (*! @license DOMPurify 2.4.3 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/2.4.3/LICENSE *)
+  (*! @license DOMPurify 3.0.0 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.0/LICENSE *)
 */
 //# sourceMappingURL=url-sanitizer.js.map

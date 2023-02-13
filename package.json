@@ -20,7 +20,7 @@
   "main": "src/index.js",
   "browser": "dist/url-sanitizer.js",
   "dependencies": {
-    "dompurify": "^2.4.3",
+    "dompurify": "^3.0.0",
     "jsdom": "^21.1.0"
   },
   "devDependencies": {
@@ -64,5 +64,5 @@
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html"
   },
-  "version": "0.8.7"
+  "version": "0.8.8"
 }
