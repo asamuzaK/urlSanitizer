@@ -64,5 +64,5 @@
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
     "test-bdd": "http-server ./ -c-1 -o test/bdd/dist.url-sanitizer.test.html"
   },
-  "version": "0.8.4"
+  "version": "0.8.5"
 }
