@@ -62,7 +62,7 @@
     "include": "node modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
-    "test-bdd": "http-server ./ -c-1 -o test/bdd/dist.url-sanitizer.test.html"
+    "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html"
   },
   "version": "0.8.7"
 }

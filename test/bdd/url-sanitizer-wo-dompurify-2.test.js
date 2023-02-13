@@ -5,7 +5,7 @@
 /* test */
 import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
-} from '../../dist/url-sanitizer.wo.dompurify.js';
+} from '../../dist/url-sanitizer-wo-dompurify.js';
 
 const { chai: { assert }, describe, it } = globalThis;
 
@@ -61,59 +61,50 @@ describe('dist URL Sanitizer', () => {
         'decode');
     });
 
-    it('should get result', async () => {
+    it('should throw', async () => {
       const data =
         '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
       const url = `data:text/html,${encodeURIComponent(data)}`;
-      const res = await sanitizeURL(url, {
+      await sanitizeURL(url, {
         allow: ['data']
+      }).catch(e => {
+        assert.instanceOf(e, TypeError, 'error');
       });
-      assert.strictEqual(res,
-        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E', 'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>', 'decode');
     });
 
-    it('should get result', async () => {
+    it('should throw', async () => {
       const base64data = btoa('<div><script>alert(1);</script></div>');
       const url = `data:text/html;base64,${base64data}`;
-      const res = await sanitizeURL(url, {
+      await sanitizeURL(url, {
         allow: ['data']
+      }).catch(e => {
+        assert.instanceOf(e, TypeError, 'error');
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'decode');
     });
 
-    it('should get result', async () => {
+    it('should throw', async () => {
       const base64data =
         btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
-      const res = await sanitizeURL(url, {
+      await sanitizeURL(url, {
         allow: ['data']
+      }).catch(e => {
+        assert.instanceOf(e, TypeError, 'error');
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div><img></div>', 'decode');
     });
 
-    it('should get result', async () => {
+    it('should throw', async () => {
       const data = '<svg><g onload="alert(1)"/></svg>';
       const blob = new Blob([data], {
         type: 'image/svg+xml'
       });
       const url = URL.createObjectURL(blob);
-      const res = await sanitizeURL(url, {
+      await sanitizeURL(url, {
         allow: ['blob']
+      }).catch(e => {
+        assert.instanceOf(e, TypeError, 'error');
       });
       URL.revokeObjectURL(url);
-      assert.strictEqual(res,
-        'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:image/svg+xml,<svg><g></g></svg>',
-        'decoded');
     });
 
     it('should get null', async () => {
@@ -169,41 +160,30 @@ describe('dist URL Sanitizer', () => {
         'decode');
     });
 
-    it('should get result', () => {
+    it('should throw', () => {
       const data =
         '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
       const url = `data:text/html,${encodeURIComponent(data)}`;
-      const res = sanitizeURLSync(url, {
+      assert.throws(() => sanitizeURLSync(url, {
         allow: ['data']
-      });
-      assert.strictEqual(res,
-        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E', 'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>', 'decode');
+      }));
     });
 
-    it('should get result', () => {
+    it('should throw', () => {
       const base64data = btoa('<div><script>alert(1);</script></div>');
       const url = `data:text/html;base64,${base64data}`;
-      const res = sanitizeURLSync(url, {
+      assert.throws(() => sanitizeURLSync(url, {
         allow: ['data']
-      });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div></div>', 'decode');
+      }));
     });
 
-    it('should get result', () => {
+    it('should throw', () => {
       const base64data =
         btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
-      const res = sanitizeURLSync(url, {
+      assert.throws(() => sanitizeURLSync(url, {
         allow: ['data']
-      });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'data:text/html,<div><img></div>', 'decode');
+      }));
     });
 
     it('should get null', async () => {
@@ -289,29 +269,11 @@ describe('dist URL Sanitizer', () => {
       }, 'result');
     });
 
-    it('should get result', async () => {
+    it('should throw', async () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = await parseURL(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(res, {
-        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-        valid: true,
-        data: {
-          mime: 'image/svg+xml',
-          base64: false,
-          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
-        },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        origin: 'null',
-        protocol: 'data:',
-        username: '',
-        password: '',
-        host: '',
-        port: '',
-        hostname: '',
-        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        search: '',
-        hash: ''
-      }, 'result');
+      await parseURL(`data:image/svg+xml;base64,${btoa(data)}`).catch(e => {
+        assert.instanceOf(e, TypeError, 'error');
+      });
     });
 
     it('should get result', async () => {
@@ -369,29 +331,10 @@ describe('dist URL Sanitizer', () => {
       }, 'result');
     });
 
-    it('should get result', () => {
+    it('should throw', () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = parseURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(res, {
-        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-        valid: true,
-        data: {
-          mime: 'image/svg+xml',
-          base64: false,
-          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
-        },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        origin: 'null',
-        protocol: 'data:',
-        username: '',
-        password: '',
-        host: '',
-        port: '',
-        hostname: '',
-        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        search: '',
-        hash: ''
-      }, 'result');
+      assert.throws(() =>
+        parseURLSync(`data:image/svg+xml;base64,${btoa(data)}`));
     });
 
     it('should get result', () => {
