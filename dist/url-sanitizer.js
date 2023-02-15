@@ -1068,7 +1068,6 @@ var require_purify = __commonJS({
 
 // bundle/mjs/file-reader.js
 var { FileReader } = window;
-var fileReader = new FileReader();
 
 // bundle/mjs/common.js
 var TYPE_FROM = 8;

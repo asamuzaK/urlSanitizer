@@ -1,6 +1,5 @@
 // bundle_wo_dompurify/mjs/file-reader.js
 var { FileReader } = window;
-var fileReader = new FileReader();
 
 // bundle_wo_dompurify/mjs/common.js
 var TYPE_FROM = 8;
