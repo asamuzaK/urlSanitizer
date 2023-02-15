@@ -9,18 +9,11 @@ import { sleep } from '../modules/common.js';
 import sinon from 'sinon';
 
 /* test */
-import fileReader, {
+import {
   FileReader, ProgressEvent
 } from '../src/mjs/file-reader.js';
 
 describe('file-reader', () => {
-  describe('default', () => {
-    it('should be instance of FileReader', () => {
-      assert.instanceOf(fileReader, EventTarget, 'instance');
-      assert.instanceOf(fileReader, FileReader, 'instance');
-    });
-  });
-
   describe('progress event', () => {
     it('should create instance', () => {
       const evt = new ProgressEvent('abort');

@@ -291,11 +291,3 @@ export class FileReader extends EventTarget {
     await this._read(blob, 'text', encoding);
   }
 }
-
-/* instance */
-const fileReader = new FileReader();
-
-/* export */
-export {
-  fileReader as default
-};
