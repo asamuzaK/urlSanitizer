@@ -4,7 +4,6 @@
 [![CodeQL](https://github.com/asamuzaK/urlSanitizer/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/asamuzaK/urlSanitizer/actions/workflows/github-code-scanning/codeql)
 [![npm](https://img.shields.io/npm/v/url-sanitizer)](https://www.npmjs.com/package/url-sanitizer)
 [![release](https://img.shields.io/github/v/release/asamuzaK/urlSanitizer)](https://github.com/asamuzaK/urlSanitizer/releases)
-[![license](https://img.shields.io/github/license/asamuzaK/urlSanitizer)](LICENSE)
 
 URL sanitizer for Node.js (>=18), browsers and web sites.
 Sanitize not only regular URLs, but also data URLs and blob URLs.
