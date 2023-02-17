@@ -35,6 +35,30 @@ const REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 const REG_URL_ENC_AMP = /%26/g;
 
+/* typedef */
+/**
+ * object with additional properties based on URL API
+ *
+ * @typedef {object} ParsedURL
+ * @property {string} input - URL input
+ * @property {boolean} valid - is valid URI
+ * @property {object} data - parsed result of data URL, `null`able
+ * @property {string} data.mime - MIME type
+ * @property {boolean} data.base64 - is base64 encoded
+ * @property {string} data.data - data part of the data URL
+ * @property {string} href - sanitized URL input
+ * @property {string} origin - scheme, domain and port of the sanitized URL
+ * @property {string} protocol -  protocol scheme of the sanitized URL
+ * @property {string} username - username specified before the domain name
+ * @property {string} password - password specified before the domain name
+ * @property {string} host - domain and port of the sanitized URL
+ * @property {string} hostname - domain of the sanitized URL
+ * @property {string} port - port number of the sanitized URL
+ * @property {string} pathname - path of the sanitized URL
+ * @property {string} search - query string of the sanitized URL
+ * @property {string} hash - fragment identifier of the sanitized URL
+ */
+
 /**
  * get URL encoded string
  *
@@ -513,29 +537,6 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * object with additional properties based on URL API
-   *
-   * @typedef {object} ParsedURL
-   * @property {string} input - URL input
-   * @property {boolean} valid - is valid URI
-   * @property {object} data - parsed result of data URL, `null`able
-   * @property {string} data.mime - MIME type
-   * @property {boolean} data.base64 - is base64 encoded
-   * @property {string} data.data - data part of the data URL
-   * @property {string} href - sanitized URL input
-   * @property {string} origin - scheme, domain and port of the sanitized URL
-   * @property {string} protocol -  protocol scheme of the sanitized URL
-   * @property {string} username - username specified before the domain name
-   * @property {string} password - password specified before the domain name
-   * @property {string} host - domain and port of the sanitized URL
-   * @property {string} hostname - domain of the sanitized URL
-   * @property {string} port - port number of the sanitized URL
-   * @property {string} pathname - path of the sanitized URL
-   * @property {string} search - query string of the sanitized URL
-   * @property {string} hash - fragment identifier of the sanitized URL
-   */
-
-  /**
    * parse sanitized URL
    *
    * @param {string} url - URL
@@ -614,7 +615,7 @@ export const isURI = async uri => {
  * parse URL sync
  *
  * @param {string} url - URL
- * @returns {ParsedURL} - result with extended props based on URL API
+ * @returns {ParsedURL} - result
  */
 export const parseURLSync = url => urlSanitizer.parse(url);
 
@@ -622,7 +623,7 @@ export const parseURLSync = url => urlSanitizer.parse(url);
  * parse URL async
  *
  * @param {string} url - URL
- * @returns {Promise.<ParsedURL>} - result with extended props based on URL API
+ * @returns {Promise.<ParsedURL>} - result
  */
 export const parseURL = async url => {
   const res = urlSanitizer.parse(url);
@@ -636,6 +637,10 @@ export const parseURL = async url => {
  *
  * @param {string} url - URL
  * @param {object} opt - options
+ * @param {Array.<string>} opt.allow - array of allowed schemes
+ * @param {Array.<string>} opt.deny - array of denied schemes
+ * @param {Array.<string>} opt.only - array of specific schemes to allow
+ * @param {boolean} opt.remove - remove tag and/or quote and the rest
  * @returns {?string} - sanitized URL
  */
 export const sanitizeURLSync = (url, opt) => {
@@ -662,6 +667,10 @@ export const sanitizeURLSync = (url, opt) => {
  *
  * @param {string} url - URL
  * @param {object} opt - options
+ * @param {Array.<string>} opt.allow - array of allowed schemes
+ * @param {Array.<string>} opt.deny - array of denied schemes
+ * @param {Array.<string>} opt.only - array of specific schemes to allow
+ * @param {boolean} opt.remove - remove tag and/or quote and the rest
  * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt = {
