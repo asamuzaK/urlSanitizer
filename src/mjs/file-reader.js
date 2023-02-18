@@ -3,8 +3,8 @@
  */
 
 /* shared */
-import { getType, isString } from './common.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
+import { getType, isString } from './common.js';
 
 /* constants */
 const DONE = 2;
@@ -141,7 +141,7 @@ export class FileReader extends EventTarget {
    *
    * @param {object} blob - blob
    * @param {string} format - format to read as
-   * @param {string} encoding - character encoding
+   * @param {string} [encoding] - character encoding
    * @returns {void}
    */
   async _read(blob, format, encoding = '') {

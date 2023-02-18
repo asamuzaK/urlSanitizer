@@ -4,7 +4,6 @@
 
 import fs, { promises as fsPromise } from 'node:fs';
 import path from 'node:path';
-
 import { getType, isString } from './common.js';
 
 /* constants */
@@ -34,8 +33,8 @@ export const isFile = file => {
 /**
  * create a file
  *
- * @param {string} file - file path to create
- * @param {string} value - value to write
+ * @param {!string} file - file path to create
+ * @param {!string} value - value to write
  * @returns {string} - file path
  */
 export const createFile = async (file, value) => {
@@ -55,7 +54,7 @@ export const createFile = async (file, value) => {
 /**
  * fetch text
  *
- * @param {string} url - URL
+ * @param {!string} url - URL
  * @returns {string} - content text
  */
 export const fetchText = async url => {

@@ -3,10 +3,10 @@
  */
 
 /* api */
+import sinon from 'sinon';
 import { assert } from 'chai';
 import { describe, it } from 'mocha';
 import { sleep } from '../modules/common.js';
-import sinon from 'sinon';
 
 /* test */
 import {

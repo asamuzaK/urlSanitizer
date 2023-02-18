@@ -3,11 +3,11 @@
  */
 
 /* shared */
-import { FileReader } from './file-reader.js';
-import { getType, isString } from './common.js';
-import domPurify from './dompurify.js';
 import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
+import domPurify from './dompurify.js';
+import { getType, isString } from './common.js';
+import { FileReader } from './file-reader.js';
 
 /* constants */
 const HEX = 16;
@@ -42,27 +42,27 @@ const REG_URL_ENC_AMP = /%26/g;
  * @typedef {object} ParsedURL
  * @property {string} input - URL input
  * @property {boolean} valid - is valid URI
- * @property {object} data - parsed result of data URL, `null`able
- * @property {string} data.mime - MIME type
- * @property {boolean} data.base64 - is base64 encoded
- * @property {string} data.data - data part of the data URL
- * @property {string} href - sanitized URL input
- * @property {string} origin - scheme, domain and port of the sanitized URL
- * @property {string} protocol -  protocol scheme of the sanitized URL
- * @property {string} username - username specified before the domain name
- * @property {string} password - password specified before the domain name
- * @property {string} host - domain and port of the sanitized URL
- * @property {string} hostname - domain of the sanitized URL
- * @property {string} port - port number of the sanitized URL
- * @property {string} pathname - path of the sanitized URL
- * @property {string} search - query string of the sanitized URL
- * @property {string} hash - fragment identifier of the sanitized URL
+ * @property {object} [data] - parsed result of data URL, `null`able
+ * @property {string} [data.mime] - MIME type
+ * @property {boolean} [data.base64] - is base64 encoded
+ * @property {string} [data.data] - data part of the data URL
+ * @property {string} [href] - sanitized URL input
+ * @property {string} [origin] - scheme, domain and port of the sanitized URL
+ * @property {string} [protocol] -  protocol scheme of the sanitized URL
+ * @property {string} [username] - username specified before the domain name
+ * @property {string} [password] - password specified before the domain name
+ * @property {string} [host] - domain and port of the sanitized URL
+ * @property {string} [hostname] - domain of the sanitized URL
+ * @property {string} [port] - port number of the sanitized URL
+ * @property {string} [pathname] - path of the sanitized URL
+ * @property {string} [search] - query string of the sanitized URL
+ * @property {string} [hash] - fragment identifier of the sanitized URL
  */
 
 /**
  * get URL encoded string
  *
- * @param {string} str - string
+ * @param {!string} str - string
  * @returns {string} - URL encoded string
  */
 export const getURLEncodedString = str => {
@@ -108,7 +108,7 @@ export const escapeURLEncodedHTMLChars = ch => {
 /**
  * parse base64 encoded data
  *
- * @param {string} data - base64 encoded data
+ * @param {!string} data - base64 encoded data
  * @returns {string} - parsed text data / base64 encoded data if binary
  */
 export const parseBase64 = data => {
@@ -132,8 +132,8 @@ export const parseBase64 = data => {
 /**
  * parse URL encoded numeric character references in the range 0x00 to 0xFF
  *
- * @param {string} str - string
- * @param {number} nest - nest level
+ * @param {!string} str - string
+ * @param {number} [nest] - nest level
  * @returns {string} - parsed string
  */
 export const parseURLEncodedNumCharRef = (str, nest = 0) => {
@@ -232,7 +232,7 @@ export class URISchemes {
    * add scheme
    * NOTE: `javascript` and/or `vbscript` schemes can not be registered
    *
-   * @param {string} scheme - scheme
+   * @param {!string} scheme - scheme
    * @returns {Array.<string>} - array of schemes
    */
   add(scheme) {
@@ -296,7 +296,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * replace matched data URLs
    *
-   * @param {string} data - data URL
+   * @param {!string} data - data URL
    * @returns {string} - replaced data URL
    */
   replace(data) {
@@ -335,7 +335,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * purify URL encoded DOM
    *
-   * @param {string} dom - DOM string
+   * @param {!string} dom - DOM string
    * @returns {string} - purified DOM string
    */
   purify(dom) {
@@ -358,11 +358,11 @@ export class URLSanitizer extends URISchemes {
    *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL
-   * @param {object} opt - options
-   * @param {Array.<string>} opt.allow - array of allowed schemes
-   * @param {Array.<string>} opt.deny - array of denied schemes
-   * @param {Array.<string>} opt.only - array of specific schemes to allow
-   * @param {boolean} opt.remove - remove tag and/or quote and the rest
+   * @param {object} [opt] - options
+   * @param {Array.<string>} [opt.allow] - array of allowed schemes
+   * @param {Array.<string>} [opt.deny] - array of denied schemes
+   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {
@@ -539,8 +539,12 @@ export class URLSanitizer extends URISchemes {
   /**
    * parse sanitized URL
    *
-   * @param {string} url - URL
-   * @param {object} opt - options
+   * @param {!string} url - URL
+   * @param {object} [opt] - options
+   * @param {Array.<string>} [opt.allow] - array of allowed schemes
+   * @param {Array.<string>} [opt.deny] - array of denied schemes
+   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {ParsedURL} - result with additional props based on URL API
    */
   parse(url, opt) {
@@ -636,11 +640,11 @@ export const parseURL = async url => {
  *       `blob` scheme returns `null`
  *
  * @param {string} url - URL
- * @param {object} opt - options
- * @param {Array.<string>} opt.allow - array of allowed schemes
- * @param {Array.<string>} opt.deny - array of denied schemes
- * @param {Array.<string>} opt.only - array of specific schemes to allow
- * @param {boolean} opt.remove - remove tag and/or quote and the rest
+ * @param {object} [opt] - options
+ * @param {Array.<string>} [opt.allow] - array of allowed schemes
+ * @param {Array.<string>} [opt.deny] - array of denied schemes
+ * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+ * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
  * @returns {?string} - sanitized URL
  */
 export const sanitizeURLSync = (url, opt) => {
@@ -666,11 +670,11 @@ export const sanitizeURLSync = (url, opt) => {
  *       given a `blob` URL, returns a sanitized `data` URL
  *
  * @param {string} url - URL
- * @param {object} opt - options
- * @param {Array.<string>} opt.allow - array of allowed schemes
- * @param {Array.<string>} opt.deny - array of denied schemes
- * @param {Array.<string>} opt.only - array of specific schemes to allow
- * @param {boolean} opt.remove - remove tag and/or quote and the rest
+ * @param {object} [opt] - options
+ * @param {Array.<string>} [opt.allow] - array of allowed schemes
+ * @param {Array.<string>} [opt.deny] - array of denied schemes
+ * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+ * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
  * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt = {

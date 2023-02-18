@@ -1,11 +1,11 @@
 /* api */
-import { assert } from 'chai';
-import { afterEach, beforeEach, describe, it } from 'mocha';
-import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
-import sinon from 'sinon';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import sinon from 'sinon';
+import { assert } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'mocha';
+import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {

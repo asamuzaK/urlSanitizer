@@ -3,13 +3,13 @@
  */
 
 /* api */
-import { isString, throwErr } from './common.js';
-import { createFile, fetchText, isFile } from './file-util.js';
-import { program as commander } from 'commander';
-import csvToJson from 'csvtojson';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import csvToJson from 'csvtojson';
+import { program as commander } from 'commander';
+import { isString, throwErr } from './common.js';
+import { createFile, fetchText, isFile } from './file-util.js';
 
 /* constants */
 const BASE_URL_IANA = 'https://www.iana.org/assignments/uri-schemes/';

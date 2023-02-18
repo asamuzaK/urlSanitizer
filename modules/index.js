@@ -3,9 +3,9 @@
  */
 
 /* api */
-import { logErr, throwErr } from './common.js';
-import { parseCommand } from './commander.js';
 import process from 'node:process';
+import { parseCommand } from './commander.js';
+import { logErr, throwErr } from './common.js';
 
 /* process */
 process.on('uncaughtException', throwErr);
