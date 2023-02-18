@@ -20,6 +20,8 @@
   "main": "src/index.js",
   "browser": "dist/url-sanitizer.js",
   "dependencies": {
+    "@types/dompurify": "^2.4.0",
+    "@types/jsdom": "^21.1.0",
     "dompurify": "^3.0.0",
     "jsdom": "^21.1.0"
   },
@@ -44,10 +46,11 @@
     "mocha": "^10.2.0",
     "npm-run-all": "^4.1.5",
     "sinon": "^15.0.1",
+    "typescript": "^4.9.5",
     "undici": "^5.19.1"
   },
   "scripts": {
-    "build": "npm run include && npm run char && npm run lint && npm test && npm run copy && npm run bundle",
+    "build": "npm run include && npm run char && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
     "bundle": "npm-run-all -s bundle-*",
     "bundle-src": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.js --bundle --sourcemap bundle/index.js",
     "bundle-src-wo-dompurify": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer-wo-dompurify.js --bundle --sourcemap bundle_wo_dompurify/index.js",
@@ -62,7 +65,8 @@
     "include": "node modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
-    "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html"
+    "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
+    "tsc": "node -e \"fs.rmSync('types',{recursive:true,force:true})\" && npx tsc"
   },
   "version": "0.8.10"
 }
