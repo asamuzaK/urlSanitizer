@@ -18,6 +18,7 @@
   ],
   "type": "module",
   "main": "src/index.js",
+  "types": "types/index.d.ts",
   "browser": "dist/url-sanitizer.js",
   "dependencies": {
     "@types/dompurify": "^2.4.0",
