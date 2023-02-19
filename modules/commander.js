@@ -3,13 +3,14 @@
  */
 
 /* api */
-import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import csvToJson from 'csvtojson';
 import { program as commander } from 'commander';
-import { isString, throwErr } from './common.js';
-import { createFile, fetchText, isFile } from './file-util.js';
+import { throwErr } from './common.js';
+import {
+  createFile, fetchText, isDir, isFile, removeDir, rename
+} from './file-util.js';
 
 /* constants */
 const BASE_URL_IANA = 'https://www.iana.org/assignments/uri-schemes/';
@@ -101,13 +102,24 @@ export const createCharTable = cmdOpts =>
  */
 export const renameFile = (cmdOpts = {}) => {
   const { newpath, oldpath, info } = cmdOpts;
-  if (!isFile(oldpath)) {
-    throw new Error(`No such file: ${oldpath}`);
+  rename(oldpath, newpath);
+  if (isFile(newpath) && info) {
+    console.info(`Renamed: ${oldpath} to ${newpath}`);
   }
-  if (isString(newpath)) {
-    fs.renameSync(oldpath, newpath);
+};
+
+/**
+ * clean directory
+ *
+ * @param {object} cmdOpts - command options
+ * @returns {void}
+ */
+export const cleanDirectory = (cmdOpts = {}) => {
+  const { dir, info } = cmdOpts;
+  if (isDir(dir)) {
+    removeDir(dir);
     if (info) {
-      console.info(`Renamed: ${oldpath} to ${newpath}`);
+      console.info(`Removed: ${path.resolve(dir)}`);
     }
   }
 };
@@ -120,7 +132,7 @@ export const renameFile = (cmdOpts = {}) => {
  */
 export const parseCommand = args => {
   const reg =
-    /^(?:(?:--)?help|-[h|v]|--version|c(?:har)?|i(?:nclude)?|r(?:ename))$/;
+    /^(?:(?:--)?help|-[h|v]|--version|c(?:har|lean)?|i(?:nclude)?|r(?:ename))$/;
   if (Array.isArray(args) && args.some(arg => reg.test(arg))) {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
@@ -133,6 +145,11 @@ export const parseCommand = args => {
       .option('-d, --dir <name>', 'specify library directory')
       .option('-i, --info', 'console info')
       .action(includeLibraries);
+    commander.command('clean')
+      .description('clean directory')
+      .option('-d, --dir <name>', 'specify directory')
+      .option('-i, --info', 'console info')
+      .action(cleanDirectory);
     commander.command('rename').alias('r')
       .description('rename file')
       .option('-o, --oldpath <name>', 'old path')

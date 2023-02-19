@@ -62,7 +62,7 @@ const REG_URL_ENC_AMP = /%26/g;
 /**
  * get URL encoded string
  *
- * @param {!string} str - string
+ * @param {string} str - string
  * @returns {string} - URL encoded string
  */
 export const getURLEncodedString = str => {
@@ -108,7 +108,7 @@ export const escapeURLEncodedHTMLChars = ch => {
 /**
  * parse base64 encoded data
  *
- * @param {!string} data - base64 encoded data
+ * @param {string} data - base64 encoded data
  * @returns {string} - parsed text data / base64 encoded data if binary
  */
 export const parseBase64 = data => {
@@ -132,7 +132,7 @@ export const parseBase64 = data => {
 /**
  * parse URL encoded numeric character references in the range 0x00 to 0xFF
  *
- * @param {!string} str - string
+ * @param {string} str - string
  * @param {number} [nest] - nest level
  * @returns {string} - parsed string
  */
@@ -232,7 +232,7 @@ export class URISchemes {
    * add scheme
    * NOTE: `javascript` and/or `vbscript` schemes can not be registered
    *
-   * @param {!string} scheme - scheme
+   * @param {string} scheme - scheme
    * @returns {Array.<string>} - array of schemes
    */
   add(scheme) {
@@ -296,7 +296,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * replace matched data URLs
    *
-   * @param {!string} data - data URL
+   * @param {string} data - data URL
    * @returns {string} - replaced data URL
    */
   replace(data) {
@@ -335,7 +335,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * purify URL encoded DOM
    *
-   * @param {!string} dom - DOM string
+   * @param {string} dom - DOM string
    * @returns {string} - purified DOM string
    */
   purify(dom) {
@@ -539,7 +539,7 @@ export class URLSanitizer extends URISchemes {
   /**
    * parse sanitized URL
    *
-   * @param {!string} url - URL
+   * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
    * @param {Array.<string>} [opt.deny] - array of denied schemes
