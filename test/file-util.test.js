@@ -1,15 +1,15 @@
 /* api */
-import fs from 'node:fs';
+import fs, { promises as fsPromise } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
+import sinon from 'sinon';
 import { assert } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
 import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  createFile, fetchText, getStat, isFile
+  createFile, fetchText, getStat, isDir, isFile, removeDir, rename
 } from '../modules/file-util.js';
 
 /* constants */
@@ -32,6 +32,18 @@ describe('getStat', () => {
   });
 });
 
+describe('isDir', () => {
+  it('should get true if dir exists', () => {
+    const p = path.resolve(path.join('test', 'file'));
+    assert.strictEqual(isDir(p), true);
+  });
+
+  it('should get false if dir does not exist', () => {
+    const p = path.resolve(path.join('test', 'foo'));
+    assert.strictEqual(isDir(p), false);
+  });
+});
+
 describe('isFile', () => {
   it('should get true if file exists', () => {
     const p = path.resolve('test', 'file', 'test.txt');
@@ -41,6 +53,39 @@ describe('isFile', () => {
   it('should get false if file does not exist', () => {
     const p = path.resolve('test', 'file', 'foo.txt');
     assert.isFalse(isFile(p));
+  });
+});
+
+describe('removeDir', () => {
+  it('should throw', () => {
+    const foo = path.resolve('foo');
+    assert.isFalse(isDir(foo));
+    assert.throws(() => removeDir(foo), `No such directory: ${foo}`);
+  });
+
+  it("should remove dir and it's files", async () => {
+    const dirPath = path.join(TMPDIR, 'url-sanitizer');
+    fs.mkdirSync(dirPath);
+    const subDirPath = path.join(dirPath, 'foo');
+    fs.mkdirSync(subDirPath);
+    const filePath = path.join(subDirPath, 'test.txt');
+    const value = 'test file.\n';
+    await fsPromise.writeFile(filePath, value, {
+      encoding: 'utf8', flag: 'w', mode: 0o666
+    });
+    const res1 = await Promise.all([
+      fs.existsSync(dirPath),
+      fs.existsSync(subDirPath),
+      fs.existsSync(filePath)
+    ]);
+    removeDir(dirPath);
+    const res2 = await Promise.all([
+      fs.existsSync(dirPath),
+      fs.existsSync(subDirPath),
+      fs.existsSync(filePath)
+    ]);
+    assert.deepEqual(res1, [true, true, true]);
+    assert.deepEqual(res2, [false, false, false]);
   });
 });
 
@@ -72,6 +117,39 @@ describe('createFile', () => {
     createFile(file).catch(e => {
       assert.strictEqual(e.message, 'Expected String but got Undefined.');
     });
+  });
+});
+
+describe('rename file or directory', () => {
+  it('should throw', () => {
+    assert.throws(() => rename(),
+      'No such file or directory: undefined');
+  });
+
+  it('should throw if file does not exist', () => {
+    const oldpath = path.resolve('test', 'file', 'foo.txt');
+    const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
+    assert.throws(() => rename(oldpath, newpath),
+      `No such file or directory: ${oldpath}`);
+  });
+
+  it('should not call function', () => {
+    const stubRename = sinon.stub(fs, 'renameSync');
+    const oldpath = path.resolve('test', 'file', 'test.txt');
+    rename(oldpath);
+    const { called: calledRename } = stubRename;
+    stubRename.restore();
+    assert.isFalse(calledRename, 'not called');
+  });
+
+  it('should call function', () => {
+    const stubRename = sinon.stub(fs, 'renameSync');
+    const oldpath = path.resolve('test', 'file', 'test.txt');
+    const newpath = path.resolve('test', 'file', 'test-renamed.txt');
+    rename(oldpath, newpath);
+    const { calledOnce: calledRename } = stubRename;
+    stubRename.restore();
+    assert.isTrue(calledRename, 'called');
   });
 });
 

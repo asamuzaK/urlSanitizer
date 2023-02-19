@@ -9,8 +9,8 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  commander, createCharTable, includeLibraries, parseCommand, renameFile,
-  saveUriSchemes, storeTextChars
+  commander, cleanDirectory, createCharTable, includeLibraries, parseCommand,
+  renameFile, saveUriSchemes, storeTextChars
 } from '../modules/commander.js';
 
 const BASE_URL_IANA = 'https://www.iana.org';
@@ -236,18 +236,22 @@ describe('create a table of chars', () => {
 describe('rename file', () => {
   it('should throw', () => {
     assert.throws(() => renameFile(),
-      'No such file: undefined');
+      'No such file or directory: undefined');
   });
 
   it('should throw if file does not exist', () => {
     const oldpath = path.resolve('test', 'file', 'foo.txt');
     const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
     assert.throws(() => renameFile({ oldpath, newpath }),
-      `No such file: ${oldpath}`);
+      `No such file or directory: ${oldpath}`);
   });
 
   it('should call function', () => {
     const stubRename = sinon.stub(fs, 'renameSync');
+    const stubExists = sinon.stub(fs, 'existsSync').returns(true);
+    const stubStat = sinon.stub(fs, 'statSync').returns({
+      isFile: () => true
+    });
     const stubInfo = sinon.stub(console, 'info');
     const oldpath = path.resolve('test', 'file', 'test.txt');
     const newpath = path.resolve('test', 'file', 'test-renamed.txt');
@@ -255,6 +259,8 @@ describe('rename file', () => {
     const { calledOnce: calledRename } = stubRename;
     const { called: calledInfo } = stubInfo;
     stubRename.restore();
+    stubExists.restore();
+    stubStat.restore();
     stubInfo.restore();
     assert.isTrue(calledRename, 'called');
     assert.isFalse(calledInfo, 'called');
@@ -262,6 +268,10 @@ describe('rename file', () => {
 
   it('should call function', () => {
     const stubRename = sinon.stub(fs, 'renameSync');
+    const stubExists = sinon.stub(fs, 'existsSync').returns(true);
+    const stubStat = sinon.stub(fs, 'statSync').returns({
+      isFile: () => true
+    });
     const stubInfo = sinon.stub(console, 'info');
     const oldpath = path.resolve('test', 'file', 'test.txt');
     const newpath = path.resolve('test', 'file', 'test-renamed.txt');
@@ -273,9 +283,48 @@ describe('rename file', () => {
     const { calledOnce: calledRename } = stubRename;
     const { calledOnce: calledInfo } = stubInfo;
     stubRename.restore();
+    stubExists.restore();
+    stubStat.restore();
     stubInfo.restore();
     assert.isTrue(calledRename, 'called');
     assert.isTrue(calledInfo, 'called');
+  });
+});
+
+describe('clean directory', () => {
+  it('should not call funtion', () => {
+    const stubRm = sinon.stub(fs, 'rmSync');
+    const dir = path.resolve('foo');
+    cleanDirectory({ dir });
+    const { called: rmCalled } = stubRm;
+    stubRm.restore();
+    assert.isFalse(rmCalled, 'not called');
+  });
+
+  it('should call funtion', () => {
+    const stubRm = sinon.stub(fs, 'rmSync');
+    const stubInfo = sinon.stub(console, 'info');
+    const dir = path.resolve('test', 'file');
+    cleanDirectory({ dir });
+    const { calledOnce: rmCalled } = stubRm;
+    const { called: infoCalled } = stubInfo;
+    stubRm.restore();
+    stubInfo.restore();
+    assert.isTrue(rmCalled, 'called');
+    assert.isFalse(infoCalled, 'not called');
+  });
+
+  it('should call funtion', () => {
+    const stubRm = sinon.stub(fs, 'rmSync');
+    const stubInfo = sinon.stub(console, 'info');
+    const dir = path.resolve('test', 'file');
+    cleanDirectory({ dir, info: true });
+    const { calledOnce: rmCalled } = stubRm;
+    const { calledOnce: infoCalled } = stubInfo;
+    stubRm.restore();
+    stubInfo.restore();
+    assert.isTrue(rmCalled, 'called');
+    assert.isTrue(infoCalled, 'not called');
   });
 });
 

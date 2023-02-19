@@ -20,6 +20,17 @@ export const getStat = file =>
   isString(file) && fs.existsSync(file) ? fs.statSync(file) : null;
 
 /**
+ * the directory is a directory
+ *
+ * @param {string} dir - directory path
+ * @returns {boolean} - result
+ */
+export const isDir = dir => {
+  const stat = getStat(dir);
+  return stat ? stat.isDirectory() : false;
+};
+
+/**
  * the file is a file
  *
  * @param {string} file - file path
@@ -28,6 +39,22 @@ export const getStat = file =>
 export const isFile = file => {
   const stat = getStat(file);
   return stat ? stat.isFile() : false;
+};
+
+/**
+ * remove the directory and it's files synchronously
+ *
+ * @param {string} dir - directory path
+ * @returns {void}
+ */
+export const removeDir = dir => {
+  if (!isDir(dir)) {
+    throw new Error(`No such directory: ${dir}`);
+  }
+  fs.rmSync(dir, {
+    force: true,
+    recursive: true
+  });
 };
 
 /**
@@ -49,6 +76,22 @@ export const createFile = async (file, value) => {
     encoding: CHAR, flag: 'w', mode: PERM_FILE
   });
   return filePath;
+};
+
+/**
+ * rename file or directory
+ *
+ * @param {string} oldpath - old path
+ * @param {string} newpath - new path
+ * @returns {void}
+ */
+export const rename = (oldpath, newpath) => {
+  if (!(isFile(oldpath) || isDir(oldpath))) {
+    throw new Error(`No such file or directory: ${oldpath}`);
+  }
+  if (isString(newpath)) {
+    fs.renameSync(oldpath, path.resolve(newpath));
+  }
 };
 
 /**
