@@ -1,15 +1,3 @@
-// bundle_wo_dompurify/mjs/file-reader.js
-var { FileReader } = window;
-
-// bundle_wo_dompurify/mjs/common.js
-var TYPE_FROM = 8;
-var TYPE_TO = -1;
-var getType = (o) => Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
-var isString = (o) => typeof o === "string" || o instanceof String;
-
-// bundle_wo_dompurify/mjs/dompurify.js
-var { DOMPurify } = window;
-
 // bundle_wo_dompurify/lib/file/text-chars.json
 var text_chars_default = [
   7,
@@ -595,6 +583,18 @@ var uri_schemes_default = [
   "z39.50s"
 ];
 
+// bundle_wo_dompurify/mjs/dompurify.js
+var { DOMPurify } = window;
+
+// bundle_wo_dompurify/mjs/common.js
+var TYPE_FROM = 8;
+var TYPE_TO = -1;
+var getType = (o) => Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
+var isString = (o) => typeof o === "string" || o instanceof String;
+
+// bundle_wo_dompurify/mjs/file-reader.js
+var { FileReader } = window;
+
 // bundle_wo_dompurify/mjs/uri-util.js
 var HEX = 16;
 var REG_BASE64 = /^[\da-z+/\-_=]+$/i;
@@ -863,11 +863,11 @@ var URLSanitizer = class extends URISchemes {
    *       `javascript` and `vbscript` schemes can not be allowed
    *
    * @param {string} url - URL
-   * @param {object} opt - options
-   * @param {Array.<string>} opt.allow - array of allowed schemes
-   * @param {Array.<string>} opt.deny - array of denied schemes
-   * @param {Array.<string>} opt.only - array of specific schemes to allow
-   * @param {boolean} opt.remove - remove tag and/or quote and the rest
+   * @param {object} [opt] - options
+   * @param {Array.<string>} [opt.allow] - array of allowed schemes
+   * @param {Array.<string>} [opt.deny] - array of denied schemes
+   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt = { allow: [], deny: [], only: [] }) {
@@ -1033,32 +1033,14 @@ var URLSanitizer = class extends URISchemes {
     return sanitizedUrl || null;
   }
   /**
-   * object with additional properties based on URL API
-   *
-   * @typedef {object} ParsedURL
-   * @property {string} input - URL input
-   * @property {boolean} valid - is valid URI
-   * @property {object} data - parsed result of data URL, `null`able
-   * @property {string} data.mime - MIME type
-   * @property {boolean} data.base64 - is base64 encoded
-   * @property {string} data.data - data part of the data URL
-   * @property {string} href - sanitized URL input
-   * @property {string} origin - scheme, domain and port of the sanitized URL
-   * @property {string} protocol -  protocol scheme of the sanitized URL
-   * @property {string} username - username specified before the domain name
-   * @property {string} password - password specified before the domain name
-   * @property {string} host - domain and port of the sanitized URL
-   * @property {string} hostname - domain of the sanitized URL
-   * @property {string} port - port number of the sanitized URL
-   * @property {string} pathname - path of the sanitized URL
-   * @property {string} search - query string of the sanitized URL
-   * @property {string} hash - fragment identifier of the sanitized URL
-   */
-  /**
    * parse sanitized URL
    *
    * @param {string} url - URL
-   * @param {object} opt - options
+   * @param {object} [opt] - options
+   * @param {Array.<string>} [opt.allow] - array of allowed schemes
+   * @param {Array.<string>} [opt.deny] - array of denied schemes
+   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {ParsedURL} - result with additional props based on URL API
    */
   parse(url, opt) {
