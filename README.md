@@ -46,12 +46,12 @@ Sanitize the given URL.
 ### Parameters
 
 * `url` **[string][1]** URL input.
-* `opt` **[object][3]** Options.
-  * `opt.allow` **[Array][4]<[string][1]>** Array of allowed schemes, e.g. `['data']`.
-  * `opt.deny` **[Array][4]<[string][1]>** Array of denied schemes, e.g. `['web+foo']`.
-  * `opt.only` **[Array][4]<[string][1]>** Array of specific schemes to allow, e.g. `['git', 'https']`.
+* `opt` **[object][3]?** Options.
+  * `opt.allow` **[Array][4]<[string][1]>?** Array of allowed schemes, e.g. `['data']`.
+  * `opt.deny` **[Array][4]<[string][1]>?** Array of denied schemes, e.g. `['web+foo']`.
+  * `opt.only` **[Array][4]<[string][1]>?** Array of specific schemes to allow, e.g. `['git', 'https']`.
     `only` takes precedence over `allow` and `deny`.
-  * `opt.remove` **[boolean][2]** Remove tag or quote and the rest following it.
+  * `opt.remove` **[boolean][2]?** Remove tag or quote and the rest following it.
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
@@ -179,21 +179,21 @@ Type: [object][3]
 
 * `input` **[string][1]** URL input.
 * `valid` **[boolean][2]** Is valid URI.
-* `data` **[object][3]** Parsed result of data URL, `null`able.
-  * `data.mime` **[string][1]** MIME type.
-  * `data.base64` **[boolean][2]** Is base64 encoded.
-  * `data.data` **[string][1]** Data part of the data URL.
-* `href` **[string][1]** Sanitized URL input.
-* `origin` **[string][1]** Scheme, domain and port of the sanitized URL.
-* `protocol` **[string][1]** Protocol scheme of the sanitized URL.
-* `username` **[string][1]** Username specified before the domain name.
-* `password` **[string][1]** Password specified before the domain name.
-* `host` **[string][1]** Domain and port of the sanitized URL.
-* `hostname` **[string][1]** Domain of the sanitized URL.
-* `port` **[string][1]** Port number of the sanitized URL.
-* `pathname` **[string][1]** Path of the sanitized URL.
-* `search` **[string][1]** Query string of the sanitized URL.
-* `hash` **[string][1]** Fragment identifier of the sanitized URL.
+* `data` **[object][3]?** Parsed result of data URL, `null`able.
+  * `data.mime` **[string][1]?** MIME type.
+  * `data.base64` **[boolean][2]?** Is base64 encoded.
+  * `data.data` **[string][1]?** Data part of the data URL.
+* `href` **[string][1]?** Sanitized URL input.
+* `origin` **[string][1]?** Scheme, domain and port of the sanitized URL.
+* `protocol` **[string][1]?** Protocol scheme of the sanitized URL.
+* `username` **[string][1]?** Username specified before the domain name.
+* `password` **[string][1]?** Password specified before the domain name.
+* `host` **[string][1]?** Domain and port of the sanitized URL.
+* `hostname` **[string][1]?** Domain of the sanitized URL.
+* `port` **[string][1]?** Port number of the sanitized URL.
+* `pathname` **[string][1]?** Path of the sanitized URL.
+* `search` **[string][1]?** Query string of the sanitized URL.
+* `hash` **[string][1]?** Fragment identifier of the sanitized URL.
 
 ```javascript
 const res1 = await parseURL('javascript:alert(1)');
