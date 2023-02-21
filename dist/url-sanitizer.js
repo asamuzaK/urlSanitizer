@@ -2115,12 +2115,20 @@ var URLSanitizer = class extends URISchemes {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    const sanitizedUrl = this.sanitize(url, opt ?? {
-      allow: ["blob", "data", "file"]
-    });
     const parsedUrl = /* @__PURE__ */ new Map([
       ["input", url]
     ]);
+    let sanitizedUrl;
+    if (this.verify(url)) {
+      const { protocol } = new URL(url);
+      if (protocol === "blob:") {
+        sanitizedUrl = url;
+      } else {
+        sanitizedUrl = this.sanitize(url, opt ?? {
+          allow: ["data", "file"]
+        });
+      }
+    }
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
       const { pathname, protocol } = urlObj;
