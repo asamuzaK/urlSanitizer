@@ -98,7 +98,7 @@ const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
 });
 const url4 = URL.createObjectURL(blob4);
 const res4 = await sanitizeURL(url4, {
- allow: ['blob']
+  allow: ['blob']
 });
 // => 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
 
