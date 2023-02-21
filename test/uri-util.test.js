@@ -1554,6 +1554,28 @@ describe('uri-util', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = null;
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
         const url = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
         const obj = new URL(url);
         const items = {};

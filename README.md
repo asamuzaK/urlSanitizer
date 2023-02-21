@@ -162,6 +162,7 @@ Synchronous version of the [sanitizeURL()](#sanitizeurlurl-opt).
 ## parseURL(url)
 
 Parse the given URL.
+* Blob URLs are simply parsed and not yet sanitized.
 
 ### Parameters
 
@@ -249,6 +250,22 @@ const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAA
         protocol: 'data:',
         pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         ...
+      } */
+
+// Note that blob URLs are parsed but not yet sanitized
+const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+  type: 'image/svg+xml'
+});
+const url4 = URL.createObjectURL(blob);
+const res4 = await parseURL(url);
+/* => {
+        input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
+        valid: true,
+        data: null,
+        href: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
+        origin: 'null',
+        protocol: 'blob:',
+        pathname: 'nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
       } */
 ```
 

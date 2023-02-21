@@ -8,6 +8,7 @@ import urlSanitizer, {
 } from '../../dist/url-sanitizer-wo-dompurify.js';
 
 const { chai: { assert }, describe, it } = globalThis;
+const isString = o => typeof o === 'string';
 
 describe('dist URL Sanitizer', () => {
   describe('urlSanitizer', () => {
@@ -300,6 +301,27 @@ describe('dist URL Sanitizer', () => {
         hash: ''
       }, 'result');
     });
+
+    it('should get value', async () => {
+      const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+        type: 'image/svg+xml'
+      });
+      const url = URL.createObjectURL(blob);
+      const obj = new URL(url);
+      const items = {};
+      for (const key in obj) {
+        const value = obj[key];
+        if (isString(value)) {
+          items[key] = value;
+        }
+      }
+      items.input = url;
+      items.valid = true;
+      items.data = null;
+      const res = await parseURL(url);
+      URL.revokeObjectURL(url);
+      assert.deepEqual(res, items, 'result');
+    });
   });
 
   describe('parse URL sync', () => {
@@ -360,6 +382,27 @@ describe('dist URL Sanitizer', () => {
         search: '',
         hash: ''
       }, 'result');
+    });
+
+    it('should get value', () => {
+      const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+        type: 'image/svg+xml'
+      });
+      const url = URL.createObjectURL(blob);
+      const obj = new URL(url);
+      const items = {};
+      for (const key in obj) {
+        const value = obj[key];
+        if (isString(value)) {
+          items[key] = value;
+        }
+      }
+      items.input = url;
+      items.valid = true;
+      items.data = null;
+      const res = parseURLSync(url);
+      URL.revokeObjectURL(url);
+      assert.deepEqual(res, items, 'result');
     });
   });
 
