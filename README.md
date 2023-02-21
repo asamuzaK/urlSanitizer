@@ -253,11 +253,11 @@ const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAA
       } */
 
 // Note that blob URLs are parsed but not yet sanitized
-const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
-const url4 = URL.createObjectURL(blob4);
-const res4 = await parseURL(url4);
+const url5 = URL.createObjectURL(blob5);
+const res5 = await parseURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
