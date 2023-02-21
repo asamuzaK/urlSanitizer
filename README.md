@@ -256,8 +256,8 @@ const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAA
 const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
-const url4 = URL.createObjectURL(blob);
-const res4 = await parseURL(url);
+const url4 = URL.createObjectURL(blob4);
+const res4 = await parseURL(url4);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
@@ -266,6 +266,7 @@ const res4 = await parseURL(url);
         origin: 'null',
         protocol: 'blob:',
         pathname: 'nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
+        ...
       } */
 ```
 
