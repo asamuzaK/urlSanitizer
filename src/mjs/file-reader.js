@@ -30,7 +30,13 @@ export class ProgressEvent extends Event {
    * construct
    *
    * @param {string} type - type
-   * @param {object} opt - init options
+   * @param {object} [opt] - init options
+   * @param {boolean} [opt.bubbles] - bubbles
+   * @param {boolean} [opt.cancelable] - cancelable
+   * @param {boolean} [opt.composed] - composed
+   * @param {boolean} [opt.lengthComputable] - lengthComputable
+   * @param {number} [opt.loaded] - loaded
+   * @param {number} [opt.total] - total
    */
   constructor(type, opt = {}) {
     const { lengthComputable, loaded, total } = opt;
@@ -174,14 +180,13 @@ export class FileReader extends EventTarget {
             res = binary;
             this._dispatchProgressEvent('progress');
             break;
-          case 'dataURL': {
+          case 'dataURL':
             if (!header.length || header[header.length - 1] !== 'base64') {
               header.push('base64');
             }
             res = `data:${header.join(';')},${btoa(binary)}`;
             this._dispatchProgressEvent('progress');
             break;
-          }
           // NOTE: exec only if encoding matches
           case 'text': {
             const textCharCodes = new Set(textChars);
