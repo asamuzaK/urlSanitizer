@@ -39,8 +39,14 @@ export class ProgressEvent extends Event {
    * @param {number} [opt.total] - total
    */
   constructor(type, opt = {}) {
-    const { lengthComputable, loaded, total } = opt;
-    super(type, opt);
+    const {
+      bubbles, cancelable, composed, lengthComputable, loaded, total
+    } = opt;
+    super(type, {
+      bubbles,
+      cancelable,
+      composed
+    });
     this.#lengthComputable = lengthComputable ?? false;
     this.#loaded = loaded ?? 0;
     this.#total = total ?? 0;
