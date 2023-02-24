@@ -28,15 +28,55 @@ describe('file-reader', () => {
       });
 
       it('should get value', () => {
+        const evt = new ProgressEvent('abort', {
+          lengthComputable: true
+        });
+        const res = evt.lengthComputable;
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get value', () => {
         const evt = new ProgressEvent('abort');
         const res = evt.loaded;
         assert.strictEqual(res, 0, 'result');
       });
 
       it('should get value', () => {
+        const evt = new ProgressEvent('abort', {
+          loaded: -1
+        });
+        const res = evt.loaded;
+        assert.strictEqual(res, 0, 'result');
+      });
+
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort', {
+          loaded: 1
+        });
+        const res = evt.loaded;
+        assert.strictEqual(res, 1, 'result');
+      });
+
+      it('should get value', () => {
         const evt = new ProgressEvent('abort');
         const res = evt.total;
         assert.strictEqual(res, 0, 'result');
+      });
+
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort', {
+          total: -1
+        });
+        const res = evt.total;
+        assert.strictEqual(res, 0, 'result');
+      });
+
+      it('should get value', () => {
+        const evt = new ProgressEvent('abort', {
+          total: 1
+        });
+        const res = evt.total;
+        assert.strictEqual(res, 1, 'result');
       });
     });
   });

@@ -43,13 +43,13 @@ export class ProgressEvent extends Event {
       bubbles, cancelable, composed, lengthComputable, loaded, total
     } = opt;
     super(type, {
-      bubbles,
-      cancelable,
-      composed
+      bubbles: !!bubbles,
+      cancelable: !!cancelable,
+      composed: !!composed
     });
-    this.#lengthComputable = lengthComputable ?? false;
-    this.#loaded = loaded ?? 0;
-    this.#total = total ?? 0;
+    this.#lengthComputable = !!lengthComputable;
+    this.#loaded = Number.isInteger(loaded) && loaded > 0 ? loaded : 0;
+    this.#total = Number.isInteger(total) && total > 0 ? total : 0;
   }
 
   /* getter */
