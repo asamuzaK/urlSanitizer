@@ -19,7 +19,7 @@ export class FileReader extends EventTarget {
     get error(): any;
     get readyState(): number;
     get result(): any;
-    _dispatchProgressEvent(type: string): Function;
+    _dispatchProgressEvent(type: string): boolean;
     abort(): void;
     _read(blob: object, format: string, encoding?: string): void;
     readAsArrayBuffer(blob: object): void;
