@@ -185,9 +185,9 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
  */
 export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
   const reader = new FileReader();
-  reader.addEventListener('error', () => reject(reader.error));
-  reader.addEventListener('abort', () => resolve(reader.result));
-  reader.addEventListener('load', () => resolve(reader.result));
+  reader.addEventListener('error', evt => reject(evt.target.error));
+  reader.addEventListener('abort', evt => resolve(evt.target.result));
+  reader.addEventListener('load', evt => resolve(evt.target.result));
   reader.readAsDataURL(blob);
 });
 
