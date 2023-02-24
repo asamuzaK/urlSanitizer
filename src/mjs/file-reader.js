@@ -109,7 +109,7 @@ export class FileReader extends EventTarget {
    * dispatch progress event
    *
    * @param {string} type - event type
-   * @returns {Function} - super.dispatchEvent()
+   * @returns {boolean} - result
    */
   _dispatchProgressEvent(type) {
     if (isString(type)) {
@@ -132,7 +132,8 @@ export class FileReader extends EventTarget {
       cancelable: false,
       lengthComputable: false
     });
-    return super.dispatchEvent(evt);
+    const res = super.dispatchEvent(evt);
+    return res;
   }
 
   /**
