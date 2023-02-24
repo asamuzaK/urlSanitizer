@@ -62,7 +62,7 @@
     "copy-src": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js bundle",
     "copy-src-wo-dompurify": "copyfiles --up=1 --verbose src/**/* --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js bundle_wo_dompurify",
     "copy-repl": "copyfiles --up=1 --verbose repl/dompurify.js repl/file-reader.js bundle/mjs",
-    "copy-repl-wo-dompurify": "copyfiles --up=1 --verbose repl/dompurify.global.js repl/file-reader.js bundle_wo_dompurify/mjs && node modules/index rename --oldpath=bundle_wo_dompurify/mjs/dompurify.global.js --newpath=bundle_wo_dompurify/mjs/dompurify.js -i",
+    "copy-repl-wo-dompurify": "copyfiles --up=1 --verbose repl/dompurify-global.js repl/file-reader.js bundle_wo_dompurify/mjs && node modules/index rename --oldpath=bundle_wo_dompurify/mjs/dompurify-global.js --newpath=bundle_wo_dompurify/mjs/dompurify.js -i",
     "include": "node modules/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
