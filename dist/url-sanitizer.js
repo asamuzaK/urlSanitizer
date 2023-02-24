@@ -2093,7 +2093,6 @@ var URLSanitizer = class extends URISchemes {
             this.#nest = 0;
           }
         } else {
-          sanitizedUrl = urlToSanitize;
           this.#nest = 0;
         }
       }
