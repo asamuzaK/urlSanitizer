@@ -155,7 +155,7 @@ export class FileReader extends EventTarget {
    * @param {object} blob - blob
    * @param {string} format - format to read as
    * @param {string} [encoding] - character encoding
-   * @returns {void}
+   * @returns {Promise.<void>}
    */
   async _read(blob, format, encoding = '') {
     if (!(blob instanceof Blob && isString(format) && isString(encoding))) {
@@ -266,7 +266,7 @@ export class FileReader extends EventTarget {
    * read as arrayBuffer
    *
    * @param {object} blob - blob
-   * @returns {void}
+   * @returns {Promise.<void>}
    */
   async readAsArrayBuffer(blob) {
     await this._read(blob, 'arrayBuffer');
@@ -276,7 +276,7 @@ export class FileReader extends EventTarget {
    * read as binary string
    *
    * @param {object} blob - blob
-   * @returns {void}
+   * @returns {Promise.<void>}
    */
   async readAsBinaryString(blob) {
     await this._read(blob, 'binaryString');
@@ -286,7 +286,7 @@ export class FileReader extends EventTarget {
    * read as data URL
    *
    * @param {object} blob - blob
-   * @returns {void}
+   * @returns {Promise.<void>}
    */
   async readAsDataURL(blob) {
     await this._read(blob, 'dataURL');
@@ -297,7 +297,7 @@ export class FileReader extends EventTarget {
    *
    * @param {object} blob - blob
    * @param {string} encoding - encoding
-   * @returns {void}
+   * @returns {Promise.<void>}
    */
   async readAsText(blob, encoding) {
     await this._read(blob, 'text', encoding);

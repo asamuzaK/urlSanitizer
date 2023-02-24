@@ -21,10 +21,10 @@ export class FileReader extends EventTarget {
     get result(): any;
     _dispatchProgressEvent(type: string): boolean;
     abort(): void;
-    _read(blob: object, format: string, encoding?: string): void;
-    readAsArrayBuffer(blob: object): void;
-    readAsBinaryString(blob: object): void;
-    readAsDataURL(blob: object): void;
-    readAsText(blob: object, encoding: string): void;
+    _read(blob: object, format: string, encoding?: string): Promise<void>;
+    readAsArrayBuffer(blob: object): Promise<void>;
+    readAsBinaryString(blob: object): Promise<void>;
+    readAsDataURL(blob: object): Promise<void>;
+    readAsText(blob: object, encoding: string): Promise<void>;
     #private;
 }
