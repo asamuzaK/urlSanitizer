@@ -173,7 +173,7 @@ export class FileReader extends EventTarget {
       let res;
       try {
         const { type } = blob;
-        const header = type ? type.split(';') : [];
+        const mediaTypes = type ? type.split(';') : [];
         const buffer = await blob.arrayBuffer();
         const uint8arr = new Uint8Array(buffer);
         const binary = String.fromCharCode(...uint8arr);
@@ -188,10 +188,11 @@ export class FileReader extends EventTarget {
             this._dispatchProgressEvent('progress');
             break;
           case 'dataURL':
-            if (!header.length || header[header.length - 1] !== 'base64') {
-              header.push('base64');
+            if (!mediaTypes.length ||
+                mediaTypes[mediaTypes.length - 1] !== 'base64') {
+              mediaTypes.push('base64');
             }
-            res = `data:${header.join(';')},${btoa(binary)}`;
+            res = `data:${mediaTypes.join(';')},${btoa(binary)}`;
             this._dispatchProgressEvent('progress');
             break;
           // NOTE: exec only if encoding matches
@@ -199,9 +200,9 @@ export class FileReader extends EventTarget {
             const textCharCodes = new Set(textChars);
             if (uint8arr.every(c => textCharCodes.has(c))) {
               let charset;
-              for (const head of header) {
-                if (REG_CHARSET.test(head)) {
-                  [, charset] = REG_CHARSET.exec(head);
+              for (const media of mediaTypes) {
+                if (REG_CHARSET.test(media)) {
+                  [, charset] = REG_CHARSET.exec(media);
                   if (charset) {
                     if (/utf-?8/i.test(charset)) {
                       charset = 'utf8';
