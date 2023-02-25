@@ -25,7 +25,7 @@ const PATH_LIB = './src/lib';
  *      - Historical schemes omitted
  *      - Added 'moz-extension' scheme
  * @param {object} cmdOpts - command options
- * @returns {string} - file path
+ * @returns {Promise.<string>} - file path
  */
 export const saveUriSchemes = async (cmdOpts = {}) => {
   const { info } = cmdOpts;
@@ -54,7 +54,7 @@ export const saveUriSchemes = async (cmdOpts = {}) => {
  * include libraries
  *
  * @param {object} cmdOpts - command options
- * @returns {Function} - promise chain
+ * @returns {Promise} - promise chain
  */
 export const includeLibraries = cmdOpts =>
   saveUriSchemes(cmdOpts).catch(throwErr);
@@ -64,7 +64,7 @@ export const includeLibraries = cmdOpts =>
  *
  * @see {@link https://github.com/file/file/blob/master/src/encoding.c}
  * @param {object} cmdOpts - command options
- * @returns {string} - file path
+ * @returns {Promise.<string>} - file path
  */
 export const storeTextChars = async (cmdOpts = {}) => {
   const { info } = cmdOpts;
@@ -89,7 +89,7 @@ export const storeTextChars = async (cmdOpts = {}) => {
  * create a table of chars
  *
  * @param {object} cmdOpts - command options
- * @returns {Function} - promise chain
+ * @returns {Promise} - promise chain
  */
 export const createCharTable = cmdOpts =>
   storeTextChars(cmdOpts).catch(throwErr);

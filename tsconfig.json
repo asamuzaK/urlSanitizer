@@ -1,5 +1,4 @@
 {
-  "include": ["src/index.js"],
   "compilerOptions": {
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
@@ -12,5 +11,6 @@
     "removeComments": true,
     "resolveJsonModule": true,
     "target": "esnext"
-  }
+  },
+  "include": ["modules/index.js", "src/index.js"]
 }

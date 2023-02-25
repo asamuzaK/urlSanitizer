@@ -60,9 +60,9 @@ export const removeDir = dir => {
 /**
  * create a file
  *
- * @param {!string} file - file path to create
- * @param {!string} value - value to write
- * @returns {string} - file path
+ * @param {string} file - file path to create
+ * @param {string} value - value to write
+ * @returns {Promise.<string>} - file path
  */
 export const createFile = async (file, value) => {
   if (!isString(file)) {
@@ -97,8 +97,8 @@ export const rename = (oldpath, newpath) => {
 /**
  * fetch text
  *
- * @param {!string} url - URL
- * @returns {string} - content text
+ * @param {string} url - URL
+ * @returns {Promise.<string>} - content text
  */
 export const fetchText = async url => {
   if (!isString(url)) {

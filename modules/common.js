@@ -9,7 +9,7 @@ const TYPE_TO = -1;
 /**
  * throw error
  *
- * @param {!object} e - Error
+ * @param {object} e - Error
  * @throws - Error
  */
 export const throwErr = e => {
@@ -19,7 +19,7 @@ export const throwErr = e => {
 /**
  * log error
  *
- * @param {!object} e - Error
+ * @param {object} e - Error
  * @returns {boolean} - false
  */
 export const logErr = e => {
@@ -70,7 +70,7 @@ export const isString = o => typeof o === 'string' || o instanceof String;
  *
  * @param {number} msec - millisecond
  * @param {boolean} doReject - reject instead of resolve
- * @returns {?Function} - resolve / reject
+ * @returns {?Promise} - resolve / reject
  */
 export const sleep = (msec = 0, doReject = false) => {
   let func;
