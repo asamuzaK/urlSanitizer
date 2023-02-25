@@ -966,10 +966,10 @@ var URLSanitizer = class extends URISchemes {
         let finalize;
         let urlToSanitize = href;
         if (isDataUrl) {
-          const [head, ...body] = pathname.split(",");
-          const data = `${body.join(",")}${search}${hash}`;
-          const mediaType = head.split(";");
-          const isBase64 = mediaType[mediaType.length - 1] === "base64";
+          const [mediaType, ...dataParts] = pathname.split(",");
+          const data = `${dataParts.join(",")}${search}${hash}`;
+          const mediaTypes = mediaType.split(";");
+          const isBase64 = mediaTypes[mediaTypes.length - 1] === "base64";
           let parsedData = data;
           if (isBase64) {
             parsedData = parseBase64(data);
@@ -997,14 +997,14 @@ var URLSanitizer = class extends URISchemes {
           } else {
             finalize = true;
           }
-          if (!head || REG_MIME_DOM.test(head)) {
+          if (!mediaType || REG_MIME_DOM.test(mediaType)) {
             parsedData = this.purify(parsedData);
           }
           if (urlToSanitize && parsedData) {
             if (isBase64 && parsedData !== data) {
-              mediaType.pop();
+              mediaTypes.pop();
             }
-            urlToSanitize = `${scheme}:${mediaType.join(";")},${parsedData}`;
+            urlToSanitize = `${scheme}:${mediaTypes.join(";")},${parsedData}`;
           } else {
             urlToSanitize = "";
           }
@@ -1068,14 +1068,14 @@ var URLSanitizer = class extends URISchemes {
       parsedUrl.set("valid", true);
       if (isDataUrl) {
         const dataUrl = /* @__PURE__ */ new Map();
-        const [head, ...body] = pathname.split(",");
-        const data = `${body.join(",")}`;
-        const mediaType = head.split(";");
-        const isBase64 = mediaType[mediaType.length - 1] === "base64";
+        const [mediaType, ...dataParts] = pathname.split(",");
+        const data = `${dataParts.join(",")}`;
+        const mediaTypes = mediaType.split(";");
+        const isBase64 = mediaTypes[mediaTypes.length - 1] === "base64";
         if (isBase64) {
-          mediaType.pop();
+          mediaTypes.pop();
         }
-        dataUrl.set("mime", mediaType.join(";"));
+        dataUrl.set("mime", mediaTypes.join(";"));
         dataUrl.set("base64", isBase64);
         dataUrl.set("data", data);
         parsedUrl.set("data", Object.fromEntries(dataUrl));
