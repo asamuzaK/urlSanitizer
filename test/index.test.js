@@ -154,6 +154,18 @@ describe('URL Sanitizer', () => {
         'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;',
         'decode');
     });
+
+    it('should get null', async () => {
+      const url = 'javascript&colon;alert(1)';
+      const res = await sanitizeURL(url);
+      assert.isNull(res, 'result')
+    });
+
+    it('should get null', async () => {
+      const url = 'javasc&Tab;ript:alert(1);';
+      const res = await sanitizeURL(url);
+      assert.isNull(res, 'result')
+    });
   });
 
   describe('sanitize URL sync', () => {
