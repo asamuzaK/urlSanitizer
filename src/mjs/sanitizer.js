@@ -280,6 +280,7 @@ export class URLSanitizer extends URISchemes {
         } else {
           finalize = true;
         }
+        console.log(`isDataUrl: ${isDataUrl}, remove ${remove}, url: ${urlToSanitize}`)
         if (!isDataUrl && remove &&
             REG_HTML_URL_ENC_SHORT.test(urlToSanitize)) {
           const item = REG_HTML_URL_ENC_SHORT.exec(urlToSanitize);

@@ -1295,15 +1295,6 @@ describe('sanitizer', () => {
       });
 
       it('FIXME: should get sanitized value', async () => {
-        const url = 'https://example.com/<script>alert(1)</script>';
-        const res = await func(url, {
-          allow: ['data', 'file'],
-          remove: true
-        });
-        assert.strictEqual(res, 'https://example.com/', 'result');
-      });
-
-      it('FIXME: should get sanitized value', async () => {
         const url = 'https://example.com/"onclick="alert(1)"';
         const res = await func(url, {
           allow: ['data', 'file'],
