@@ -1295,12 +1295,39 @@ describe('sanitizer', () => {
       });
 
       it('FIXME: should get sanitized value', async () => {
-        const url = 'https://example.com/"onclick="alert(1)"';
+        const url = 'https://example.com/"quoted"';
         const res = await func(url, {
           allow: ['data', 'file'],
           remove: true
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('FIXME: should get sanitized value', async () => {
+        const url = "https://example.com/'quoted'";
+        const res = await func(url, {
+          allow: ['data', 'file'],
+          remove: true
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('FIXME: should get sanitized value', async () => {
+        const url = 'https://example.com/?q="quoted"';
+        const res = await func(url, {
+          allow: ['data', 'file'],
+          remove: true
+        });
+        assert.strictEqual(res, 'https://example.com/?q=', 'result');
+      });
+
+      it('FIXME: should get sanitized value', async () => {
+        const url = "https://example.com/?q='quoted'";
+        const res = await func(url, {
+          allow: ['data', 'file'],
+          remove: true
+        });
+        assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
     });
 
