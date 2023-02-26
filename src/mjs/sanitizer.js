@@ -453,11 +453,7 @@ export const sanitizeURLSync = (url, opt) => {
     if (protocol === 'blob:') {
       URL.revokeObjectURL(url);
     } else {
-      res = urlSanitizer.sanitize(url, opt ?? {
-        allow: [],
-        deny: [],
-        only: []
-      });
+      res = urlSanitizer.sanitize(url, opt);
     }
   }
   return res || null;
