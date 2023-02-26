@@ -1294,7 +1294,7 @@ describe('sanitizer', () => {
           'decoded');
       });
 
-      it('should get sanitized value', async () => {
+      it('FIXME: should get sanitized value', async () => {
         const url = 'https://example.com/"onclick="alert(1)"';
         const res = await func(url, {
           allow: ['data', 'file'],
