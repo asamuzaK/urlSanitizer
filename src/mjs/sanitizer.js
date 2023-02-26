@@ -14,7 +14,7 @@ import {
 const HEX = 16;
 const REG_DATA_URL = /(?:data:[^,]*?,)+?/;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-const REG_DATA_URL_G = /data:[^,]*,[^"]+/g;
+const REG_DATA_URL_G = /data:[^,]*?,[^"]+/g;
 const REG_END_COLON = /:$/;
 const REG_END_NUM = /(?:#|%23)$/;
 const REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
