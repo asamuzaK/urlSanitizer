@@ -1278,7 +1278,7 @@ var REG_END_NUM = /(?:#|%23)$/;
 var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 var REG_HTML_SP = /[<>"'\s]/g;
 var REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-var REG_HTML_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
+var REG_HTML_URL_ENC_QUOT = /(?:%(?:2(?:2|7)|3(?:C|E))+?|["'])/;
 var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 var REG_URL_ENC_AMP = /%26/g;
@@ -1363,7 +1363,7 @@ var URLSanitizer = class extends URISchemes {
    * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
-  sanitize(url, opt = { allow: [], deny: [], only: [] }) {
+  sanitize(url, opt) {
     if (this.#nest > HEX2) {
       this.#nest = 0;
       throw new Error("Data URLs nested too deeply.");
@@ -1504,8 +1504,8 @@ var URLSanitizer = class extends URISchemes {
         } else {
           finalize = true;
         }
-        if (!isDataUrl && remove && REG_HTML_URL_ENC_SHORT.test(urlToSanitize)) {
-          const item = REG_HTML_URL_ENC_SHORT.exec(urlToSanitize);
+        if (!isDataUrl && remove && REG_HTML_URL_ENC_QUOT.test(urlToSanitize)) {
+          const item = REG_HTML_URL_ENC_QUOT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
@@ -1635,11 +1635,7 @@ var sanitizeURLSync = (url, opt) => {
     if (protocol === "blob:") {
       URL.revokeObjectURL(url);
     } else {
-      res = urlSanitizer.sanitize(url, opt ?? {
-        allow: [],
-        deny: [],
-        only: []
-      });
+      res = urlSanitizer.sanitize(url, opt);
     }
   }
   return res || null;
