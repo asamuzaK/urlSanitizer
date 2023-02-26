@@ -15,7 +15,6 @@ import {
 /* constants */
 const BASE_URL_IANA = 'https://www.iana.org/assignments/uri-schemes/';
 const DIR_CWD = process.cwd();
-const INDENT = 2;
 const PATH_LIB = './src/lib';
 
 /**
@@ -41,7 +40,7 @@ export const saveUriSchemes = async (cmdOpts = {}) => {
       schemes.add(scheme);
     }
   }
-  const content = JSON.stringify([...schemes].sort(), null, INDENT);
+  const content = JSON.stringify([...schemes].sort(), null, null);
   const filePath =
     await createFile(path.resolve(libPath, 'uri-schemes.json'), `${content}\n`);
   if (filePath && info) {
@@ -76,7 +75,7 @@ export const storeTextChars = async (cmdOpts = {}) => {
   for (let i = 0x80; i <= 0xff; i++) {
     textChars.add(i);
   }
-  const content = JSON.stringify([...textChars], null, INDENT);
+  const content = JSON.stringify([...textChars], null, null);
   const filePath =
     await createFile(path.resolve(libPath, 'text-chars.json'), `${content}\n`);
   if (filePath && info) {
