@@ -28,9 +28,7 @@ const REG_URL_ENC_AMP = /%26/g;
 
 /* typedef */
 /**
- * object with additional properties based on URL API
- *
- * @typedef {object} ParsedURL
+ * @typedef {object} ParsedURL - object with additional props based on URL API
  * @property {string} input - URL input
  * @property {boolean} valid - is valid URI
  * @property {object} [data] - parsed result of data URL, `null`able
@@ -137,7 +135,7 @@ export class URLSanitizer extends URISchemes {
    * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
-  sanitize(url, opt = { allow: [], deny: [], only: [] }) {
+  sanitize(url, opt) {
     if (this.#nest > HEX) {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
