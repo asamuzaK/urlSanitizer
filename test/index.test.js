@@ -17,34 +17,49 @@ describe('URL Sanitizer', () => {
       assert.isFunction(urlSanitizer.remove, 'remove');
     });
 
-    it('should get value', () => {
-      const schemes = urlSanitizer.get();
-      assert.isArray(schemes, 'result');
+    describe('get', () => {
+      it('should get value', () => {
+        const schemes = urlSanitizer.get();
+        assert.isArray(schemes, 'result');
+      });
     });
 
-    it('should get result', () => {
-      const res1 = urlSanitizer.has('https');
-      const res2 = urlSanitizer.has('foo');
-      assert.isTrue(res1, 'result');
-      assert.isFalse(res2, 'result');
+    describe('has', () => {
+      it('should get result', () => {
+        const res = urlSanitizer.has('https');
+        assert.isTrue(res, 'result');
+      });
+
+      it('should get result', () => {
+        const res = urlSanitizer.has('foo');
+        assert.isFalse(res, 'result');
+      });
     });
 
-    it('should get value', () => {
-      assert.isFalse(urlSanitizer.has('foo'));
-      const res = urlSanitizer.add('foo');
-      assert.isTrue(urlSanitizer.has('foo'));
-      assert.isArray(res, 'result');
-      urlSanitizer.remove('foo');
+    describe('add', () => {
+      it('should get value', () => {
+        assert.isFalse(urlSanitizer.has('foo'));
+        const res = urlSanitizer.add('foo');
+        assert.isTrue(urlSanitizer.has('foo'));
+        assert.isArray(res, 'result');
+        urlSanitizer.remove('foo');
+      });
     });
 
-    it('should get result', () => {
-      assert.isTrue(urlSanitizer.has('aaa'));
-      const res1 = urlSanitizer.remove('aaa');
-      assert.isFalse(urlSanitizer.has('aaa'));
-      assert.isTrue(res1, 'result');
-      urlSanitizer.add('aaa');
-      const res2 = urlSanitizer.remove('foo');
-      assert.isFalse(res2, 'result');
+    describe('remove', () => {
+      it('should get result', () => {
+        assert.isTrue(urlSanitizer.has('aaa'));
+        const res = urlSanitizer.remove('aaa');
+        assert.isFalse(urlSanitizer.has('aaa'));
+        assert.isTrue(res, 'result');
+        urlSanitizer.add('aaa');
+      });
+
+      it('should get result', () => {
+        assert.isFalse(urlSanitizer.has('foo'));
+        const res = urlSanitizer.remove('foo');
+        assert.isFalse(res, 'result');
+      });
     });
   });
 
@@ -158,13 +173,13 @@ describe('URL Sanitizer', () => {
     it('should get null', async () => {
       const url = 'javascript&colon;alert(1)';
       const res = await sanitizeURL(url);
-      assert.isNull(res, 'result')
+      assert.isNull(res, 'result');
     });
 
     it('should get null', async () => {
       const url = 'javasc&Tab;ript:alert(1);';
       const res = await sanitizeURL(url);
-      assert.isNull(res, 'result')
+      assert.isNull(res, 'result');
     });
   });
 
