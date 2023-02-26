@@ -18,13 +18,13 @@ var { FileReader } = window;
 
 // bundle_wo_dompurify/mjs/uri-util.js
 var HEX = 16;
-var REG_BASE64 = /^[\da-z+/\-_=]+$/i;
+var REG_BASE64 = /^[\w+/\-=]+$/;
 var REG_END_COLON = /:$/;
 var REG_NUM_DECI = /^\d+/;
 var REG_NUM_HEAD = /#x?$/;
 var REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
 var REG_NUM_HEX = /^x[\dA-F]+/i;
-var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
+var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
 var REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 var REG_SCRIPT = /(?:java|vb)script/;
@@ -202,16 +202,16 @@ var URISchemes = class {
 
 // bundle_wo_dompurify/mjs/sanitizer.js
 var HEX2 = 16;
-var REG_DATA_URL = /(?:data:[^,]*?,)+?/;
-var REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-var REG_DATA_URL_G = /data:[^,]*?,[^"]+/g;
+var REG_DATA_URL = /data:[\w#&+\-./;=]*,/;
+var REG_DATA_URL_BASE64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
+var REG_DATA_URL_G = /data:[\w#&+\-./;=]*,[^"]+/g;
 var REG_END_COLON2 = /:$/;
 var REG_END_NUM = /(?:#|%23)$/;
 var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 var REG_HTML_SP = /[<>"'\s]/g;
 var REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-var REG_HTML_URL_ENC_QUOT = /(?:%(?:2(?:2|7)|3(?:C|E))+?|["'])/;
-var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
+var REG_HTML_URL_ENC_QUOT = /%(?:2(?:2|7)|3(?:C|E))|["']/;
+var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml)/;
 var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 var REG_URL_ENC_AMP = /%26/g;
 var URLSanitizer = class extends URISchemes {
