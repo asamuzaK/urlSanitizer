@@ -12,7 +12,7 @@ import {
 
 /* constants */
 const HEX = 16;
-const REG_DATA_URL = /(?:data:[^,]*,)+?/;
+const REG_DATA_URL = /(?:data:[^,]*?,)+?/;
 const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
 const REG_DATA_URL_G = /data:[^,]*,[^"]+/g;
 const REG_END_COLON = /:$/;
