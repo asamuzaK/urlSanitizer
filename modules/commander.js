@@ -130,7 +130,8 @@ export const cleanDirectory = (cmdOpts = {}) => {
  * @returns {void}
  */
 export const parseCommand = args => {
-  const reg = /^(?:(?:--)?help|-[h|v]|--version|c(?:har|lean)?|i(?:nclude)?|r(?:ename)?)$/;
+  const reg =
+    /^(?:(?:--)?help|-[h|v]|--version|(?:includ|renam)e|c(?:har|lean))$/;
   if (Array.isArray(args) && args.some(arg => reg.test(arg))) {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
@@ -138,17 +139,17 @@ export const parseCommand = args => {
       .description('create text chars table')
       .option('-i, --info', 'console info')
       .action(createCharTable);
-    commander.command('clean').alias('c')
+    commander.command('clean')
       .description('clean directory')
       .option('-d, --dir <name>', 'specify directory')
       .option('-i, --info', 'console info')
       .action(cleanDirectory);
-    commander.command('include').alias('i')
+    commander.command('include')
       .description('include library packages')
       .option('-d, --dir <name>', 'specify library directory')
       .option('-i, --info', 'console info')
       .action(includeLibraries);
-    commander.command('rename').alias('r')
+    commander.command('rename')
       .description('rename file')
       .option('-o, --oldpath <name>', 'old path')
       .option('-n, --newpath <name>', 'new path')
