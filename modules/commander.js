@@ -135,20 +135,20 @@ export const parseCommand = args => {
   if (Array.isArray(args) && args.some(arg => reg.test(arg))) {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
-    commander.command('char').alias('c')
+    commander.command('char')
       .description('create text chars table')
       .option('-i, --info', 'console info')
       .action(createCharTable);
+    commander.command('clean').alias('c')
+      .description('clean directory')
+      .option('-d, --dir <name>', 'specify directory')
+      .option('-i, --info', 'console info')
+      .action(cleanDirectory);
     commander.command('include').alias('i')
       .description('include library packages')
       .option('-d, --dir <name>', 'specify library directory')
       .option('-i, --info', 'console info')
       .action(includeLibraries);
-    commander.command('clean')
-      .description('clean directory')
-      .option('-d, --dir <name>', 'specify directory')
-      .option('-i, --info', 'console info')
-      .action(cleanDirectory);
     commander.command('rename').alias('r')
       .description('rename file')
       .option('-o, --oldpath <name>', 'old path')
