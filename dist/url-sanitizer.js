@@ -1270,9 +1270,9 @@ var URISchemes = class {
 
 // bundle/mjs/sanitizer.js
 var HEX2 = 16;
-var REG_DATA_URL = /data:[^,]*,/;
+var REG_DATA_URL = /(?:data:[^,]*?,)+?/;
 var REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-var REG_DATA_URL_G = /data:[^,]*,[^"]+/g;
+var REG_DATA_URL_G = /data:[^,]*?,[^"]+/g;
 var REG_END_COLON2 = /:$/;
 var REG_END_NUM = /(?:#|%23)$/;
 var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
