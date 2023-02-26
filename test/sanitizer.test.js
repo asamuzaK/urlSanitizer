@@ -1293,6 +1293,15 @@ describe('sanitizer', () => {
           'data:image/svg+xml,<svg><g></g></svg>',
           'decoded');
       });
+
+      it('should get sanitized value', async () => {
+        const url = 'https://example.com/"onclick="alert(1)"';
+        const res = await func(url, {
+          allow: ['data', 'file'],
+          remove: true
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
     });
 
     describe('sanitize URL sync', () => {
