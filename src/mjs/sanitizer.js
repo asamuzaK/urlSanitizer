@@ -12,17 +12,17 @@ import {
 
 /* constants */
 const HEX = 16;
-const REG_DATA_URL = /(?:data:[^,]*?,)+?/;
-const REG_DATA_URL_BASE64 = /data:[^,]*;?base64,[\da-z+/\-_=]+/i;
-const REG_DATA_URL_G = /data:[^,]*?,[^"]+/g;
+const REG_DATA_URL = /data:[\w#&+\-./;=]*,/;
+const REG_DATA_URL_BASE64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
+const REG_DATA_URL_G = /data:[\w#&+\-./;=]*,[^"]+/g;
 const REG_END_COLON = /:$/;
 const REG_END_NUM = /(?:#|%23)$/;
 const REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 const REG_HTML_SP = /[<>"'\s]/g;
 const REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-const REG_HTML_URL_ENC_QUOT = /(?:%(?:2(?:2|7)|3(?:C|E))+?|["'])/;
+const REG_HTML_URL_ENC_QUOT = /%(?:2(?:2|7)|3(?:C|E))|["']/;
 const REG_MIME_DOM =
-  /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
+  /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml)/;
 const REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 const REG_URL_ENC_AMP = /%26/g;
 

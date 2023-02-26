@@ -10,13 +10,13 @@ import { FileReader } from './file-reader.js';
 
 /* constants */
 const HEX = 16;
-const REG_BASE64 = /^[\da-z+/\-_=]+$/i;
+const REG_BASE64 = /^[\w+/\-=]+$/;
 const REG_END_COLON = /:$/;
 const REG_NUM_DECI = /^\d+/;
 const REG_NUM_HEAD = /#x?$/;
 const REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
 const REG_NUM_HEX = /^x[\dA-F]+/i;
-const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/ig;
+const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
 const REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
 const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
 const REG_SCRIPT = /(?:java|vb)script/;

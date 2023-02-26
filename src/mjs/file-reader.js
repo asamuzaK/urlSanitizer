@@ -10,10 +10,10 @@ import { getType, isString } from './common.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
-const REG_CHARSET = /^charset=([\da-z\-_]+)$/i;
+const REG_CHARSET = /^charset=([\w#&\-.;]+)$/;
 const REG_MIME_DOM =
-  /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml);?/;
-const REG_MIME_TEXT = /^text\/[\da-z][\da-z\-.][\da-z]+;?/i;
+  /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml);?/;
+const REG_MIME_TEXT = /^text\/[\w#&\-.;]+/;
 
 /**
  * progress event
