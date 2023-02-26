@@ -156,6 +156,15 @@ describe('dist URL Sanitizer', () => {
         'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;',
         'decode');
     });
+
+    it('should get sanitized value', async () => {
+      const url = 'https://example.com/"onclick="alert(1)"';
+      const res = await sanitizeURL(url, {
+        allow: ['data', 'file'],
+        remove: true
+      });
+      assert.strictEqual(res, 'https://example.com/', 'result');
+    });
   });
 
   describe('sanitize URL sync', () => {
