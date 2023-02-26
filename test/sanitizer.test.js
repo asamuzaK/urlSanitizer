@@ -1294,7 +1294,7 @@ describe('sanitizer', () => {
           'decoded');
       });
 
-      it('FIXME: should get sanitized value', async () => {
+      it('should get sanitized value', async () => {
         const url = 'https://example.com/"quoted"';
         const res = await func(url, {
           allow: ['data', 'file'],
@@ -1303,14 +1303,13 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('FIXME: should get sanitized value', async () => {
+      it('should get sanitized value', async () => {
         const url = "https://example.com/'quoted'";
         const res = await func(url, {
           allow: ['data', 'file'],
           remove: true
         });
-        assert.strictEqual(res, 'https://example.com/%26%2339;quoted%26%2339;',
-          'result');
+        assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
       it('should get sanitized value', async () => {

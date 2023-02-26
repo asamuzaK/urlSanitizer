@@ -20,7 +20,7 @@ const REG_END_NUM = /(?:#|%23)$/;
 const REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 const REG_HTML_SP = /[<>"'\s]/g;
 const REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-const REG_HTML_URL_ENC_SHORT = /%(?:2(?:2|7)|3(?:C|E))+?/;
+const REG_HTML_URL_ENC_QUOT = /(?:%(?:2(?:2|7)|3(?:C|E))+?|["'])/;
 const REG_MIME_DOM =
   /^(?:text\/(?:ht|x)ml|application\/(?:xhtml\+)?xml|image\/svg\+xml)/;
 const REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
@@ -280,10 +280,8 @@ export class URLSanitizer extends URISchemes {
         } else {
           finalize = true;
         }
-        console.log(`isDataUrl: ${isDataUrl}, remove ${remove}, url: ${urlToSanitize}`)
-        if (!isDataUrl && remove &&
-            REG_HTML_URL_ENC_SHORT.test(urlToSanitize)) {
-          const item = REG_HTML_URL_ENC_SHORT.exec(urlToSanitize);
+        if (!isDataUrl && remove && REG_HTML_URL_ENC_QUOT.test(urlToSanitize)) {
+          const item = REG_HTML_URL_ENC_QUOT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
