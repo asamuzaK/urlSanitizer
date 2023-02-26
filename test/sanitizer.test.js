@@ -1309,10 +1309,11 @@ describe('sanitizer', () => {
           allow: ['data', 'file'],
           remove: true
         });
-        assert.strictEqual(res, 'https://example.com/', 'result');
+        assert.strictEqual(res, 'https://example.com/%26%2339;quoted%26%2339;',
+          'result');
       });
 
-      it('FIXME: should get sanitized value', async () => {
+      it('should get sanitized value', async () => {
         const url = 'https://example.com/?q="quoted"';
         const res = await func(url, {
           allow: ['data', 'file'],
@@ -1321,7 +1322,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
 
-      it('FIXME: should get sanitized value', async () => {
+      it('should get sanitized value', async () => {
         const url = "https://example.com/?q='quoted'";
         const res = await func(url, {
           allow: ['data', 'file'],
