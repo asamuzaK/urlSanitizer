@@ -71,5 +71,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node modules/index clean --dir=types -i && npx tsc"
   },
-  "version": "0.9.12"
+  "version": "0.9.13"
 }

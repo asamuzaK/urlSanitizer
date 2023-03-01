@@ -210,9 +210,9 @@ var REG_END_NUM = /(?:#|%23)$/;
 var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 var REG_HTML_SP = /[<>"'\s]/g;
 var REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-var REG_HTML_URL_ENC_QUOT = /%(?:2(?:2|7)|3(?:C|E))|["']/;
 var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml)/;
 var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
+var REG_TAG_QUOT = /%(?:2(?:2|7)|3(?:C|E))|[<>"']/;
 var REG_URL_ENC_AMP = /%26/g;
 var URLSanitizer = class extends URISchemes {
   /* private fields */
@@ -436,8 +436,8 @@ var URLSanitizer = class extends URISchemes {
         } else {
           finalize = true;
         }
-        if (!isDataUrl && remove && REG_HTML_URL_ENC_QUOT.test(urlToSanitize)) {
-          const item = REG_HTML_URL_ENC_QUOT.exec(urlToSanitize);
+        if (!isDataUrl && remove && REG_TAG_QUOT.test(urlToSanitize)) {
+          const item = REG_TAG_QUOT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
