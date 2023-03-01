@@ -1,5 +1,5 @@
 // bundle_wo_dompurify/mjs/dompurify.js
-var { DOMPurify } = window;
+var { DOMPurify } = globalThis;
 
 // bundle_wo_dompurify/mjs/common.js
 var TYPE_FROM = 8;
