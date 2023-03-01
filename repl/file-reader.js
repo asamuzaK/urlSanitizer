@@ -2,7 +2,7 @@
  * file-reader.js
  */
 
-const { FileReader } = window;
+const { FileReader } = globalThis;
 
 export {
   FileReader
