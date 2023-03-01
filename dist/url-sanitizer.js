@@ -366,7 +366,7 @@ var require_purify = __commonJS({
         var DOMPurify = function DOMPurify2(root) {
           return createDOMPurify(root);
         };
-        DOMPurify.version = "3.0.0";
+        DOMPurify.version = "3.0.1";
         DOMPurify.removed = [];
         if (!window2 || !window2.document || window2.document.nodeType !== 9) {
           DOMPurify.isSupported = false;
@@ -509,6 +509,7 @@ var require_purify = __commonJS({
           IN_PLACE = cfg.IN_PLACE || false;
           IS_ALLOWED_URI$1 = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI$1;
           NAMESPACE = cfg.NAMESPACE || HTML_NAMESPACE;
+          CUSTOM_ELEMENT_HANDLING = cfg.CUSTOM_ELEMENT_HANDLING || {};
           if (cfg.CUSTOM_ELEMENT_HANDLING && isRegexOrFunction(cfg.CUSTOM_ELEMENT_HANDLING.tagNameCheck)) {
             CUSTOM_ELEMENT_HANDLING.tagNameCheck = cfg.CUSTOM_ELEMENT_HANDLING.tagNameCheck;
           }
@@ -1669,6 +1670,6 @@ export {
 /*! Bundled license information:
 
 dompurify/dist/purify.js:
-  (*! @license DOMPurify 3.0.0 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.0/LICENSE *)
+  (*! @license DOMPurify 3.0.1 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.1/LICENSE *)
 */
 //# sourceMappingURL=url-sanitizer.js.map
