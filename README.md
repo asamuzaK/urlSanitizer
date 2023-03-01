@@ -26,7 +26,7 @@ For browsers and web sites, standalone ESM builds are available in `dist/` direc
 Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
 NOTE: `url-sanitizer-wo-dompurify.js` and `url-sanitizer-wo-dompurify.min.js` are built without [DOMPurify](https://www.npmjs.com/package/dompurify).
-If you use them, make sure DOMPurify is exposed as `window.DOMPurify`.
+If you use them, make sure DOMPurify is exposed globally, e.g. `window.DOMPurify`.
 
 ## Usage
 
