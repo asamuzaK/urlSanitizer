@@ -2,7 +2,7 @@
  * dompurify.js
  */
 
-const { DOMPurify } = window;
+const { DOMPurify } = globalThis;
 
 export {
   DOMPurify as default
