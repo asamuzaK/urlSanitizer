@@ -13,7 +13,7 @@ It also has the ability to parse URLs and verify URIs.
 
 ## Install
 
-```shell
+```console
 npm i url-sanitizer
 ```
 
