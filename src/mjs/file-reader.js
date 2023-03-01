@@ -297,7 +297,7 @@ export class FileReader extends EventTarget {
    * read as text
    *
    * @param {object} blob - blob
-   * @param {string} encoding - encoding
+   * @param {string} [encoding] - encoding
    * @returns {Promise.<void>} - void
    */
   async readAsText(blob, encoding) {
