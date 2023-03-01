@@ -1,6 +1,6 @@
 {
   "name": "url-sanitizer",
-  "description": "URL sanitizer for Node.js (>=18), browsers and web sites.",
+  "description": "URL sanitizer for Node.js, browsers and web sites.",
   "author": "asamuzaK",
   "license": "MIT",
   "homepage": "https://github.com/asamuzaK/urlSanitizer",
@@ -71,5 +71,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node modules/index clean --dir=types -i && npx tsc"
   },
-  "version": "0.9.11"
+  "version": "0.9.12"
 }
