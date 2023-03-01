@@ -25,6 +25,6 @@ export class FileReader extends EventTarget {
     readAsArrayBuffer(blob: object): Promise<void>;
     readAsBinaryString(blob: object): Promise<void>;
     readAsDataURL(blob: object): Promise<void>;
-    readAsText(blob: object, encoding: string): Promise<void>;
+    readAsText(blob: object, encoding?: string): Promise<void>;
     #private;
 }
