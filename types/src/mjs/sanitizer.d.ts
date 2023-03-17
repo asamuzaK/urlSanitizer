@@ -52,5 +52,5 @@ export type ParsedURL = {
     search?: string;
     hash?: string;
 };
-import { URISchemes } from "./uri-util.js";
+import { URISchemes } from './uri-util.js';
 declare const urlSanitizer: URLSanitizer;
