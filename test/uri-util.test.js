@@ -232,17 +232,6 @@ describe('uri-util', () => {
       });
     });
 
-    describe('reset schemes', () => {
-      it('should reset', () => {
-        const schemes = new URISchemes();
-        schemes.remove('http');
-        schemes.reset();
-        const res = schemes.get();
-        assert.isTrue(schemes.has('http'), 'scheme');
-        assert.deepEqual(res, uriSchemes, 'result');
-      });
-    });
-
     describe('has scheme', () => {
       it('should get true', () => {
         const schemes = new URISchemes();
@@ -491,6 +480,17 @@ describe('uri-util', () => {
         const schemes = new URISchemes();
         const res = schemes.verify('URN:ISBN:4-8399-0454-5');
         assert.isTrue(res, 'result');
+      });
+    });
+
+    describe('reset schemes', () => {
+      it('should reset', () => {
+        const schemes = new URISchemes();
+        schemes.remove('http');
+        schemes.reset();
+        const res = schemes.get();
+        assert.isTrue(schemes.has('http'), 'scheme');
+        assert.deepEqual(res, uriSchemes, 'result');
       });
     });
   });

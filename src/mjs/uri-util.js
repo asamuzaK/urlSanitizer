@@ -182,18 +182,6 @@ export class URISchemes {
   }
 
   /**
-   * reset schemes
-   *
-   * @returns {void}
-   */
-  reset() {
-    this.#schemes.clear();
-    for (const scheme of uriSchemes) {
-      this.#schemes.add(scheme);
-    }
-  }
-
-  /**
    * has scheme
    *
    * @param {string} scheme - scheme
@@ -250,5 +238,17 @@ export class URISchemes {
       }
     }
     return !!res;
+  }
+
+  /**
+   * reset schemes
+   *
+   * @returns {void}
+   */
+  reset() {
+    this.#schemes.clear();
+    for (const scheme of uriSchemes) {
+      this.#schemes.add(scheme);
+    }
   }
 };

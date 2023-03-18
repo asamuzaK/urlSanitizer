@@ -28,17 +28,6 @@ describe('sanitizer', () => {
       assert.instanceOf(sanitizer, URLSanitizer, 'instance');
     });
 
-    describe('reset sanitizer', () => {
-      it('should reset', () => {
-        const sanitizer = new URLSanitizer();
-        sanitizer.remove('http');
-        sanitizer.reset();
-        const res = sanitizer.get();
-        assert.isTrue(sanitizer.has('http'), 'scheme');
-        assert.deepEqual(res, uriSchemes, 'result');
-      });
-    });
-
     describe('replace matched data URLs', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
@@ -1136,6 +1125,17 @@ describe('sanitizer', () => {
         };
         const res = sanitizer.parse(url);
         assert.deepEqual(res, items, 'result');
+      });
+    });
+
+    describe('reset sanitizer', () => {
+      it('should reset', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.remove('http');
+        sanitizer.reset();
+        const res = sanitizer.get();
+        assert.isTrue(sanitizer.has('http'), 'scheme');
+        assert.deepEqual(res, uriSchemes, 'result');
       });
     });
   });
