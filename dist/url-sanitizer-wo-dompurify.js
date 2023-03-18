@@ -198,6 +198,17 @@ var URISchemes = class {
     }
     return !!res;
   }
+  /**
+   * reset schemes
+   *
+   * @returns {void}
+   */
+  reset() {
+    this.#schemes.clear();
+    for (const scheme of uri_schemes_default) {
+      this.#schemes.add(scheme);
+    }
+  }
 };
 
 // bundle_wo_dompurify/mjs/sanitizer.js
@@ -517,6 +528,16 @@ var URLSanitizer = class extends URISchemes {
       parsedUrl.set("valid", false);
     }
     return Object.fromEntries(parsedUrl);
+  }
+  /**
+   * reset sanitizer
+   *
+   * @returns {void}
+   */
+  reset() {
+    super.reset();
+    this.#nest = 0;
+    this.#recurse.clear();
   }
 };
 var urlSanitizer = new URLSanitizer();
