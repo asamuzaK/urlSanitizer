@@ -7,6 +7,9 @@ import { assert } from 'chai';
 import { describe, it } from 'mocha';
 
 /* test */
+import uriSchemes from '../src/lib/iana/uri-schemes.json' assert {
+  type: 'json'
+};
 import * as mjs from '../src/mjs/uri-util.js';
 
 describe('uri-util', () => {
@@ -222,10 +225,21 @@ describe('uri-util', () => {
     });
 
     describe('get schemes', () => {
-      it('should get array', () => {
+      it('should get schemes', () => {
         const schemes = new URISchemes();
         const res = schemes.get();
-        assert.isArray(res, 'result');
+        assert.deepEqual(res, uriSchemes, 'result');
+      });
+    });
+
+    describe('reset schemes', () => {
+      it('should reset', () => {
+        const schemes = new URISchemes();
+        schemes.remove('http');
+        schemes.reset();
+        const res = schemes.get();
+        assert.isTrue(schemes.has('http'), 'scheme');
+        assert.deepEqual(res, uriSchemes, 'result');
       });
     });
 
