@@ -334,6 +334,12 @@ const schemes = urlSanitizer.get();
 // => ['aaa', 'aaas', 'about', 'acap', 'acct', ...]
 ```
 
+### urlSanitizer.reset()
+
+Reset sanitizer.
+
+Returns **void**
+
 ### urlSanitizer.has(scheme)
 
 Check if the given scheme is registered.

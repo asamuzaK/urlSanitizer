@@ -8,6 +8,9 @@ import { describe, it } from 'mocha';
 import { isString } from '../modules/common.js';
 
 /* test */
+import uriSchemes from '../src/lib/iana/uri-schemes.json' assert {
+  type: 'json'
+};
 import urlSanitizer, * as mjs from '../src/mjs/sanitizer.js';
 
 describe('sanitizer', () => {
@@ -23,6 +26,17 @@ describe('sanitizer', () => {
     it('should be instance of URLSanitizer', () => {
       const sanitizer = new URLSanitizer();
       assert.instanceOf(sanitizer, URLSanitizer, 'instance');
+    });
+
+    describe('reset sanitizer', () => {
+      it('should reset', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.remove('http');
+        sanitizer.reset();
+        const res = sanitizer.get();
+        assert.isTrue(sanitizer.has('http'), 'scheme');
+        assert.deepEqual(res, uriSchemes, 'result');
+      });
     });
 
     describe('replace matched data URLs', () => {

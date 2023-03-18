@@ -64,6 +64,17 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * reset sanitizer
+   *
+   * @returns {void}
+   */
+  reset() {
+    super.reset();
+    this.#nest = 0;
+    this.#recurse.clear();
+  }
+
+  /**
    * replace matched data URLs
    *
    * @param {string} data - data URL
