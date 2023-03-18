@@ -17,6 +17,7 @@ describe('dist URL Sanitizer', () => {
       assert.isFunction(urlSanitizer.has, 'has');
       assert.isFunction(urlSanitizer.add, 'add');
       assert.isFunction(urlSanitizer.remove, 'remove');
+      assert.isFunction(urlSanitizer.reset, 'reset');
     });
 
     it('should get value', () => {
