@@ -9,5 +9,6 @@ export class URISchemes {
     add(scheme: string): Array<string>;
     remove(scheme: string): boolean;
     verify(uri: string): boolean;
+    reset(): void;
     #private;
 }
