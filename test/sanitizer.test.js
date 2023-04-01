@@ -1212,6 +1212,14 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
+      it('should get value', async () => {
+        const res = await func('foo:bar', {
+          allow: ['foo']
+        });
+        assert.isFalse(urlSanitizer.has('foo'), 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
       it('should get null', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
@@ -1405,6 +1413,14 @@ describe('sanitizer', () => {
       it('should get value', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get value', () => {
+        const res = func('foo:bar', {
+          allow: ['foo']
+        });
+        assert.isFalse(urlSanitizer.has('foo'), 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
       });
 
       it('should get null', async () => {

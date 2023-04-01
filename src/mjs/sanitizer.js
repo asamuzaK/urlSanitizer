@@ -410,9 +410,15 @@ export const sanitizeURL = async (url, opt = {
   only: []
 }) => {
   let res;
-  if (urlSanitizer.verify(url)) {
-    const { protocol } = new URL(url);
-    if (protocol === 'blob:') {
+  if (url && isString(url)) {
+    let scheme;
+    try {
+      const { protocol } = new URL(url);
+      scheme = protocol.replace(REG_END_COLON, '');
+    } catch (e) {
+      // fall through;
+    }
+    if (scheme === 'blob') {
       const { allow, deny, only } = opt;
       if ((Array.isArray(allow) && allow.includes('blob') &&
            !(Array.isArray(deny) && deny.includes('blob'))) ||
@@ -442,7 +448,7 @@ export const sanitizeURL = async (url, opt = {
         }
       }
       URL.revokeObjectURL(url);
-    } else {
+    } else if (scheme) {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
@@ -464,11 +470,17 @@ export const sanitizeURL = async (url, opt = {
  */
 export const sanitizeURLSync = (url, opt) => {
   let res;
-  if (urlSanitizer.verify(url)) {
-    const { protocol } = new URL(url);
-    if (protocol === 'blob:') {
+  if (url && isString(url)) {
+    let scheme;
+    try {
+      const { protocol } = new URL(url);
+      scheme = protocol.replace(REG_END_COLON, '');
+    } catch (e) {
+      // fall through;
+    }
+    if (scheme === 'blob') {
       URL.revokeObjectURL(url);
-    } else {
+    } else if (scheme) {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
