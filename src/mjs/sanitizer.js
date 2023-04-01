@@ -300,6 +300,7 @@ export class URLSanitizer extends URISchemes {
           this.#nest = 0;
         }
       }
+      super.reset();
     }
     return sanitizedUrl || null;
   }

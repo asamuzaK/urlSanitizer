@@ -314,6 +314,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'https']
         });
+        assert.isFalse(sanitizer.verify('foo'), 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -322,6 +323,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           allow: ['foo']
         });
+        assert.isFalse(sanitizer.verify('foo'), 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -435,6 +437,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'git', 'https']
         });
+        assert.isFalse(sanitizer.verify('foo'), 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
