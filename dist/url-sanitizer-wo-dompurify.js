@@ -319,6 +319,7 @@ var URLSanitizer = class extends URISchemes {
       ["javascrpt", false],
       ["vbscript", false]
     ]);
+    const tempScheme = /* @__PURE__ */ new Set();
     let restrictScheme = false;
     if (Array.isArray(only) && only.length) {
       const schemes = super.get();
@@ -339,6 +340,7 @@ var URLSanitizer = class extends URISchemes {
               }
               if (super.has(item)) {
                 schemeMap.set(item, true);
+                tempScheme.add(item);
               }
             }
             if (!restrictScheme && schemeMap.has(item)) {
@@ -363,6 +365,7 @@ var URLSanitizer = class extends URISchemes {
                 }
                 if (super.has(item)) {
                   schemeMap.set(item, true);
+                  tempScheme.add(item);
                 }
               }
             }
@@ -463,6 +466,11 @@ var URLSanitizer = class extends URISchemes {
         } else {
           this.#nest = 0;
         }
+      }
+      if (tempScheme.size) {
+        tempScheme.forEach((item) => {
+          super.remove(item);
+        });
       }
     }
     return sanitizedUrl || null;
