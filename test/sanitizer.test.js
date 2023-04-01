@@ -311,12 +311,32 @@ describe('sanitizer', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
+        sanitizer.add('foo');
+        const res = sanitizer.sanitize('foo:bar', {
+          only: ['foo', 'https']
+        });
+        assert.isTrue(sanitizer.has('foo'), 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
         sanitizer.add('bar');
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'https']
         });
         assert.isFalse(sanitizer.has('foo'), 'scheme');
         assert.isTrue(sanitizer.has('bar'), 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.add('foo');
+        const res = sanitizer.sanitize('foo:bar', {
+          allow: ['foo']
+        });
+        assert.isTrue(sanitizer.has('foo'), 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -434,6 +454,16 @@ describe('sanitizer', () => {
           only: ['git', 'https']
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.add('foo');
+        const res = sanitizer.sanitize('foo:bar', {
+          only: ['foo', 'git', 'https']
+        });
+        assert.isTrue(sanitizer.has('foo'), 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
       });
 
       it('should get value', () => {
