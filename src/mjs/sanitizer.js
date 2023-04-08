@@ -37,7 +37,7 @@ const REG_URL_ENC_AMP = /%26/g;
  * @property {string} [data.data] - data part of the data URL
  * @property {string} [href] - sanitized URL input
  * @property {string} [origin] - scheme, domain and port of the sanitized URL
- * @property {string} [protocol] -  protocol scheme of the sanitized URL
+ * @property {string} [protocol] - protocol scheme of the sanitized URL
  * @property {string} [username] - username specified before the domain name
  * @property {string} [password] - password specified before the domain name
  * @property {string} [host] - domain and port of the sanitized URL
