@@ -31,181 +31,22 @@ var require_purify = __commonJS({
       typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory() : typeof define === "function" && define.amd ? define(factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, global.DOMPurify = factory());
     })(exports, function() {
       "use strict";
-      function _typeof(obj) {
-        "@babel/helpers - typeof";
-        return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(obj2) {
-          return typeof obj2;
-        } : function(obj2) {
-          return obj2 && "function" == typeof Symbol && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
-        }, _typeof(obj);
-      }
-      function _setPrototypeOf(o, p) {
-        _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf2(o2, p2) {
-          o2.__proto__ = p2;
-          return o2;
-        };
-        return _setPrototypeOf(o, p);
-      }
-      function _isNativeReflectConstruct() {
-        if (typeof Reflect === "undefined" || !Reflect.construct)
-          return false;
-        if (Reflect.construct.sham)
-          return false;
-        if (typeof Proxy === "function")
-          return true;
-        try {
-          Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {
-          }));
-          return true;
-        } catch (e) {
-          return false;
-        }
-      }
-      function _construct(Parent, args, Class) {
-        if (_isNativeReflectConstruct()) {
-          _construct = Reflect.construct;
-        } else {
-          _construct = function _construct2(Parent2, args2, Class2) {
-            var a = [null];
-            a.push.apply(a, args2);
-            var Constructor = Function.bind.apply(Parent2, a);
-            var instance = new Constructor();
-            if (Class2)
-              _setPrototypeOf(instance, Class2.prototype);
-            return instance;
-          };
-        }
-        return _construct.apply(null, arguments);
-      }
-      function _slicedToArray(arr, i) {
-        return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
-      }
-      function _toConsumableArray(arr) {
-        return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
-      }
-      function _arrayWithoutHoles(arr) {
-        if (Array.isArray(arr))
-          return _arrayLikeToArray(arr);
-      }
-      function _arrayWithHoles(arr) {
-        if (Array.isArray(arr))
-          return arr;
-      }
-      function _iterableToArray(iter) {
-        if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null)
-          return Array.from(iter);
-      }
-      function _iterableToArrayLimit(arr, i) {
-        var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
-        if (_i == null)
-          return;
-        var _arr = [];
-        var _n = true;
-        var _d = false;
-        var _s, _e;
-        try {
-          for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
-            _arr.push(_s.value);
-            if (i && _arr.length === i)
-              break;
-          }
-        } catch (err) {
-          _d = true;
-          _e = err;
-        } finally {
-          try {
-            if (!_n && _i["return"] != null)
-              _i["return"]();
-          } finally {
-            if (_d)
-              throw _e;
-          }
-        }
-        return _arr;
-      }
-      function _unsupportedIterableToArray(o, minLen) {
-        if (!o)
-          return;
-        if (typeof o === "string")
-          return _arrayLikeToArray(o, minLen);
-        var n = Object.prototype.toString.call(o).slice(8, -1);
-        if (n === "Object" && o.constructor)
-          n = o.constructor.name;
-        if (n === "Map" || n === "Set")
-          return Array.from(o);
-        if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))
-          return _arrayLikeToArray(o, minLen);
-      }
-      function _arrayLikeToArray(arr, len) {
-        if (len == null || len > arr.length)
-          len = arr.length;
-        for (var i = 0, arr2 = new Array(len); i < len; i++)
-          arr2[i] = arr[i];
-        return arr2;
-      }
-      function _nonIterableSpread() {
-        throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-      }
-      function _nonIterableRest() {
-        throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-      }
-      function _createForOfIteratorHelper(o, allowArrayLike) {
-        var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-        if (!it) {
-          if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
-            if (it)
-              o = it;
-            var i = 0;
-            var F = function() {
-            };
-            return {
-              s: F,
-              n: function() {
-                if (i >= o.length)
-                  return {
-                    done: true
-                  };
-                return {
-                  done: false,
-                  value: o[i++]
-                };
-              },
-              e: function(e) {
-                throw e;
-              },
-              f: F
-            };
-          }
-          throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-        }
-        var normalCompletion = true, didErr = false, err;
-        return {
-          s: function() {
-            it = it.call(o);
-          },
-          n: function() {
-            var step = it.next();
-            normalCompletion = step.done;
-            return step;
-          },
-          e: function(e) {
-            didErr = true;
-            err = e;
-          },
-          f: function() {
-            try {
-              if (!normalCompletion && it.return != null)
-                it.return();
-            } finally {
-              if (didErr)
-                throw err;
-            }
-          }
-        };
-      }
-      var entries = Object.entries, setPrototypeOf = Object.setPrototypeOf, isFrozen = Object.isFrozen, getPrototypeOf = Object.getPrototypeOf, getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-      var freeze = Object.freeze, seal = Object.seal, create = Object.create;
-      var _ref = typeof Reflect !== "undefined" && Reflect, apply = _ref.apply, construct = _ref.construct;
+      const {
+        entries,
+        setPrototypeOf,
+        isFrozen,
+        getPrototypeOf,
+        getOwnPropertyDescriptor
+      } = Object;
+      let {
+        freeze,
+        seal,
+        create
+      } = Object;
+      let {
+        apply,
+        construct
+      } = typeof Reflect !== "undefined" && Reflect;
       if (!apply) {
         apply = function apply2(fun, thisValue, args) {
           return fun.apply(thisValue, args);
@@ -223,20 +64,20 @@ var require_purify = __commonJS({
       }
       if (!construct) {
         construct = function construct2(Func, args) {
-          return _construct(Func, _toConsumableArray(args));
+          return new Func(...args);
         };
       }
-      var arrayForEach = unapply(Array.prototype.forEach);
-      var arrayPop = unapply(Array.prototype.pop);
-      var arrayPush = unapply(Array.prototype.push);
-      var stringToLowerCase = unapply(String.prototype.toLowerCase);
-      var stringToString = unapply(String.prototype.toString);
-      var stringMatch = unapply(String.prototype.match);
-      var stringReplace = unapply(String.prototype.replace);
-      var stringIndexOf = unapply(String.prototype.indexOf);
-      var stringTrim = unapply(String.prototype.trim);
-      var regExpTest = unapply(RegExp.prototype.test);
-      var typeErrorCreate = unconstruct(TypeError);
+      const arrayForEach = unapply(Array.prototype.forEach);
+      const arrayPop = unapply(Array.prototype.pop);
+      const arrayPush = unapply(Array.prototype.push);
+      const stringToLowerCase = unapply(String.prototype.toLowerCase);
+      const stringToString = unapply(String.prototype.toString);
+      const stringMatch = unapply(String.prototype.match);
+      const stringReplace = unapply(String.prototype.replace);
+      const stringIndexOf = unapply(String.prototype.indexOf);
+      const stringTrim = unapply(String.prototype.trim);
+      const regExpTest = unapply(RegExp.prototype.test);
+      const typeErrorCreate = unconstruct(TypeError);
       function unapply(func) {
         return function(thisArg) {
           for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -258,11 +99,11 @@ var require_purify = __commonJS({
         if (setPrototypeOf) {
           setPrototypeOf(set, null);
         }
-        var l = array.length;
+        let l = array.length;
         while (l--) {
-          var element = array[l];
+          let element = array[l];
           if (typeof element === "string") {
-            var lcElement = transformCaseFunc(element);
+            const lcElement = transformCaseFunc(element);
             if (lcElement !== element) {
               if (!isFrozen(array)) {
                 array[l] = lcElement;
@@ -275,23 +116,15 @@ var require_purify = __commonJS({
         return set;
       }
       function clone(object) {
-        var newObject = create(null);
-        var _iterator = _createForOfIteratorHelper(entries(object)), _step;
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done; ) {
-            var _step$value = _slicedToArray(_step.value, 2), property = _step$value[0], value = _step$value[1];
-            newObject[property] = value;
-          }
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
+        const newObject = create(null);
+        for (const [property, value] of entries(object)) {
+          newObject[property] = value;
         }
         return newObject;
       }
       function lookupGetter(object, prop) {
         while (object !== null) {
-          var desc = getOwnPropertyDescriptor(object, prop);
+          const desc = getOwnPropertyDescriptor(object, prop);
           if (desc) {
             if (desc.get) {
               return unapply(desc.get);
@@ -308,51 +141,61 @@ var require_purify = __commonJS({
         }
         return fallbackValue;
       }
-      var html$1 = freeze(["a", "abbr", "acronym", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "big", "blink", "blockquote", "body", "br", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "content", "data", "datalist", "dd", "decorator", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "element", "em", "fieldset", "figcaption", "figure", "font", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "img", "input", "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee", "menu", "menuitem", "meter", "nav", "nobr", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "section", "select", "shadow", "small", "source", "spacer", "span", "strike", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"]);
-      var svg$1 = freeze(["svg", "a", "altglyph", "altglyphdef", "altglyphitem", "animatecolor", "animatemotion", "animatetransform", "circle", "clippath", "defs", "desc", "ellipse", "filter", "font", "g", "glyph", "glyphref", "hkern", "image", "line", "lineargradient", "marker", "mask", "metadata", "mpath", "path", "pattern", "polygon", "polyline", "radialgradient", "rect", "stop", "style", "switch", "symbol", "text", "textpath", "title", "tref", "tspan", "view", "vkern"]);
-      var svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
-      var svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "fedropshadow", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
-      var mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover"]);
-      var mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
-      var text = freeze(["#text"]);
-      var html = freeze(["accept", "action", "align", "alt", "autocapitalize", "autocomplete", "autopictureinpicture", "autoplay", "background", "bgcolor", "border", "capture", "cellpadding", "cellspacing", "checked", "cite", "class", "clear", "color", "cols", "colspan", "controls", "controlslist", "coords", "crossorigin", "datetime", "decoding", "default", "dir", "disabled", "disablepictureinpicture", "disableremoteplayback", "download", "draggable", "enctype", "enterkeyhint", "face", "for", "headers", "height", "hidden", "high", "href", "hreflang", "id", "inputmode", "integrity", "ismap", "kind", "label", "lang", "list", "loading", "loop", "low", "max", "maxlength", "media", "method", "min", "minlength", "multiple", "muted", "name", "nonce", "noshade", "novalidate", "nowrap", "open", "optimum", "pattern", "placeholder", "playsinline", "poster", "preload", "pubdate", "radiogroup", "readonly", "rel", "required", "rev", "reversed", "role", "rows", "rowspan", "spellcheck", "scope", "selected", "shape", "size", "sizes", "span", "srclang", "start", "src", "srcset", "step", "style", "summary", "tabindex", "title", "translate", "type", "usemap", "valign", "value", "width", "xmlns", "slot"]);
-      var svg = freeze(["accent-height", "accumulate", "additive", "alignment-baseline", "ascent", "attributename", "attributetype", "azimuth", "basefrequency", "baseline-shift", "begin", "bias", "by", "class", "clip", "clippathunits", "clip-path", "clip-rule", "color", "color-interpolation", "color-interpolation-filters", "color-profile", "color-rendering", "cx", "cy", "d", "dx", "dy", "diffuseconstant", "direction", "display", "divisor", "dur", "edgemode", "elevation", "end", "fill", "fill-opacity", "fill-rule", "filter", "filterunits", "flood-color", "flood-opacity", "font-family", "font-size", "font-size-adjust", "font-stretch", "font-style", "font-variant", "font-weight", "fx", "fy", "g1", "g2", "glyph-name", "glyphref", "gradientunits", "gradienttransform", "height", "href", "id", "image-rendering", "in", "in2", "k", "k1", "k2", "k3", "k4", "kerning", "keypoints", "keysplines", "keytimes", "lang", "lengthadjust", "letter-spacing", "kernelmatrix", "kernelunitlength", "lighting-color", "local", "marker-end", "marker-mid", "marker-start", "markerheight", "markerunits", "markerwidth", "maskcontentunits", "maskunits", "max", "mask", "media", "method", "mode", "min", "name", "numoctaves", "offset", "operator", "opacity", "order", "orient", "orientation", "origin", "overflow", "paint-order", "path", "pathlength", "patterncontentunits", "patterntransform", "patternunits", "points", "preservealpha", "preserveaspectratio", "primitiveunits", "r", "rx", "ry", "radius", "refx", "refy", "repeatcount", "repeatdur", "restart", "result", "rotate", "scale", "seed", "shape-rendering", "specularconstant", "specularexponent", "spreadmethod", "startoffset", "stddeviation", "stitchtiles", "stop-color", "stop-opacity", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke", "stroke-width", "style", "surfacescale", "systemlanguage", "tabindex", "targetx", "targety", "transform", "transform-origin", "text-anchor", "text-decoration", "text-rendering", "textlength", "type", "u1", "u2", "unicode", "values", "viewbox", "visibility", "version", "vert-adv-y", "vert-origin-x", "vert-origin-y", "width", "word-spacing", "wrap", "writing-mode", "xchannelselector", "ychannelselector", "x", "x1", "x2", "xmlns", "y", "y1", "y2", "z", "zoomandpan"]);
-      var mathMl = freeze(["accent", "accentunder", "align", "bevelled", "close", "columnsalign", "columnlines", "columnspan", "denomalign", "depth", "dir", "display", "displaystyle", "encoding", "fence", "frame", "height", "href", "id", "largeop", "length", "linethickness", "lspace", "lquote", "mathbackground", "mathcolor", "mathsize", "mathvariant", "maxsize", "minsize", "movablelimits", "notation", "numalign", "open", "rowalign", "rowlines", "rowspacing", "rowspan", "rspace", "rquote", "scriptlevel", "scriptminsize", "scriptsizemultiplier", "selection", "separator", "separators", "stretchy", "subscriptshift", "supscriptshift", "symmetric", "voffset", "width", "xmlns"]);
-      var xml = freeze(["xlink:href", "xml:id", "xlink:title", "xml:space", "xmlns:xlink"]);
-      var MUSTACHE_EXPR = seal(/\{\{[\w\W]*|[\w\W]*\}\}/gm);
-      var ERB_EXPR = seal(/<%[\w\W]*|[\w\W]*%>/gm);
-      var TMPLIT_EXPR = seal(/\${[\w\W]*}/gm);
-      var DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]/);
-      var ARIA_ATTR = seal(/^aria-[\-\w]+$/);
-      var IS_ALLOWED_URI = seal(
-        /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+      const html$1 = freeze(["a", "abbr", "acronym", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "big", "blink", "blockquote", "body", "br", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "content", "data", "datalist", "dd", "decorator", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "element", "em", "fieldset", "figcaption", "figure", "font", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "img", "input", "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee", "menu", "menuitem", "meter", "nav", "nobr", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "section", "select", "shadow", "small", "source", "spacer", "span", "strike", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"]);
+      const svg$1 = freeze(["svg", "a", "altglyph", "altglyphdef", "altglyphitem", "animatecolor", "animatemotion", "animatetransform", "circle", "clippath", "defs", "desc", "ellipse", "filter", "font", "g", "glyph", "glyphref", "hkern", "image", "line", "lineargradient", "marker", "mask", "metadata", "mpath", "path", "pattern", "polygon", "polyline", "radialgradient", "rect", "stop", "style", "switch", "symbol", "text", "textpath", "title", "tref", "tspan", "view", "vkern"]);
+      const svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
+      const svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "fedropshadow", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
+      const mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "mprescripts"]);
+      const mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
+      const text = freeze(["#text"]);
+      const html = freeze(["accept", "action", "align", "alt", "autocapitalize", "autocomplete", "autopictureinpicture", "autoplay", "background", "bgcolor", "border", "capture", "cellpadding", "cellspacing", "checked", "cite", "class", "clear", "color", "cols", "colspan", "controls", "controlslist", "coords", "crossorigin", "datetime", "decoding", "default", "dir", "disabled", "disablepictureinpicture", "disableremoteplayback", "download", "draggable", "enctype", "enterkeyhint", "face", "for", "headers", "height", "hidden", "high", "href", "hreflang", "id", "inputmode", "integrity", "ismap", "kind", "label", "lang", "list", "loading", "loop", "low", "max", "maxlength", "media", "method", "min", "minlength", "multiple", "muted", "name", "nonce", "noshade", "novalidate", "nowrap", "open", "optimum", "pattern", "placeholder", "playsinline", "poster", "preload", "pubdate", "radiogroup", "readonly", "rel", "required", "rev", "reversed", "role", "rows", "rowspan", "spellcheck", "scope", "selected", "shape", "size", "sizes", "span", "srclang", "start", "src", "srcset", "step", "style", "summary", "tabindex", "title", "translate", "type", "usemap", "valign", "value", "width", "xmlns", "slot"]);
+      const svg = freeze(["accent-height", "accumulate", "additive", "alignment-baseline", "ascent", "attributename", "attributetype", "azimuth", "basefrequency", "baseline-shift", "begin", "bias", "by", "class", "clip", "clippathunits", "clip-path", "clip-rule", "color", "color-interpolation", "color-interpolation-filters", "color-profile", "color-rendering", "cx", "cy", "d", "dx", "dy", "diffuseconstant", "direction", "display", "divisor", "dur", "edgemode", "elevation", "end", "fill", "fill-opacity", "fill-rule", "filter", "filterunits", "flood-color", "flood-opacity", "font-family", "font-size", "font-size-adjust", "font-stretch", "font-style", "font-variant", "font-weight", "fx", "fy", "g1", "g2", "glyph-name", "glyphref", "gradientunits", "gradienttransform", "height", "href", "id", "image-rendering", "in", "in2", "k", "k1", "k2", "k3", "k4", "kerning", "keypoints", "keysplines", "keytimes", "lang", "lengthadjust", "letter-spacing", "kernelmatrix", "kernelunitlength", "lighting-color", "local", "marker-end", "marker-mid", "marker-start", "markerheight", "markerunits", "markerwidth", "maskcontentunits", "maskunits", "max", "mask", "media", "method", "mode", "min", "name", "numoctaves", "offset", "operator", "opacity", "order", "orient", "orientation", "origin", "overflow", "paint-order", "path", "pathlength", "patterncontentunits", "patterntransform", "patternunits", "points", "preservealpha", "preserveaspectratio", "primitiveunits", "r", "rx", "ry", "radius", "refx", "refy", "repeatcount", "repeatdur", "restart", "result", "rotate", "scale", "seed", "shape-rendering", "specularconstant", "specularexponent", "spreadmethod", "startoffset", "stddeviation", "stitchtiles", "stop-color", "stop-opacity", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke", "stroke-width", "style", "surfacescale", "systemlanguage", "tabindex", "targetx", "targety", "transform", "transform-origin", "text-anchor", "text-decoration", "text-rendering", "textlength", "type", "u1", "u2", "unicode", "values", "viewbox", "visibility", "version", "vert-adv-y", "vert-origin-x", "vert-origin-y", "width", "word-spacing", "wrap", "writing-mode", "xchannelselector", "ychannelselector", "x", "x1", "x2", "xmlns", "y", "y1", "y2", "z", "zoomandpan"]);
+      const mathMl = freeze(["accent", "accentunder", "align", "bevelled", "close", "columnsalign", "columnlines", "columnspan", "denomalign", "depth", "dir", "display", "displaystyle", "encoding", "fence", "frame", "height", "href", "id", "largeop", "length", "linethickness", "lspace", "lquote", "mathbackground", "mathcolor", "mathsize", "mathvariant", "maxsize", "minsize", "movablelimits", "notation", "numalign", "open", "rowalign", "rowlines", "rowspacing", "rowspan", "rspace", "rquote", "scriptlevel", "scriptminsize", "scriptsizemultiplier", "selection", "separator", "separators", "stretchy", "subscriptshift", "supscriptshift", "symmetric", "voffset", "width", "xmlns"]);
+      const xml = freeze(["xlink:href", "xml:id", "xlink:title", "xml:space", "xmlns:xlink"]);
+      const MUSTACHE_EXPR = seal(/\{\{[\w\W]*|[\w\W]*\}\}/gm);
+      const ERB_EXPR = seal(/<%[\w\W]*|[\w\W]*%>/gm);
+      const TMPLIT_EXPR = seal(/\${[\w\W]*}/gm);
+      const DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]/);
+      const ARIA_ATTR = seal(/^aria-[\-\w]+$/);
+      const IS_ALLOWED_URI = seal(
+        /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
         // eslint-disable-line no-useless-escape
       );
-      var IS_SCRIPT_OR_DATA = seal(/^(?:\w+script|data):/i);
-      var ATTR_WHITESPACE = seal(
+      const IS_SCRIPT_OR_DATA = seal(/^(?:\w+script|data):/i);
+      const ATTR_WHITESPACE = seal(
         /[\u0000-\u0020\u00A0\u1680\u180E\u2000-\u2029\u205F\u3000]/g
         // eslint-disable-line no-control-regex
       );
-      var DOCTYPE_NAME = seal(/^html$/i);
-      var getGlobal = function getGlobal2() {
-        return typeof window === "undefined" ? null : window;
-      };
-      var _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, document) {
-        if (_typeof(trustedTypes) !== "object" || typeof trustedTypes.createPolicy !== "function") {
+      const DOCTYPE_NAME = seal(/^html$/i);
+      var EXPRESSIONS = /* @__PURE__ */ Object.freeze({
+        __proto__: null,
+        MUSTACHE_EXPR,
+        ERB_EXPR,
+        TMPLIT_EXPR,
+        DATA_ATTR,
+        ARIA_ATTR,
+        IS_ALLOWED_URI,
+        IS_SCRIPT_OR_DATA,
+        ATTR_WHITESPACE,
+        DOCTYPE_NAME
+      });
+      const getGlobal = () => typeof window === "undefined" ? null : window;
+      const _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, document) {
+        if (typeof trustedTypes !== "object" || typeof trustedTypes.createPolicy !== "function") {
           return null;
         }
-        var suffix = null;
-        var ATTR_NAME = "data-tt-policy-suffix";
+        let suffix = null;
+        const ATTR_NAME = "data-tt-policy-suffix";
         if (document.currentScript && document.currentScript.hasAttribute(ATTR_NAME)) {
           suffix = document.currentScript.getAttribute(ATTR_NAME);
         }
-        var policyName = "dompurify" + (suffix ? "#" + suffix : "");
+        const policyName = "dompurify" + (suffix ? "#" + suffix : "");
         try {
           return trustedTypes.createPolicy(policyName, {
-            createHTML: function createHTML(html2) {
+            createHTML(html2) {
               return html2;
             },
-            createScriptURL: function createScriptURL(scriptUrl) {
+            createScriptURL(scriptUrl) {
               return scriptUrl;
             }
           });
@@ -362,43 +205,70 @@ var require_purify = __commonJS({
         }
       };
       function createDOMPurify() {
-        var window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
-        var DOMPurify = function DOMPurify2(root) {
-          return createDOMPurify(root);
-        };
-        DOMPurify.version = "3.0.1";
+        let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
+        const DOMPurify = (root) => createDOMPurify(root);
+        DOMPurify.version = "3.0.2";
         DOMPurify.removed = [];
         if (!window2 || !window2.document || window2.document.nodeType !== 9) {
           DOMPurify.isSupported = false;
           return DOMPurify;
         }
-        var originalDocument = window2.document;
-        var document = window2.document;
-        var DocumentFragment = window2.DocumentFragment, HTMLTemplateElement = window2.HTMLTemplateElement, Node = window2.Node, Element = window2.Element, NodeFilter = window2.NodeFilter, _window$NamedNodeMap = window2.NamedNodeMap, NamedNodeMap = _window$NamedNodeMap === void 0 ? window2.NamedNodeMap || window2.MozNamedAttrMap : _window$NamedNodeMap, HTMLFormElement = window2.HTMLFormElement, DOMParser = window2.DOMParser, trustedTypes = window2.trustedTypes;
-        var ElementPrototype = Element.prototype;
-        var cloneNode = lookupGetter(ElementPrototype, "cloneNode");
-        var getNextSibling = lookupGetter(ElementPrototype, "nextSibling");
-        var getChildNodes = lookupGetter(ElementPrototype, "childNodes");
-        var getParentNode = lookupGetter(ElementPrototype, "parentNode");
+        const originalDocument = window2.document;
+        let {
+          document
+        } = window2;
+        const {
+          DocumentFragment,
+          HTMLTemplateElement,
+          Node,
+          Element,
+          NodeFilter,
+          NamedNodeMap = window2.NamedNodeMap || window2.MozNamedAttrMap,
+          HTMLFormElement,
+          DOMParser,
+          trustedTypes
+        } = window2;
+        const ElementPrototype = Element.prototype;
+        const cloneNode = lookupGetter(ElementPrototype, "cloneNode");
+        const getNextSibling = lookupGetter(ElementPrototype, "nextSibling");
+        const getChildNodes = lookupGetter(ElementPrototype, "childNodes");
+        const getParentNode = lookupGetter(ElementPrototype, "parentNode");
         if (typeof HTMLTemplateElement === "function") {
-          var template = document.createElement("template");
+          const template = document.createElement("template");
           if (template.content && template.content.ownerDocument) {
             document = template.content.ownerDocument;
           }
         }
-        var trustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, originalDocument);
-        var emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML("") : "";
-        var _document = document, implementation = _document.implementation, createNodeIterator = _document.createNodeIterator, createDocumentFragment = _document.createDocumentFragment, getElementsByTagName = _document.getElementsByTagName;
-        var importNode = originalDocument.importNode;
-        var hooks = {};
+        const trustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, originalDocument);
+        const emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML("") : "";
+        const {
+          implementation,
+          createNodeIterator,
+          createDocumentFragment,
+          getElementsByTagName
+        } = document;
+        const {
+          importNode
+        } = originalDocument;
+        let hooks = {};
         DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && typeof implementation.createHTMLDocument !== "undefined";
-        var MUSTACHE_EXPR$1 = MUSTACHE_EXPR, ERB_EXPR$1 = ERB_EXPR, TMPLIT_EXPR$1 = TMPLIT_EXPR, DATA_ATTR$1 = DATA_ATTR, ARIA_ATTR$1 = ARIA_ATTR, IS_SCRIPT_OR_DATA$1 = IS_SCRIPT_OR_DATA, ATTR_WHITESPACE$1 = ATTR_WHITESPACE;
-        var IS_ALLOWED_URI$1 = IS_ALLOWED_URI;
-        var ALLOWED_TAGS = null;
-        var DEFAULT_ALLOWED_TAGS = addToSet({}, [].concat(_toConsumableArray(html$1), _toConsumableArray(svg$1), _toConsumableArray(svgFilters), _toConsumableArray(mathMl$1), _toConsumableArray(text)));
-        var ALLOWED_ATTR = null;
-        var DEFAULT_ALLOWED_ATTR = addToSet({}, [].concat(_toConsumableArray(html), _toConsumableArray(svg), _toConsumableArray(mathMl), _toConsumableArray(xml)));
-        var CUSTOM_ELEMENT_HANDLING = Object.seal(Object.create(null, {
+        const {
+          MUSTACHE_EXPR: MUSTACHE_EXPR2,
+          ERB_EXPR: ERB_EXPR2,
+          TMPLIT_EXPR: TMPLIT_EXPR2,
+          DATA_ATTR: DATA_ATTR2,
+          ARIA_ATTR: ARIA_ATTR2,
+          IS_SCRIPT_OR_DATA: IS_SCRIPT_OR_DATA2,
+          ATTR_WHITESPACE: ATTR_WHITESPACE2
+        } = EXPRESSIONS;
+        let {
+          IS_ALLOWED_URI: IS_ALLOWED_URI$1
+        } = EXPRESSIONS;
+        let ALLOWED_TAGS = null;
+        const DEFAULT_ALLOWED_TAGS = addToSet({}, [...html$1, ...svg$1, ...svgFilters, ...mathMl$1, ...text]);
+        let ALLOWED_ATTR = null;
+        const DEFAULT_ALLOWED_ATTR = addToSet({}, [...html, ...svg, ...mathMl, ...xml]);
+        let CUSTOM_ELEMENT_HANDLING = Object.seal(Object.create(null, {
           tagNameCheck: {
             writable: true,
             configurable: false,
@@ -418,52 +288,52 @@ var require_purify = __commonJS({
             value: false
           }
         }));
-        var FORBID_TAGS = null;
-        var FORBID_ATTR = null;
-        var ALLOW_ARIA_ATTR = true;
-        var ALLOW_DATA_ATTR = true;
-        var ALLOW_UNKNOWN_PROTOCOLS = false;
-        var ALLOW_SELF_CLOSE_IN_ATTR = true;
-        var SAFE_FOR_TEMPLATES = false;
-        var WHOLE_DOCUMENT = false;
-        var SET_CONFIG = false;
-        var FORCE_BODY = false;
-        var RETURN_DOM = false;
-        var RETURN_DOM_FRAGMENT = false;
-        var RETURN_TRUSTED_TYPE = false;
-        var SANITIZE_DOM = true;
-        var SANITIZE_NAMED_PROPS = false;
-        var SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
-        var KEEP_CONTENT = true;
-        var IN_PLACE = false;
-        var USE_PROFILES = {};
-        var FORBID_CONTENTS = null;
-        var DEFAULT_FORBID_CONTENTS = addToSet({}, ["annotation-xml", "audio", "colgroup", "desc", "foreignobject", "head", "iframe", "math", "mi", "mn", "mo", "ms", "mtext", "noembed", "noframes", "noscript", "plaintext", "script", "style", "svg", "template", "thead", "title", "video", "xmp"]);
-        var DATA_URI_TAGS = null;
-        var DEFAULT_DATA_URI_TAGS = addToSet({}, ["audio", "video", "img", "source", "image", "track"]);
-        var URI_SAFE_ATTRIBUTES = null;
-        var DEFAULT_URI_SAFE_ATTRIBUTES = addToSet({}, ["alt", "class", "for", "id", "label", "name", "pattern", "placeholder", "role", "summary", "title", "value", "style", "xmlns"]);
-        var MATHML_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
-        var SVG_NAMESPACE = "http://www.w3.org/2000/svg";
-        var HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
-        var NAMESPACE = HTML_NAMESPACE;
-        var IS_EMPTY_INPUT = false;
-        var ALLOWED_NAMESPACES = null;
-        var DEFAULT_ALLOWED_NAMESPACES = addToSet({}, [MATHML_NAMESPACE, SVG_NAMESPACE, HTML_NAMESPACE], stringToString);
-        var PARSER_MEDIA_TYPE;
-        var SUPPORTED_PARSER_MEDIA_TYPES = ["application/xhtml+xml", "text/html"];
-        var DEFAULT_PARSER_MEDIA_TYPE = "text/html";
-        var transformCaseFunc;
-        var CONFIG = null;
-        var formElement = document.createElement("form");
-        var isRegexOrFunction = function isRegexOrFunction2(testValue) {
+        let FORBID_TAGS = null;
+        let FORBID_ATTR = null;
+        let ALLOW_ARIA_ATTR = true;
+        let ALLOW_DATA_ATTR = true;
+        let ALLOW_UNKNOWN_PROTOCOLS = false;
+        let ALLOW_SELF_CLOSE_IN_ATTR = true;
+        let SAFE_FOR_TEMPLATES = false;
+        let WHOLE_DOCUMENT = false;
+        let SET_CONFIG = false;
+        let FORCE_BODY = false;
+        let RETURN_DOM = false;
+        let RETURN_DOM_FRAGMENT = false;
+        let RETURN_TRUSTED_TYPE = false;
+        let SANITIZE_DOM = true;
+        let SANITIZE_NAMED_PROPS = false;
+        const SANITIZE_NAMED_PROPS_PREFIX = "user-content-";
+        let KEEP_CONTENT = true;
+        let IN_PLACE = false;
+        let USE_PROFILES = {};
+        let FORBID_CONTENTS = null;
+        const DEFAULT_FORBID_CONTENTS = addToSet({}, ["annotation-xml", "audio", "colgroup", "desc", "foreignobject", "head", "iframe", "math", "mi", "mn", "mo", "ms", "mtext", "noembed", "noframes", "noscript", "plaintext", "script", "style", "svg", "template", "thead", "title", "video", "xmp"]);
+        let DATA_URI_TAGS = null;
+        const DEFAULT_DATA_URI_TAGS = addToSet({}, ["audio", "video", "img", "source", "image", "track"]);
+        let URI_SAFE_ATTRIBUTES = null;
+        const DEFAULT_URI_SAFE_ATTRIBUTES = addToSet({}, ["alt", "class", "for", "id", "label", "name", "pattern", "placeholder", "role", "summary", "title", "value", "style", "xmlns"]);
+        const MATHML_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
+        const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+        const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+        let NAMESPACE = HTML_NAMESPACE;
+        let IS_EMPTY_INPUT = false;
+        let ALLOWED_NAMESPACES = null;
+        const DEFAULT_ALLOWED_NAMESPACES = addToSet({}, [MATHML_NAMESPACE, SVG_NAMESPACE, HTML_NAMESPACE], stringToString);
+        let PARSER_MEDIA_TYPE;
+        const SUPPORTED_PARSER_MEDIA_TYPES = ["application/xhtml+xml", "text/html"];
+        const DEFAULT_PARSER_MEDIA_TYPE = "text/html";
+        let transformCaseFunc;
+        let CONFIG = null;
+        const formElement = document.createElement("form");
+        const isRegexOrFunction = function isRegexOrFunction2(testValue) {
           return testValue instanceof RegExp || testValue instanceof Function;
         };
-        var _parseConfig = function _parseConfig2(cfg) {
+        const _parseConfig = function _parseConfig2(cfg) {
           if (CONFIG && CONFIG === cfg) {
             return;
           }
-          if (!cfg || _typeof(cfg) !== "object") {
+          if (!cfg || typeof cfg !== "object") {
             cfg = {};
           }
           cfg = clone(cfg);
@@ -507,7 +377,7 @@ var require_purify = __commonJS({
           SANITIZE_NAMED_PROPS = cfg.SANITIZE_NAMED_PROPS || false;
           KEEP_CONTENT = cfg.KEEP_CONTENT !== false;
           IN_PLACE = cfg.IN_PLACE || false;
-          IS_ALLOWED_URI$1 = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI$1;
+          IS_ALLOWED_URI$1 = cfg.ALLOWED_URI_REGEXP || IS_ALLOWED_URI;
           NAMESPACE = cfg.NAMESPACE || HTML_NAMESPACE;
           CUSTOM_ELEMENT_HANDLING = cfg.CUSTOM_ELEMENT_HANDLING || {};
           if (cfg.CUSTOM_ELEMENT_HANDLING && isRegexOrFunction(cfg.CUSTOM_ELEMENT_HANDLING.tagNameCheck)) {
@@ -526,7 +396,7 @@ var require_purify = __commonJS({
             RETURN_DOM = true;
           }
           if (USE_PROFILES) {
-            ALLOWED_TAGS = addToSet({}, _toConsumableArray(text));
+            ALLOWED_TAGS = addToSet({}, [...text]);
             ALLOWED_ATTR = [];
             if (USE_PROFILES.html === true) {
               addToSet(ALLOWED_TAGS, html$1);
@@ -584,24 +454,24 @@ var require_purify = __commonJS({
           }
           CONFIG = cfg;
         };
-        var MATHML_TEXT_INTEGRATION_POINTS = addToSet({}, ["mi", "mo", "mn", "ms", "mtext"]);
-        var HTML_INTEGRATION_POINTS = addToSet({}, ["foreignobject", "desc", "title", "annotation-xml"]);
-        var COMMON_SVG_AND_HTML_ELEMENTS = addToSet({}, ["title", "style", "font", "a", "script"]);
-        var ALL_SVG_TAGS = addToSet({}, svg$1);
+        const MATHML_TEXT_INTEGRATION_POINTS = addToSet({}, ["mi", "mo", "mn", "ms", "mtext"]);
+        const HTML_INTEGRATION_POINTS = addToSet({}, ["foreignobject", "desc", "title", "annotation-xml"]);
+        const COMMON_SVG_AND_HTML_ELEMENTS = addToSet({}, ["title", "style", "font", "a", "script"]);
+        const ALL_SVG_TAGS = addToSet({}, svg$1);
         addToSet(ALL_SVG_TAGS, svgFilters);
         addToSet(ALL_SVG_TAGS, svgDisallowed);
-        var ALL_MATHML_TAGS = addToSet({}, mathMl$1);
+        const ALL_MATHML_TAGS = addToSet({}, mathMl$1);
         addToSet(ALL_MATHML_TAGS, mathMlDisallowed);
-        var _checkValidNamespace = function _checkValidNamespace2(element) {
-          var parent = getParentNode(element);
+        const _checkValidNamespace = function _checkValidNamespace2(element) {
+          let parent = getParentNode(element);
           if (!parent || !parent.tagName) {
             parent = {
               namespaceURI: NAMESPACE,
               tagName: "template"
             };
           }
-          var tagName = stringToLowerCase(element.tagName);
-          var parentTagName = stringToLowerCase(parent.tagName);
+          const tagName = stringToLowerCase(element.tagName);
+          const parentTagName = stringToLowerCase(parent.tagName);
           if (!ALLOWED_NAMESPACES[element.namespaceURI]) {
             return false;
           }
@@ -637,7 +507,7 @@ var require_purify = __commonJS({
           }
           return false;
         };
-        var _forceRemove = function _forceRemove2(node) {
+        const _forceRemove = function _forceRemove2(node) {
           arrayPush(DOMPurify.removed, {
             element: node
           });
@@ -647,7 +517,7 @@ var require_purify = __commonJS({
             node.remove();
           }
         };
-        var _removeAttribute = function _removeAttribute2(name, node) {
+        const _removeAttribute = function _removeAttribute2(name, node) {
           try {
             arrayPush(DOMPurify.removed, {
               attribute: node.getAttributeNode(name),
@@ -674,19 +544,19 @@ var require_purify = __commonJS({
             }
           }
         };
-        var _initDocument = function _initDocument2(dirty) {
-          var doc;
-          var leadingWhitespace;
+        const _initDocument = function _initDocument2(dirty) {
+          let doc;
+          let leadingWhitespace;
           if (FORCE_BODY) {
             dirty = "<remove></remove>" + dirty;
           } else {
-            var matches = stringMatch(dirty, /^[\r\n\t ]+/);
+            const matches = stringMatch(dirty, /^[\r\n\t ]+/);
             leadingWhitespace = matches && matches[0];
           }
           if (PARSER_MEDIA_TYPE === "application/xhtml+xml" && NAMESPACE === HTML_NAMESPACE) {
             dirty = '<html xmlns="http://www.w3.org/1999/xhtml"><head></head><body>' + dirty + "</body></html>";
           }
-          var dirtyPayload = trustedTypesPolicy ? trustedTypesPolicy.createHTML(dirty) : dirty;
+          const dirtyPayload = trustedTypesPolicy ? trustedTypesPolicy.createHTML(dirty) : dirty;
           if (NAMESPACE === HTML_NAMESPACE) {
             try {
               doc = new DOMParser().parseFromString(dirtyPayload, PARSER_MEDIA_TYPE);
@@ -700,7 +570,7 @@ var require_purify = __commonJS({
             } catch (_) {
             }
           }
-          var body = doc.body || doc.documentElement;
+          const body = doc.body || doc.documentElement;
           if (dirty && leadingWhitespace) {
             body.insertBefore(document.createTextNode(leadingWhitespace), body.childNodes[0] || null);
           }
@@ -709,7 +579,7 @@ var require_purify = __commonJS({
           }
           return WHOLE_DOCUMENT ? doc.documentElement : body;
         };
-        var _createIterator = function _createIterator2(root) {
+        const _createIterator = function _createIterator2(root) {
           return createNodeIterator.call(
             root.ownerDocument || root,
             root,
@@ -719,28 +589,28 @@ var require_purify = __commonJS({
             false
           );
         };
-        var _isClobbered = function _isClobbered2(elm) {
+        const _isClobbered = function _isClobbered2(elm) {
           return elm instanceof HTMLFormElement && (typeof elm.nodeName !== "string" || typeof elm.textContent !== "string" || typeof elm.removeChild !== "function" || !(elm.attributes instanceof NamedNodeMap) || typeof elm.removeAttribute !== "function" || typeof elm.setAttribute !== "function" || typeof elm.namespaceURI !== "string" || typeof elm.insertBefore !== "function" || typeof elm.hasChildNodes !== "function");
         };
-        var _isNode = function _isNode2(object) {
-          return _typeof(Node) === "object" ? object instanceof Node : object && _typeof(object) === "object" && typeof object.nodeType === "number" && typeof object.nodeName === "string";
+        const _isNode = function _isNode2(object) {
+          return typeof Node === "object" ? object instanceof Node : object && typeof object === "object" && typeof object.nodeType === "number" && typeof object.nodeName === "string";
         };
-        var _executeHook = function _executeHook2(entryPoint, currentNode, data) {
+        const _executeHook = function _executeHook2(entryPoint, currentNode, data) {
           if (!hooks[entryPoint]) {
             return;
           }
-          arrayForEach(hooks[entryPoint], function(hook) {
+          arrayForEach(hooks[entryPoint], (hook) => {
             hook.call(DOMPurify, currentNode, data, CONFIG);
           });
         };
-        var _sanitizeElements = function _sanitizeElements2(currentNode) {
-          var content;
+        const _sanitizeElements = function _sanitizeElements2(currentNode) {
+          let content;
           _executeHook("beforeSanitizeElements", currentNode, null);
           if (_isClobbered(currentNode)) {
             _forceRemove(currentNode);
             return true;
           }
-          var tagName = transformCaseFunc(currentNode.nodeName);
+          const tagName = transformCaseFunc(currentNode.nodeName);
           _executeHook("uponSanitizeElement", currentNode, {
             tagName,
             allowedTags: ALLOWED_TAGS
@@ -757,11 +627,11 @@ var require_purify = __commonJS({
                 return false;
             }
             if (KEEP_CONTENT && !FORBID_CONTENTS[tagName]) {
-              var parentNode = getParentNode(currentNode) || currentNode.parentNode;
-              var childNodes = getChildNodes(currentNode) || currentNode.childNodes;
+              const parentNode = getParentNode(currentNode) || currentNode.parentNode;
+              const childNodes = getChildNodes(currentNode) || currentNode.childNodes;
               if (childNodes && parentNode) {
-                var childCount = childNodes.length;
-                for (var i = childCount - 1; i >= 0; --i) {
+                const childCount = childNodes.length;
+                for (let i = childCount - 1; i >= 0; --i) {
                   parentNode.insertBefore(cloneNode(childNodes[i], true), getNextSibling(currentNode));
                 }
               }
@@ -779,9 +649,9 @@ var require_purify = __commonJS({
           }
           if (SAFE_FOR_TEMPLATES && currentNode.nodeType === 3) {
             content = currentNode.textContent;
-            content = stringReplace(content, MUSTACHE_EXPR$1, " ");
-            content = stringReplace(content, ERB_EXPR$1, " ");
-            content = stringReplace(content, TMPLIT_EXPR$1, " ");
+            content = stringReplace(content, MUSTACHE_EXPR2, " ");
+            content = stringReplace(content, ERB_EXPR2, " ");
+            content = stringReplace(content, TMPLIT_EXPR2, " ");
             if (currentNode.textContent !== content) {
               arrayPush(DOMPurify.removed, {
                 element: currentNode.cloneNode()
@@ -792,13 +662,13 @@ var require_purify = __commonJS({
           _executeHook("afterSanitizeElements", currentNode, null);
           return false;
         };
-        var _isValidAttribute = function _isValidAttribute2(lcTag, lcName, value) {
+        const _isValidAttribute = function _isValidAttribute2(lcTag, lcName, value) {
           if (SANITIZE_DOM && (lcName === "id" || lcName === "name") && (value in document || value in formElement)) {
             return false;
           }
-          if (ALLOW_DATA_ATTR && !FORBID_ATTR[lcName] && regExpTest(DATA_ATTR$1, lcName))
+          if (ALLOW_DATA_ATTR && !FORBID_ATTR[lcName] && regExpTest(DATA_ATTR2, lcName))
             ;
-          else if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR$1, lcName))
+          else if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR2, lcName))
             ;
           else if (!ALLOWED_ATTR[lcName] || FORBID_ATTR[lcName]) {
             if (
@@ -815,11 +685,11 @@ var require_purify = __commonJS({
             }
           } else if (URI_SAFE_ATTRIBUTES[lcName])
             ;
-          else if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE$1, "")))
+          else if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE2, "")))
             ;
           else if ((lcName === "src" || lcName === "xlink:href" || lcName === "href") && lcTag !== "script" && stringIndexOf(value, "data:") === 0 && DATA_URI_TAGS[lcTag])
             ;
-          else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA$1, stringReplace(value, ATTR_WHITESPACE$1, "")))
+          else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA2, stringReplace(value, ATTR_WHITESPACE2, "")))
             ;
           else if (!value)
             ;
@@ -828,20 +698,22 @@ var require_purify = __commonJS({
           }
           return true;
         };
-        var _basicCustomElementTest = function _basicCustomElementTest2(tagName) {
+        const _basicCustomElementTest = function _basicCustomElementTest2(tagName) {
           return tagName.indexOf("-") > 0;
         };
-        var _sanitizeAttributes = function _sanitizeAttributes2(currentNode) {
-          var attr;
-          var value;
-          var lcName;
-          var l;
+        const _sanitizeAttributes = function _sanitizeAttributes2(currentNode) {
+          let attr;
+          let value;
+          let lcName;
+          let l;
           _executeHook("beforeSanitizeAttributes", currentNode, null);
-          var attributes = currentNode.attributes;
+          const {
+            attributes
+          } = currentNode;
           if (!attributes) {
             return;
           }
-          var hookEvent = {
+          const hookEvent = {
             attrName: "",
             attrValue: "",
             keepAttr: true,
@@ -850,7 +722,10 @@ var require_purify = __commonJS({
           l = attributes.length;
           while (l--) {
             attr = attributes[l];
-            var _attr = attr, name = _attr.name, namespaceURI = _attr.namespaceURI;
+            const {
+              name,
+              namespaceURI
+            } = attr;
             value = name === "value" ? attr.value : stringTrim(attr.value);
             lcName = transformCaseFunc(name);
             hookEvent.attrName = lcName;
@@ -871,11 +746,11 @@ var require_purify = __commonJS({
               continue;
             }
             if (SAFE_FOR_TEMPLATES) {
-              value = stringReplace(value, MUSTACHE_EXPR$1, " ");
-              value = stringReplace(value, ERB_EXPR$1, " ");
-              value = stringReplace(value, TMPLIT_EXPR$1, " ");
+              value = stringReplace(value, MUSTACHE_EXPR2, " ");
+              value = stringReplace(value, ERB_EXPR2, " ");
+              value = stringReplace(value, TMPLIT_EXPR2, " ");
             }
-            var lcTag = transformCaseFunc(currentNode.nodeName);
+            const lcTag = transformCaseFunc(currentNode.nodeName);
             if (!_isValidAttribute(lcTag, lcName, value)) {
               continue;
             }
@@ -883,7 +758,7 @@ var require_purify = __commonJS({
               _removeAttribute(name, currentNode);
               value = SANITIZE_NAMED_PROPS_PREFIX + value;
             }
-            if (trustedTypesPolicy && _typeof(trustedTypes) === "object" && typeof trustedTypes.getAttributeType === "function") {
+            if (trustedTypesPolicy && typeof trustedTypes === "object" && typeof trustedTypes.getAttributeType === "function") {
               if (namespaceURI)
                 ;
               else {
@@ -909,9 +784,9 @@ var require_purify = __commonJS({
           }
           _executeHook("afterSanitizeAttributes", currentNode, null);
         };
-        var _sanitizeShadowDOM = function _sanitizeShadowDOM2(fragment) {
-          var shadowNode;
-          var shadowIterator = _createIterator(fragment);
+        const _sanitizeShadowDOM = function _sanitizeShadowDOM2(fragment) {
+          let shadowNode;
+          const shadowIterator = _createIterator(fragment);
           _executeHook("beforeSanitizeShadowDOM", fragment, null);
           while (shadowNode = shadowIterator.nextNode()) {
             _executeHook("uponSanitizeShadowNode", shadowNode, null);
@@ -926,11 +801,11 @@ var require_purify = __commonJS({
           _executeHook("afterSanitizeShadowDOM", fragment, null);
         };
         DOMPurify.sanitize = function(dirty) {
-          var cfg = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-          var body;
-          var importedNode;
-          var currentNode;
-          var returnNode;
+          let cfg = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+          let body;
+          let importedNode;
+          let currentNode;
+          let returnNode;
           IS_EMPTY_INPUT = !dirty;
           if (IS_EMPTY_INPUT) {
             dirty = "<!-->";
@@ -957,7 +832,7 @@ var require_purify = __commonJS({
           }
           if (IN_PLACE) {
             if (dirty.nodeName) {
-              var tagName = transformCaseFunc(dirty.nodeName);
+              const tagName = transformCaseFunc(dirty.nodeName);
               if (!ALLOWED_TAGS[tagName] || FORBID_TAGS[tagName]) {
                 throw typeErrorCreate("root node is forbidden and cannot be sanitized in-place");
               }
@@ -985,7 +860,7 @@ var require_purify = __commonJS({
           if (body && FORCE_BODY) {
             _forceRemove(body.firstChild);
           }
-          var nodeIterator = _createIterator(IN_PLACE ? dirty : body);
+          const nodeIterator = _createIterator(IN_PLACE ? dirty : body);
           while (currentNode = nodeIterator.nextNode()) {
             if (_sanitizeElements(currentNode)) {
               continue;
@@ -1012,14 +887,14 @@ var require_purify = __commonJS({
             }
             return returnNode;
           }
-          var serializedHTML = WHOLE_DOCUMENT ? body.outerHTML : body.innerHTML;
+          let serializedHTML = WHOLE_DOCUMENT ? body.outerHTML : body.innerHTML;
           if (WHOLE_DOCUMENT && ALLOWED_TAGS["!doctype"] && body.ownerDocument && body.ownerDocument.doctype && body.ownerDocument.doctype.name && regExpTest(DOCTYPE_NAME, body.ownerDocument.doctype.name)) {
             serializedHTML = "<!DOCTYPE " + body.ownerDocument.doctype.name + ">\n" + serializedHTML;
           }
           if (SAFE_FOR_TEMPLATES) {
-            serializedHTML = stringReplace(serializedHTML, MUSTACHE_EXPR$1, " ");
-            serializedHTML = stringReplace(serializedHTML, ERB_EXPR$1, " ");
-            serializedHTML = stringReplace(serializedHTML, TMPLIT_EXPR$1, " ");
+            serializedHTML = stringReplace(serializedHTML, MUSTACHE_EXPR2, " ");
+            serializedHTML = stringReplace(serializedHTML, ERB_EXPR2, " ");
+            serializedHTML = stringReplace(serializedHTML, TMPLIT_EXPR2, " ");
           }
           return trustedTypesPolicy && RETURN_TRUSTED_TYPE ? trustedTypesPolicy.createHTML(serializedHTML) : serializedHTML;
         };
@@ -1035,8 +910,8 @@ var require_purify = __commonJS({
           if (!CONFIG) {
             _parseConfig({});
           }
-          var lcTag = transformCaseFunc(tag);
-          var lcName = transformCaseFunc(attr);
+          const lcTag = transformCaseFunc(tag);
+          const lcName = transformCaseFunc(attr);
           return _isValidAttribute(lcTag, lcName, value);
         };
         DOMPurify.addHook = function(entryPoint, hookFunction) {
@@ -1709,6 +1584,6 @@ export {
 /*! Bundled license information:
 
 dompurify/dist/purify.js:
-  (*! @license DOMPurify 3.0.1 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.1/LICENSE *)
+  (*! @license DOMPurify 3.0.2 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.2/LICENSE *)
 */
 //# sourceMappingURL=url-sanitizer.js.map
