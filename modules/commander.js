@@ -19,7 +19,6 @@ const PATH_LIB = './src/lib';
 
 /**
  * save URI schemes file
- *
  * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
  *      - Historical schemes omitted
  *      - Added 'moz-extension' scheme
@@ -51,7 +50,6 @@ export const saveUriSchemes = async (cmdOpts = {}) => {
 
 /**
  * include libraries
- *
  * @param {object} cmdOpts - command options
  * @returns {Promise} - promise chain
  */
@@ -60,7 +58,6 @@ export const includeLibraries = cmdOpts =>
 
 /**
  * store text char codes
- *
  * @see {@link https://github.com/file/file/blob/master/src/encoding.c}
  * @param {object} cmdOpts - command options
  * @returns {Promise.<string>} - file path
@@ -86,7 +83,6 @@ export const storeTextChars = async (cmdOpts = {}) => {
 
 /**
  * create a table of chars
- *
  * @param {object} cmdOpts - command options
  * @returns {Promise} - promise chain
  */
@@ -95,7 +91,6 @@ export const createCharTable = cmdOpts =>
 
 /**
  * rename file
- *
  * @param {object} cmdOpts - command options
  * @returns {void}
  */
@@ -109,7 +104,6 @@ export const renameFile = (cmdOpts = {}) => {
 
 /**
  * clean directory
- *
  * @param {object} cmdOpts - command options
  * @returns {void}
  */
@@ -125,7 +119,6 @@ export const cleanDirectory = (cmdOpts = {}) => {
 
 /**
  * parse command
- *
  * @param {Array} args - process.argv
  * @returns {void}
  */

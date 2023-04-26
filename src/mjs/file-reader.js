@@ -17,7 +17,6 @@ const REG_MIME_TEXT = /^text\/[\w#&\-.;]+/;
 
 /**
  * progress event
- *
  * @see {@link https://xhr.spec.whatwg.org/#interface-progressevent}
  */
 export class ProgressEvent extends Event {
@@ -28,7 +27,6 @@ export class ProgressEvent extends Event {
 
   /**
    * construct
-   *
    * @param {string} type - type
    * @param {object} [opt] - init options
    * @param {boolean} [opt.bubbles] - bubbles
@@ -68,7 +66,6 @@ export class ProgressEvent extends Event {
 
 /**
  * file reader
- *
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  */
 export class FileReader extends EventTarget {
@@ -107,7 +104,6 @@ export class FileReader extends EventTarget {
 
   /**
    * dispatch progress event
-   *
    * @param {string} type - event type
    * @returns {boolean} - result
    */
@@ -138,7 +134,6 @@ export class FileReader extends EventTarget {
 
   /**
    * abort
-   *
    * @returns {void}
    */
   abort() {
@@ -151,7 +146,6 @@ export class FileReader extends EventTarget {
 
   /**
    * read blob
-   *
    * @param {object} blob - blob
    * @param {string} format - format to read as
    * @param {string} [encoding] - character encoding
@@ -265,7 +259,6 @@ export class FileReader extends EventTarget {
 
   /**
    * read as arrayBuffer
-   *
    * @param {object} blob - blob
    * @returns {Promise.<void>} - void
    */
@@ -275,7 +268,6 @@ export class FileReader extends EventTarget {
 
   /**
    * read as binary string
-   *
    * @param {object} blob - blob
    * @returns {Promise.<void>} - void
    */
@@ -285,7 +277,6 @@ export class FileReader extends EventTarget {
 
   /**
    * read as data URL
-   *
    * @param {object} blob - blob
    * @returns {Promise.<void>} - void
    */
@@ -295,7 +286,6 @@ export class FileReader extends EventTarget {
 
   /**
    * read as text
-   *
    * @param {object} blob - blob
    * @param {string} [encoding] - encoding
    * @returns {Promise.<void>} - void

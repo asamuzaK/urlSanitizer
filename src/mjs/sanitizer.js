@@ -65,7 +65,6 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * replace matched data URLs
-   *
    * @param {string} data - data URL
    * @returns {string} - replaced data URL
    */
@@ -104,7 +103,6 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * purify URL encoded DOM
-   *
    * @param {string} dom - DOM string
    * @returns {string} - purified DOM string
    */
@@ -124,9 +122,8 @@ export class URLSanitizer extends URISchemes {
   /**
    * sanitize URL
    * NOTE: `data` and `file` schemes must be explicitly allowed
-   *       `blob` URLs should be converted to `data` URLs
-   *       `javascript` and `vbscript` schemes can not be allowed
-   *
+   * `blob` URLs should be converted to `data` URLs
+   * `javascript` and `vbscript` schemes can not be allowed
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -314,7 +311,6 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * parse sanitized URL
-   *
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -377,7 +373,6 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * reset sanitizer
-   *
    * @returns {void}
    */
   reset() {
@@ -394,8 +389,7 @@ const urlSanitizer = new URLSanitizer();
 /**
  * sanitize URL async
  * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
- *       given a `blob` URL, returns a sanitized `data` URL
- *
+ * given a `blob` URL, returns a sanitized `data` URL
  * @param {string} url - URL
  * @param {object} [opt] - options
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -458,8 +452,7 @@ export const sanitizeURL = async (url, opt = {
 /**
  * sanitize URL sync
  * NOTE: `data` and `file` schemes must be explicitly allowed
- *       `blob` scheme returns `null`
- *
+ * `blob` scheme returns `null`
  * @param {string} url - URL
  * @param {object} [opt] - options
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -489,7 +482,6 @@ export const sanitizeURLSync = (url, opt) => {
 
 /**
  * parse URL async
- *
  * @param {string} url - URL
  * @returns {Promise.<ParsedURL>} - result
  */
@@ -500,7 +492,6 @@ export const parseURL = async url => {
 
 /**
  * parse URL sync
- *
  * @param {string} url - URL
  * @returns {ParsedURL} - result
  */
@@ -508,7 +499,6 @@ export const parseURLSync = url => urlSanitizer.parse(url);
 
 /**
  * is URI async
- *
  * @param {string} uri - URI
  * @returns {Promise.<boolean>} - result
  */
@@ -519,7 +509,6 @@ export const isURI = async uri => {
 
 /**
  * is URI sync
- *
  * @param {string} uri - URI
  * @returns {boolean} - result
  */
