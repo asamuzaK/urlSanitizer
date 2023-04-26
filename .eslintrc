@@ -35,6 +35,12 @@
       }
     }],
     "no-await-in-loop": "error",
+    "no-use-before-define": ["error", {
+      "allowNamedExports": false,
+      "classes": true,
+      "functions": true,
+      "variables": true
+    }],
     "semi": ["error", "always"],
     "space-before-function-paren": ["error", {
       "anonymous": "always",
