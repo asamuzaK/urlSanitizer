@@ -8,7 +8,6 @@ const TYPE_TO = -1;
 
 /**
  * throw error
- *
  * @param {object} e - Error
  * @throws - Error
  */
@@ -18,7 +17,6 @@ export const throwErr = e => {
 
 /**
  * log error
- *
  * @param {object} e - Error
  * @returns {boolean} - false
  */
@@ -29,7 +27,6 @@ export const logErr = e => {
 
 /**
  * log warn
- *
  * @param {*} msg - message
  * @returns {boolean} - false
  */
@@ -40,7 +37,6 @@ export const logWarn = msg => {
 
 /**
  * log message
- *
  * @param {*} msg - message
  * @returns {*} - message
  */
@@ -51,7 +47,6 @@ export const logMsg = msg => {
 
 /**
  * get type
- *
  * @param {*} o - object to check
  * @returns {string} - type of object
  */
@@ -59,7 +54,6 @@ export const getType = o => Object.prototype.toString.call(o).slice(TYPE_FROM, T
 
 /**
  * is string
- *
  * @param {*} o - object to check
  * @returns {boolean} - result
  */
@@ -67,7 +61,6 @@ export const isString = o => typeof o === 'string' || o instanceof String;
 
 /**
  * sleep
- *
  * @param {number} msec - millisecond
  * @param {boolean} doReject - reject instead of resolve
  * @returns {?Promise} - resolve / reject
