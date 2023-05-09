@@ -135,7 +135,6 @@ var URISchemes = class {
   }
   /**
    * get schemes
-   *
    * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
    *      - Historical schemes omitted
    *      - 'moz-extension' scheme added
@@ -146,7 +145,6 @@ var URISchemes = class {
   }
   /**
    * has scheme
-   *
    * @param {string} scheme - scheme
    * @returns {boolean} - result
    */
@@ -156,7 +154,6 @@ var URISchemes = class {
   /**
    * add scheme
    * NOTE: `javascript` and/or `vbscript` schemes can not be registered
-   *
    * @param {string} scheme - scheme
    * @returns {Array.<string>} - array of schemes
    */
@@ -171,7 +168,6 @@ var URISchemes = class {
   }
   /**
    * remove scheme
-   *
    * @param {string} scheme - scheme
    * @returns {boolean} - result
    */
@@ -180,7 +176,6 @@ var URISchemes = class {
   }
   /**
    * verify URI
-   *
    * @param {string} uri - URI
    * @returns {boolean} - result
    */
@@ -200,7 +195,6 @@ var URISchemes = class {
   }
   /**
    * reset schemes
-   *
    * @returns {void}
    */
   reset() {
@@ -239,7 +233,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * replace matched data URLs
-   *
    * @param {string} data - data URL
    * @returns {string} - replaced data URL
    */
@@ -277,7 +270,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * purify URL encoded DOM
-   *
    * @param {string} dom - DOM string
    * @returns {string} - purified DOM string
    */
@@ -295,9 +287,8 @@ var URLSanitizer = class extends URISchemes {
   /**
    * sanitize URL
    * NOTE: `data` and `file` schemes must be explicitly allowed
-   *       `blob` URLs should be converted to `data` URLs
-   *       `javascript` and `vbscript` schemes can not be allowed
-   *
+   * `blob` URLs should be converted to `data` URLs
+   * `javascript` and `vbscript` schemes can not be allowed
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -477,7 +468,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * parse sanitized URL
-   *
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -539,7 +529,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * reset sanitizer
-   *
    * @returns {void}
    */
   reset() {

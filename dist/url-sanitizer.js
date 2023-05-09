@@ -95,7 +95,8 @@ var require_purify = __commonJS({
         };
       }
       function addToSet(set, array, transformCaseFunc) {
-        transformCaseFunc = transformCaseFunc ? transformCaseFunc : stringToLowerCase;
+        var _transformCaseFunc;
+        transformCaseFunc = (_transformCaseFunc = transformCaseFunc) !== null && _transformCaseFunc !== void 0 ? _transformCaseFunc : stringToLowerCase;
         if (setPrototypeOf) {
           setPrototypeOf(set, null);
         }
@@ -143,8 +144,8 @@ var require_purify = __commonJS({
       }
       const html$1 = freeze(["a", "abbr", "acronym", "address", "area", "article", "aside", "audio", "b", "bdi", "bdo", "big", "blink", "blockquote", "body", "br", "button", "canvas", "caption", "center", "cite", "code", "col", "colgroup", "content", "data", "datalist", "dd", "decorator", "del", "details", "dfn", "dialog", "dir", "div", "dl", "dt", "element", "em", "fieldset", "figcaption", "figure", "font", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "img", "input", "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee", "menu", "menuitem", "meter", "nav", "nobr", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "section", "select", "shadow", "small", "source", "spacer", "span", "strike", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "tt", "u", "ul", "var", "video", "wbr"]);
       const svg$1 = freeze(["svg", "a", "altglyph", "altglyphdef", "altglyphitem", "animatecolor", "animatemotion", "animatetransform", "circle", "clippath", "defs", "desc", "ellipse", "filter", "font", "g", "glyph", "glyphref", "hkern", "image", "line", "lineargradient", "marker", "mask", "metadata", "mpath", "path", "pattern", "polygon", "polyline", "radialgradient", "rect", "stop", "style", "switch", "symbol", "text", "textpath", "title", "tref", "tspan", "view", "vkern"]);
-      const svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
-      const svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "fedropshadow", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
+      const svgFilters = freeze(["feBlend", "feColorMatrix", "feComponentTransfer", "feComposite", "feConvolveMatrix", "feDiffuseLighting", "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood", "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight", "feTile", "feTurbulence"]);
+      const svgDisallowed = freeze(["animate", "color-profile", "cursor", "discard", "font-face", "font-face-format", "font-face-name", "font-face-src", "font-face-uri", "foreignobject", "hatch", "hatchpath", "mesh", "meshgradient", "meshpatch", "meshrow", "missing-glyph", "script", "set", "solidcolor", "unknown", "use"]);
       const mathMl$1 = freeze(["math", "menclose", "merror", "mfenced", "mfrac", "mglyph", "mi", "mlabeledtr", "mmultiscripts", "mn", "mo", "mover", "mpadded", "mphantom", "mroot", "mrow", "ms", "mspace", "msqrt", "mstyle", "msub", "msup", "msubsup", "mtable", "mtd", "mtext", "mtr", "munder", "munderover", "mprescripts"]);
       const mathMlDisallowed = freeze(["maction", "maligngroup", "malignmark", "mlongdiv", "mscarries", "mscarry", "msgroup", "mstack", "msline", "msrow", "semantics", "annotation", "annotation-xml", "mprescripts", "none"]);
       const text = freeze(["#text"]);
@@ -180,14 +181,14 @@ var require_purify = __commonJS({
         DOCTYPE_NAME
       });
       const getGlobal = () => typeof window === "undefined" ? null : window;
-      const _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, document) {
+      const _createTrustedTypesPolicy = function _createTrustedTypesPolicy2(trustedTypes, purifyHostElement) {
         if (typeof trustedTypes !== "object" || typeof trustedTypes.createPolicy !== "function") {
           return null;
         }
         let suffix = null;
         const ATTR_NAME = "data-tt-policy-suffix";
-        if (document.currentScript && document.currentScript.hasAttribute(ATTR_NAME)) {
-          suffix = document.currentScript.getAttribute(ATTR_NAME);
+        if (purifyHostElement && purifyHostElement.hasAttribute(ATTR_NAME)) {
+          suffix = purifyHostElement.getAttribute(ATTR_NAME);
         }
         const policyName = "dompurify" + (suffix ? "#" + suffix : "");
         try {
@@ -207,13 +208,14 @@ var require_purify = __commonJS({
       function createDOMPurify() {
         let window2 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : getGlobal();
         const DOMPurify = (root) => createDOMPurify(root);
-        DOMPurify.version = "3.0.2";
+        DOMPurify.version = "3.0.3";
         DOMPurify.removed = [];
         if (!window2 || !window2.document || window2.document.nodeType !== 9) {
           DOMPurify.isSupported = false;
           return DOMPurify;
         }
         const originalDocument = window2.document;
+        const currentScript = originalDocument.currentScript;
         let {
           document
         } = window2;
@@ -239,8 +241,8 @@ var require_purify = __commonJS({
             document = template.content.ownerDocument;
           }
         }
-        const trustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, originalDocument);
-        const emptyHTML = trustedTypesPolicy ? trustedTypesPolicy.createHTML("") : "";
+        let trustedTypesPolicy;
+        let emptyHTML = "";
         const {
           implementation,
           createNodeIterator,
@@ -251,7 +253,7 @@ var require_purify = __commonJS({
           importNode
         } = originalDocument;
         let hooks = {};
-        DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && typeof implementation.createHTMLDocument !== "undefined";
+        DOMPurify.isSupported = typeof entries === "function" && typeof getParentNode === "function" && implementation && implementation.createHTMLDocument !== void 0;
         const {
           MUSTACHE_EXPR: MUSTACHE_EXPR2,
           ERB_EXPR: ERB_EXPR2,
@@ -448,6 +450,23 @@ var require_purify = __commonJS({
           if (ALLOWED_TAGS.table) {
             addToSet(ALLOWED_TAGS, ["tbody"]);
             delete FORBID_TAGS.tbody;
+          }
+          if (cfg.TRUSTED_TYPES_POLICY) {
+            if (typeof cfg.TRUSTED_TYPES_POLICY.createHTML !== "function") {
+              throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createHTML" hook.');
+            }
+            if (typeof cfg.TRUSTED_TYPES_POLICY.createScriptURL !== "function") {
+              throw typeErrorCreate('TRUSTED_TYPES_POLICY configuration option must provide a "createScriptURL" hook.');
+            }
+            trustedTypesPolicy = cfg.TRUSTED_TYPES_POLICY;
+            emptyHTML = trustedTypesPolicy.createHTML("");
+          } else {
+            if (trustedTypesPolicy === void 0) {
+              trustedTypesPolicy = _createTrustedTypesPolicy(trustedTypes, currentScript);
+            }
+            if (trustedTypesPolicy !== null && typeof emptyHTML === "string") {
+              emptyHTML = trustedTypesPolicy.createHTML("");
+            }
           }
           if (freeze) {
             freeze(cfg);
@@ -691,11 +710,10 @@ var require_purify = __commonJS({
             ;
           else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA2, stringReplace(value, ATTR_WHITESPACE2, "")))
             ;
-          else if (!value)
-            ;
-          else {
+          else if (value) {
             return false;
-          }
+          } else
+            ;
           return true;
         };
         const _basicCustomElementTest = function _basicCustomElementTest2(tagName) {
@@ -763,12 +781,14 @@ var require_purify = __commonJS({
                 ;
               else {
                 switch (trustedTypes.getAttributeType(lcTag, lcName)) {
-                  case "TrustedHTML":
+                  case "TrustedHTML": {
                     value = trustedTypesPolicy.createHTML(value);
                     break;
-                  case "TrustedScriptURL":
+                  }
+                  case "TrustedScriptURL": {
                     value = trustedTypesPolicy.createScriptURL(value);
                     break;
+                  }
                 }
               }
             }
@@ -811,13 +831,13 @@ var require_purify = __commonJS({
             dirty = "<!-->";
           }
           if (typeof dirty !== "string" && !_isNode(dirty)) {
-            if (typeof dirty.toString !== "function") {
-              throw typeErrorCreate("toString is not a function");
-            } else {
+            if (typeof dirty.toString === "function") {
               dirty = dirty.toString();
               if (typeof dirty !== "string") {
                 throw typeErrorCreate("dirty is not a string, aborting");
               }
+            } else {
+              throw typeErrorCreate("toString is not a function");
             }
           }
           if (!DOMPurify.isSupported) {
@@ -1079,7 +1099,6 @@ var URISchemes = class {
   }
   /**
    * get schemes
-   *
    * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
    *      - Historical schemes omitted
    *      - 'moz-extension' scheme added
@@ -1090,7 +1109,6 @@ var URISchemes = class {
   }
   /**
    * has scheme
-   *
    * @param {string} scheme - scheme
    * @returns {boolean} - result
    */
@@ -1100,7 +1118,6 @@ var URISchemes = class {
   /**
    * add scheme
    * NOTE: `javascript` and/or `vbscript` schemes can not be registered
-   *
    * @param {string} scheme - scheme
    * @returns {Array.<string>} - array of schemes
    */
@@ -1115,7 +1132,6 @@ var URISchemes = class {
   }
   /**
    * remove scheme
-   *
    * @param {string} scheme - scheme
    * @returns {boolean} - result
    */
@@ -1124,7 +1140,6 @@ var URISchemes = class {
   }
   /**
    * verify URI
-   *
    * @param {string} uri - URI
    * @returns {boolean} - result
    */
@@ -1144,7 +1159,6 @@ var URISchemes = class {
   }
   /**
    * reset schemes
-   *
    * @returns {void}
    */
   reset() {
@@ -1183,7 +1197,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * replace matched data URLs
-   *
    * @param {string} data - data URL
    * @returns {string} - replaced data URL
    */
@@ -1221,7 +1234,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * purify URL encoded DOM
-   *
    * @param {string} dom - DOM string
    * @returns {string} - purified DOM string
    */
@@ -1239,9 +1251,8 @@ var URLSanitizer = class extends URISchemes {
   /**
    * sanitize URL
    * NOTE: `data` and `file` schemes must be explicitly allowed
-   *       `blob` URLs should be converted to `data` URLs
-   *       `javascript` and `vbscript` schemes can not be allowed
-   *
+   * `blob` URLs should be converted to `data` URLs
+   * `javascript` and `vbscript` schemes can not be allowed
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -1421,7 +1432,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * parse sanitized URL
-   *
    * @param {string} url - URL
    * @param {object} [opt] - options
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
@@ -1483,7 +1493,6 @@ var URLSanitizer = class extends URISchemes {
   }
   /**
    * reset sanitizer
-   *
    * @returns {void}
    */
   reset() {
@@ -1584,6 +1593,6 @@ export {
 /*! Bundled license information:
 
 dompurify/dist/purify.js:
-  (*! @license DOMPurify 3.0.2 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.2/LICENSE *)
+  (*! @license DOMPurify 3.0.3 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.3/LICENSE *)
 */
 //# sourceMappingURL=url-sanitizer.js.map
