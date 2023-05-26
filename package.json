@@ -35,12 +35,11 @@
     "commander": "^10.0.1",
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
-    "esbuild": "^0.17.18",
-    "eslint": "^8.40.0",
+    "esbuild": "^0.17.19",
+    "eslint": "^8.41.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-jsdoc": "^44.0.2",
-    "eslint-plugin-n": "^15.7.0",
+    "eslint-plugin-jsdoc": "^44.2.7",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-regexp": "^1.15.0",
@@ -48,9 +47,9 @@
     "http-server": "^14.1.1",
     "mocha": "^10.2.0",
     "npm-run-all": "^4.1.5",
-    "sinon": "^15.0.4",
+    "sinon": "^15.1.0",
     "typescript": "^5.0.4",
-    "undici": "^5.22.0"
+    "undici": "^5.22.1"
   },
   "scripts": {
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
@@ -71,5 +70,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node modules/index clean --dir=types -i && npx tsc"
   },
-  "version": "0.10.5"
+  "version": "0.10.6"
 }
