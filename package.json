@@ -51,6 +51,9 @@
     "typescript": "^5.1.6",
     "undici": "^5.22.1"
   },
+  "overrides": {
+    "semver": "^7.5.2"
+  },
   "scripts": {
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
     "bundle": "npm-run-all -s bundle-*",
