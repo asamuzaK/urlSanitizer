@@ -421,6 +421,7 @@ export const sanitizeURL = async (url, opt = {
         try {
           const r = await fetch(url);
           console.log(r);
+          console.log(typeof r.blob)
           const b = await r.blob();
           console.log(b);
           data = await createDataURLFromBlob(b);
