@@ -1270,7 +1270,6 @@ describe('sanitizer', () => {
         assert.isNull(res, 'result');
       });
 
-      /*
       it('should get sanitized value', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
@@ -1280,11 +1279,13 @@ describe('sanitizer', () => {
         const res = await func(url, {
           allow: ['blob']
         });
+        /*
         const revoked = await fetch(url).catch(e => {
           assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
         assert.isTrue(revoked, 'revoked');
+        */
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1292,7 +1293,6 @@ describe('sanitizer', () => {
           'data:image/svg+xml,<svg><g></g></svg>',
           'decoded');
       });
-      */
 
       it('should get null', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
