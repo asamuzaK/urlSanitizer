@@ -112,7 +112,6 @@ describe('URL Sanitizer', () => {
         'data:text/html,<div><img></div>', 'decode');
     });
 
-    /*
     it('should get sanitized value', async () => {
       const data = '<svg><g onload="alert(1)"/></svg>';
       const blob = new Blob([data], {
@@ -130,7 +129,6 @@ describe('URL Sanitizer', () => {
         'data:image/svg+xml,<svg><g></g></svg>',
         'decoded');
     });
-    */
 
     it('should get null', async () => {
       const res = await sanitizeURL('web+foo://example.com', {

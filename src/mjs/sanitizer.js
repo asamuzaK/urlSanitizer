@@ -419,12 +419,9 @@ export const sanitizeURL = async (url, opt = {
           (Array.isArray(only) && only.includes('blob'))) {
         let data;
         try {
-          console.log(url)
           data =
             await fetch(url).then(r => r.blob()).then(createDataURLFromBlob);
-          console.log(data)
         } catch (e) {
-          console.error(e)
           // fall through
         }
         if (data) {
@@ -449,7 +446,6 @@ export const sanitizeURL = async (url, opt = {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
-  console.log(`res: ${res}`)
   return res || null;
 };
 
