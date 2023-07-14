@@ -1279,13 +1279,11 @@ describe('sanitizer', () => {
         const res = await func(url, {
           allow: ['blob']
         });
-        /*
         const revoked = await fetch(url).catch(e => {
           assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
         assert.isTrue(revoked, 'revoked');
-        */
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
