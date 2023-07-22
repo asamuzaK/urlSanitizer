@@ -10,6 +10,7 @@ describe('test for blob', () => {
     });
     const url = URL.createObjectURL(file);
     const res = await fetch(url);
+    assert.instanceOf(res, Response, 'Response');
     const blob = await res.blob();
     assert.instanceOf(blob, Blob, 'Blob');
   });
