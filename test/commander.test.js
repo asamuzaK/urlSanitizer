@@ -13,6 +13,7 @@ import {
   renameFile, saveUriSchemes, storeTextChars
 } from '../modules/commander.js';
 
+/* constants */
 const BASE_URL_IANA = 'https://www.iana.org';
 const DIR_IANA = '/assignments/uri-schemes/';
 
