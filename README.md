@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/url-sanitizer)](https://www.npmjs.com/package/url-sanitizer)
 [![release](https://img.shields.io/github/v/release/asamuzaK/urlSanitizer)](https://github.com/asamuzaK/urlSanitizer/releases)
 
-URL sanitizer for Node.js (>=18), browsers and web sites.
+URL sanitizer for Node.js, browsers and web sites.
 Sanitize not only regular URLs, but also data URLs and blob URLs.
 It also has the ability to parse URLs and verify URIs.
 **Experimental**
