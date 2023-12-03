@@ -189,7 +189,6 @@ export class FileReader extends EventTarget {
             res = `data:${mediaTypes.join(';')},${btoa(binary)}`;
             this._dispatchProgressEvent('progress');
             break;
-          // NOTE: exec only if encoding matches
           case 'text': {
             const textCharCodes = new Set(textChars);
             if (uint8arr.every(c => textCharCodes.has(c))) {
@@ -213,20 +212,18 @@ export class FileReader extends EventTarget {
                 } else {
                   encoding = encoding.toLowerCase();
                 }
+              } else {
+                encoding = 'utf8';
               }
               if (REG_MIME_DOM.test(type)) {
-                if ((encoding && charset && encoding === charset) ||
-                    (!(encoding || charset)) ||
-                    (!encoding && charset === 'utf8') ||
-                    (encoding === 'utf8' && !charset)) {
+                if (encoding === charset || (encoding === 'utf8' && !charset)) {
                   res = binary;
                   this._dispatchProgressEvent('progress');
                 }
               } else if (REG_MIME_TEXT.test(type)) {
-                if ((encoding && charset && encoding === charset) ||
-                    (!(encoding || charset)) ||
-                    (!encoding && charset === 'utf8') ||
-                    (encoding === 'utf8' && charset === 'us-ascii')) {
+                if (encoding === charset ||
+                    (encoding === 'utf8' &&
+                     (!charset || charset === 'us-ascii'))) {
                   res = binary;
                   this._dispatchProgressEvent('progress');
                 }
