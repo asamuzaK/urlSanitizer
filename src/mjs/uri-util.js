@@ -151,7 +151,6 @@ export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
 
 /**
  * URI schemes
- *
  */
 export class URISchemes {
   /* private fields */
