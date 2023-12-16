@@ -50,7 +50,8 @@ export const logMsg = msg => {
  * @param {*} o - object to check
  * @returns {string} - type of object
  */
-export const getType = o => Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
+export const getType = o =>
+  Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
 
 /**
  * is string
