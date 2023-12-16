@@ -3,8 +3,8 @@
  */
 
 /* shared */
-import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
-import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
+import textChars from '../lib/file/text-chars.json' with { type: 'json' };
+import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
 

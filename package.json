@@ -9,17 +9,14 @@
     "type": "git",
     "url": "git+https://github.com/asamuzaK/urlSanitizer.git"
   },
-  "engines": {
-    "node": ">=18"
-  },
   "files": [
     "dist",
     "src",
-    "types/src"
+    "types"
   ],
   "type": "module",
   "main": "src/index.js",
-  "types": "types/src/index.d.ts",
+  "types": "types/index.d.ts",
   "browser": "dist/url-sanitizer.js",
   "dependencies": {
     "dompurify": "^3.0.6",
@@ -27,7 +24,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.3",
-    "@babel/plugin-syntax-import-assertions": "^7.23.3",
+    "@babel/plugin-syntax-import-attributes": "^7.23.3",
     "@types/dompurify": "^3.0.5",
     "@types/jsdom": "^21.1.6",
     "c8": "^8.0.1",

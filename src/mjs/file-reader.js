@@ -3,7 +3,7 @@
  */
 
 /* shared */
-import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
+import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */

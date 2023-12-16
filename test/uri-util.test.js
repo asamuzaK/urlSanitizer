@@ -7,9 +7,7 @@ import { assert } from 'chai';
 import { describe, it } from 'mocha';
 
 /* test */
-import uriSchemes from '../src/lib/iana/uri-schemes.json' assert {
-  type: 'json'
-};
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
 import * as mjs from '../src/mjs/uri-util.js';
 
 describe('uri-util', () => {
