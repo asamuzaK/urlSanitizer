@@ -12,5 +12,5 @@
     "resolveJsonModule": true,
     "target": "esnext"
   },
-  "include": ["modules/index.js", "src/index.js"]
+  "include": ["src/index.js"]
 }
