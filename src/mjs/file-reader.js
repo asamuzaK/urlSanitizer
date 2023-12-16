@@ -12,7 +12,7 @@ const EMPTY = 0;
 const LOADING = 1;
 const REG_CHARSET = /^charset=([\w#&\-.;]+)$/;
 const REG_MIME_DOM =
-  /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml);?/;
+  /^(?:application\/(?:[\w#&\-.;]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
 const REG_MIME_TEXT = /^text\/[\w#&\-.;]+/;
 
 /**
