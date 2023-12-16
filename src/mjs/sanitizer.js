@@ -48,7 +48,9 @@ const REG_URL_ENC_AMP = /%26/g;
  * @property {string} [hash] - fragment identifier of the sanitized URL
  */
 
-/* URL sanitizer */
+/**
+ * URL sanitizer
+ */
 export class URLSanitizer extends URISchemes {
   /* private fields */
   #nest;
