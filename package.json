@@ -15,11 +15,11 @@
   "files": [
     "dist",
     "src",
-    "types/src"
+    "types"
   ],
   "type": "module",
   "main": "src/index.js",
-  "types": "types/src/index.d.ts",
+  "types": "types/index.d.ts",
   "browser": "dist/url-sanitizer.js",
   "dependencies": {
     "dompurify": "^3.0.6",
