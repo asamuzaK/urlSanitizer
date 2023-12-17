@@ -7,7 +7,7 @@ import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
-import { HEX, REG_END_COLON, REG_SCRIPT } from './constant.js';
+import { HEX, REG_SCRIPT } from './constant.js';
 
 /**
  * get URL encoded string
@@ -207,7 +207,7 @@ export class URISchemes {
     if (isString(uri)) {
       try {
         const { protocol } = new URL(uri);
-        const scheme = protocol.replace(REG_END_COLON, '');
+        const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
         res = (!REG_SCRIPT.test(scheme) &&
                /^(?:ext|web)\+[a-z]+$/.test(scheme)) ||

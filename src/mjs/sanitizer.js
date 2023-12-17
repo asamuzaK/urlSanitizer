@@ -10,8 +10,7 @@ import {
   parseBase64, parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
-  HEX, REG_DATA_URL, REG_DATA_URL_G, REG_END_COLON, REG_MIME_DOM,
-  REG_SCRIPT_BLOB
+  HEX, REG_DATA_URL, REG_DATA_URL_G, REG_MIME_DOM, REG_SCRIPT_BLOB
 } from './constant.js';
 
 /* typedef */
@@ -206,7 +205,7 @@ export class URLSanitizer extends URISchemes {
     let sanitizedUrl;
     if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(REG_END_COLON, '');
+      const scheme = protocol.replace(/:$/, '');
       const schemeParts = scheme.split('+');
       let bool;
       if (restrictScheme) {
@@ -235,8 +234,7 @@ export class URLSanitizer extends URISchemes {
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
             const { protocol: dataScheme } = new URL(decodedData);
-            const dataSchemeParts =
-              dataScheme.replace(REG_END_COLON, '').split('+');
+            const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
             if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = '';
             }
@@ -332,7 +330,7 @@ export class URLSanitizer extends URISchemes {
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
       const { pathname, protocol } = urlObj;
-      const schemeParts = protocol.replace(REG_END_COLON, '').split('+');
+      const schemeParts = protocol.replace(/:$/, '').split('+');
       const isDataUrl = schemeParts.includes('data');
       parsedUrl.set('valid', true);
       if (isDataUrl) {
@@ -400,7 +398,7 @@ export const sanitizeURL = async (url, opt = {
     let scheme;
     try {
       const { protocol } = new URL(url);
-      scheme = protocol.replace(REG_END_COLON, '');
+      scheme = protocol.replace(/:$/, '');
     } catch (e) {
       // fall through;
     }
@@ -459,7 +457,7 @@ export const sanitizeURLSync = (url, opt) => {
     let scheme;
     try {
       const { protocol } = new URL(url);
-      scheme = protocol.replace(REG_END_COLON, '');
+      scheme = protocol.replace(/:$/, '');
     } catch (e) {
       // fall through;
     }
