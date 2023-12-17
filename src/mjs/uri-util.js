@@ -7,20 +7,7 @@ import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
-
-/* constants */
-const HEX = 16;
-const REG_BASE64 = /^[\w+/\-=]+$/;
-const REG_END_COLON = /:$/;
-const REG_NUM_DECI = /^\d+/;
-const REG_NUM_HEAD = /#x?$/;
-const REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
-const REG_NUM_HEX = /^x[\dA-F]+/i;
-const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
-const REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
-const REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
-const REG_SCRIPT = /(?:java|vb)script/;
-const REG_URL_ENC = /^%[\dA-F]{2}$/i;
+import { HEX, REG_END_COLON, REG_SCRIPT } from './constant.js';
 
 /**
  * get URL encoded string
@@ -44,7 +31,7 @@ export const getURLEncodedString = str => {
  * @returns {string} - escaped URL encoded HTML special char / URL encoded char
  */
 export const escapeURLEncodedHTMLChars = ch => {
-  if (isString(ch) && REG_URL_ENC.test(ch)) {
+  if (isString(ch) && /^%[\dA-F]{2}$/i.test(ch)) {
     ch = ch.toUpperCase();
   }
   const [amp, num, lt, gt, quot, apos] =
@@ -74,7 +61,7 @@ export const escapeURLEncodedHTMLChars = ch => {
 export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
-  } else if (!REG_BASE64.test(data)) {
+  } else if (!/^[\w+/\-=]+$/.test(data)) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
@@ -107,13 +94,14 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
     const textCharCodes = new Set(textChars);
-    const items = [...res.matchAll(REG_NUM_REF)].reverse();
+    const items =
+      [...res.matchAll(/&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi)].reverse();
     for (const item of items) {
       const [numCharRef, value] = item;
       let num;
-      if (REG_NUM_HEX.test(value)) {
+      if (/^x[\dA-F]+/i.test(value)) {
         num = parseInt(`0${value}`, HEX);
-      } else if (REG_NUM_DECI.test(value)) {
+      } else if (/^\d+/.test(value)) {
         num = parseInt(value);
       }
       if (Number.isInteger(num)) {
@@ -124,7 +112,8 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
         ];
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (REG_NUM_HEAD.test(preNum) || REG_NUM_HEAD_ASCII.test(postNum)) {
+          if (/#x?$/.test(preNum) ||
+              /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
@@ -192,7 +181,7 @@ export class URISchemes {
   add(scheme) {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    } else if (REG_SCRIPT.test(scheme) || !REG_SCHEME.test(scheme)) {
+    } else if (REG_SCRIPT.test(scheme) || !/^[a-z][\da-z+\-.]*$/.test(scheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#schemes.add(scheme);
@@ -220,7 +209,8 @@ export class URISchemes {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(REG_END_COLON, '');
         const schemeParts = scheme.split('+');
-        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme)) ||
+        res = (!REG_SCRIPT.test(scheme) &&
+               /^(?:ext|web)\+[a-z]+$/.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
       } catch (e) {
         res = false;

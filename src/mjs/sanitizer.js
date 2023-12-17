@@ -9,22 +9,10 @@ import {
   createDataURLFromBlob, escapeURLEncodedHTMLChars, getURLEncodedString,
   parseBase64, parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
-
-/* constants */
-const HEX = 16;
-const REG_DATA_URL = /data:[\w#&+\-./;=]*,/;
-const REG_DATA_URL_BASE64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
-const REG_DATA_URL_G = /data:[\w#&+\-./;=]*,[^"]+/g;
-const REG_END_COLON = /:$/;
-const REG_END_NUM = /(?:#|%23)$/;
-const REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
-const REG_HTML_SP = /[<>"'\s]/g;
-const REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-const REG_MIME_DOM =
-  /^(?:application\/(?:[\w#&\-.;]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
-const REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
-const REG_TAG_QUOT = /%(?:2(?:2|7)|3(?:C|E))|[<>"']/;
-const REG_URL_ENC_AMP = /%26/g;
+import {
+  HEX, REG_DATA_URL, REG_DATA_URL_G, REG_END_COLON, REG_MIME_DOM,
+  REG_SCRIPT_BLOB
+} from './constant.js';
 
 /* typedef */
 /**
@@ -76,12 +64,13 @@ export class URLSanitizer extends URISchemes {
     }
     let replacedData = data;
     if (REG_DATA_URL.test(replacedData)) {
+      const regDataUrlBase64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
       const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
-        if (REG_DATA_URL_BASE64.test(dataUrl)) {
-          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+        if (regDataUrlBase64.test(dataUrl)) {
+          [dataUrl] = regDataUrlBase64.exec(dataUrl);
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
@@ -116,8 +105,8 @@ export class URLSanitizer extends URISchemes {
     if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
       purifiedDom = this.replace(purifiedDom);
     }
-    purifiedDom =
-      purifiedDom.replace(REG_END_NUM, '').replace(REG_END_QUEST, '');
+    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
+      .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
     return encodeURI(purifiedDom);
   };
 
@@ -282,19 +271,20 @@ export class URLSanitizer extends URISchemes {
         } else {
           finalize = true;
         }
-        if (!isDataUrl && remove && REG_TAG_QUOT.test(urlToSanitize)) {
-          const item = REG_TAG_QUOT.exec(urlToSanitize);
+        const regTagQuot = /%(?:2(?:2|7)|3(?:C|E))|[<>"']/;
+        if (!isDataUrl && remove && regTagQuot.test(urlToSanitize)) {
+          const item = regTagQuot.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize
-            .replace(REG_HTML_SP, getURLEncodedString)
-            .replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
+            .replace(/[<>"'\s]/g, getURLEncodedString)
+            .replace(/%26/g, escapeURLEncodedHTMLChars);
           if (finalize) {
             if (!isDataUrl) {
               sanitizedUrl = sanitizedUrl
-                .replace(REG_HTML_URL_ENC, escapeURLEncodedHTMLChars);
+                .replace(/%(?:2(?:2|7)|3(?:C|E))/g, escapeURLEncodedHTMLChars);
             }
             this.#nest = 0;
           }

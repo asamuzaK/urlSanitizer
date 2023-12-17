@@ -7,13 +7,10 @@ import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */
+import { REG_MIME_DOM, REG_MIME_TEXT } from './constant.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
-const REG_CHARSET = /^charset=([\w#&\-.;]+)$/;
-const REG_MIME_DOM =
-  /^(?:application\/(?:[\w#&\-.;]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
-const REG_MIME_TEXT = /^text\/[\w#&\-.;]+/;
 
 /**
  * progress event
@@ -192,10 +189,11 @@ export class FileReader extends EventTarget {
           case 'text': {
             const textCharCodes = new Set(textChars);
             if (uint8arr.every(c => textCharCodes.has(c))) {
+              const regCharset = /^charset=([\w#&\-.;]+)$/;
               let charset;
               for (const media of mediaTypes) {
-                if (REG_CHARSET.test(media)) {
-                  [, charset] = REG_CHARSET.exec(media);
+                if (regCharset.test(media)) {
+                  [, charset] = regCharset.exec(media);
                   if (charset) {
                     if (/utf-?8/i.test(charset)) {
                       charset = 'utf8';
