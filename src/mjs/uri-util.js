@@ -113,8 +113,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
         ];
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (/#x?$/.test(preNum) ||
-              /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
+          if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
