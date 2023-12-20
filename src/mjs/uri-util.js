@@ -7,7 +7,9 @@ import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
-import { HEX, REG_SCHEME, REG_SCHEME_CUSTOM, REG_SCRIPT } from './constant.js';
+import {
+  HEX, REG_B64, REG_NUM_REF, REG_SCHEME, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+} from './constant.js';
 
 /**
  * get URL encoded string
@@ -31,7 +33,7 @@ export const getURLEncodedString = str => {
  * @returns {string} - escaped URL encoded HTML special char / URL encoded char
  */
 export const escapeURLEncodedHTMLChars = ch => {
-  if (isString(ch) && /^%[\dA-F]{2}$/i.test(ch)) {
+  if (isString(ch) && REG_URL_ENC.test(ch)) {
     ch = ch.toUpperCase();
   }
   const [amp, num, lt, gt, quot, apos] =
@@ -61,7 +63,7 @@ export const escapeURLEncodedHTMLChars = ch => {
 export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
-  } else if (!/^[\w+/\-=]+$/.test(data)) {
+  } else if (!REG_B64.test(data)) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
@@ -94,8 +96,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
     const textCharCodes = new Set(textChars);
-    const items =
-      [...res.matchAll(/&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi)].reverse();
+    const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
       const [numCharRef, value] = item;
       let num;
@@ -209,7 +210,7 @@ export class URISchemes {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
-        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme)) ||
+        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_EXT.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
       } catch (e) {
         res = false;

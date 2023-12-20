@@ -10,8 +10,8 @@ import {
   parseBase64, parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
-  HEX, REG_DATA_URL, REG_DATA_URL_BASE64, REG_DATA_URL_G, REG_MIME_DOM,
-  REG_SCRIPT_BLOB, REG_TAG_QUOT
+  HEX, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G, REG_MIME_DOM,
+  REG_SCRIPT_BLOB, REG_TAG_QUOT, REG_TAG_QUOT_ENC_G, REG_TAG_QUOT_SPACE_G
 } from './constant.js';
 
 /* typedef */
@@ -68,8 +68,8 @@ export class URLSanitizer extends URISchemes {
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
-        if (REG_DATA_URL_BASE64.test(dataUrl)) {
-          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+        if (REG_DATA_URL_B64.test(dataUrl)) {
+          [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
@@ -276,12 +276,12 @@ export class URLSanitizer extends URISchemes {
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize
-            .replace(/[<>"'\s]/g, getURLEncodedString)
+            .replace(REG_TAG_QUOT_SPACE_G, getURLEncodedString)
             .replace(/%26/g, escapeURLEncodedHTMLChars);
           if (finalize) {
             if (!isDataUrl) {
               sanitizedUrl = sanitizedUrl
-                .replace(/%(?:2(?:2|7)|3(?:C|E))/g, escapeURLEncodedHTMLChars);
+                .replace(REG_TAG_QUOT_ENC_G, escapeURLEncodedHTMLChars);
             }
             this.#nest = 0;
           }
