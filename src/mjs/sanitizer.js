@@ -10,7 +10,8 @@ import {
   parseBase64, parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
-  HEX, REG_DATA_URL, REG_DATA_URL_G, REG_MIME_DOM, REG_SCRIPT_BLOB
+  HEX, REG_DATA_URL, REG_DATA_URL_BASE64, REG_DATA_URL_G, REG_MIME_DOM,
+  REG_SCRIPT_BLOB, REG_TAG_QUOT
 } from './constant.js';
 
 /* typedef */
@@ -63,13 +64,12 @@ export class URLSanitizer extends URISchemes {
     }
     let replacedData = data;
     if (REG_DATA_URL.test(replacedData)) {
-      const regDataUrlBase64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
       const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
-        if (regDataUrlBase64.test(dataUrl)) {
-          [dataUrl] = regDataUrlBase64.exec(dataUrl);
+        if (REG_DATA_URL_BASE64.test(dataUrl)) {
+          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
@@ -269,9 +269,8 @@ export class URLSanitizer extends URISchemes {
         } else {
           finalize = true;
         }
-        const regTagQuot = /%(?:2(?:2|7)|3(?:C|E))|[<>"']/;
-        if (!isDataUrl && remove && regTagQuot.test(urlToSanitize)) {
-          const item = regTagQuot.exec(urlToSanitize);
+        if (!isDataUrl && remove && REG_TAG_QUOT.test(urlToSanitize)) {
+          const item = REG_TAG_QUOT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize = urlToSanitize.substring(0, index);
         }

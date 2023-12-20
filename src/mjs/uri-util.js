@@ -7,7 +7,7 @@ import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
-import { HEX, REG_SCRIPT } from './constant.js';
+import { HEX, REG_SCHEME, REG_SCHEME_CUSTOM, REG_SCRIPT } from './constant.js';
 
 /**
  * get URL encoded string
@@ -181,7 +181,7 @@ export class URISchemes {
   add(scheme) {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    } else if (REG_SCRIPT.test(scheme) || !/^[a-z][\da-z+\-.]*$/.test(scheme)) {
+    } else if (REG_SCRIPT.test(scheme) || !REG_SCHEME.test(scheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#schemes.add(scheme);
@@ -209,8 +209,7 @@ export class URISchemes {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
-        res = (!REG_SCRIPT.test(scheme) &&
-               /^(?:ext|web)\+[a-z]+$/.test(scheme)) ||
+        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme)) ||
               schemeParts.every(s => this.#schemes.has(s));
       } catch (e) {
         res = false;
