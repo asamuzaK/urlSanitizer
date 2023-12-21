@@ -31,7 +31,7 @@ export function parseURL(url: string): Promise<ParsedURL>;
 export function parseURLSync(url: string): ParsedURL;
 export function isURI(uri: string): Promise<boolean>;
 export function isURISync(uri: string): boolean;
-export { urlSanitizer as default };
+export default urlSanitizer;
 export type ParsedURL = {
     input: string;
     valid: boolean;

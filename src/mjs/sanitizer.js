@@ -504,6 +504,4 @@ export const isURI = async uri => {
 export const isURISync = uri => urlSanitizer.verify(uri);
 
 /* export instance */
-export {
-  urlSanitizer as default
-};
+export default urlSanitizer;

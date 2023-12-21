@@ -1,3 +1,3 @@
-export { domPurify as default };
+export default domPurify;
 declare const domPurify: DOMPurify.DOMPurifyI;
 import DOMPurify from 'dompurify';
