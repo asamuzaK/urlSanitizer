@@ -1,9 +1,27 @@
 // bundle_wo_dompurify/mjs/dompurify.js
 var { DOMPurify } = globalThis;
+var dompurify_default = DOMPurify;
 
-// bundle_wo_dompurify/mjs/common.js
+// bundle_wo_dompurify/mjs/constant.js
+var HEX = 16;
 var TYPE_FROM = 8;
 var TYPE_TO = -1;
+var REG_B64 = /^[\w+/=-]+$/;
+var REG_DATA_URL = /data:[\w#&+./;=-]*,/;
+var REG_DATA_URL_B64 = /data:[\w#&+./;=^]*base64,[\w+/=-]+/i;
+var REG_DATA_URL_G = /data:[\w#&+./;=-]*,[^"]+/g;
+var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
+var REG_MIME_DOM = /^(?:application\/(?:[\w#&.;-]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
+var REG_SCHEME = /^[a-z][\da-z+.-]*$/;
+var REG_SCHEME_EXT = /^(?:ext|web)\+[a-z]+$/;
+var REG_SCRIPT = /(?:java|vb)script/;
+var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
+var REG_TAG_QUOT = /%(?:2[27]|3[CE])|[<>"']/;
+var REG_TAG_QUOT_ENC_G = /%(?:2[27]|3[CE])/g;
+var REG_TAG_QUOT_SPACE_G = /[<>"'\s]/g;
+var REG_URL_ENC = /^%[\dA-F]{2}$/i;
+
+// bundle_wo_dompurify/mjs/common.js
 var getType = (o) => Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
 var isString = (o) => typeof o === "string" || o instanceof String;
 
@@ -17,18 +35,6 @@ var uri_schemes_default = ["aaa", "aaas", "about", "acap", "acct", "acd", "acr",
 var { FileReader } = globalThis;
 
 // bundle_wo_dompurify/mjs/uri-util.js
-var HEX = 16;
-var REG_BASE64 = /^[\w+/\-=]+$/;
-var REG_END_COLON = /:$/;
-var REG_NUM_DECI = /^\d+/;
-var REG_NUM_HEAD = /#x?$/;
-var REG_NUM_HEAD_ASCII = /^#(?:x(?:00)?[2-7]|\d)/;
-var REG_NUM_HEX = /^x[\dA-F]+/i;
-var REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
-var REG_SCHEME = /^[a-z][\da-z+\-.]*$/;
-var REG_SCHEME_CUSTOM = /^(?:ext|web)\+[a-z]+$/;
-var REG_SCRIPT = /(?:java|vb)script/;
-var REG_URL_ENC = /^%[\dA-F]{2}$/i;
 var getURLEncodedString = (str) => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
@@ -63,7 +69,7 @@ var escapeURLEncodedHTMLChars = (ch) => {
 var parseBase64 = (data) => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
-  } else if (!REG_BASE64.test(data)) {
+  } else if (!REG_B64.test(data)) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
   const bin = atob(data);
@@ -93,9 +99,9 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
     for (const item of items) {
       const [numCharRef, value] = item;
       let num;
-      if (REG_NUM_HEX.test(value)) {
+      if (/^x[\dA-F]+/i.test(value)) {
         num = parseInt(`0${value}`, HEX);
-      } else if (REG_NUM_DECI.test(value)) {
+      } else if (/^\d+/.test(value)) {
         num = parseInt(value);
       }
       if (Number.isInteger(num)) {
@@ -106,7 +112,7 @@ var parseURLEncodedNumCharRef = (str, nest = 0) => {
         ];
         if (textCharCodes.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (REG_NUM_HEAD.test(preNum) || REG_NUM_HEAD_ASCII.test(postNum)) {
+          if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);
           }
         } else if (num < HEX * HEX) {
@@ -184,9 +190,9 @@ var URISchemes = class {
     if (isString(uri)) {
       try {
         const { protocol } = new URL(uri);
-        const scheme = protocol.replace(REG_END_COLON, "");
+        const scheme = protocol.replace(/:$/, "");
         const schemeParts = scheme.split("+");
-        res = !REG_SCRIPT.test(scheme) && REG_SCHEME_CUSTOM.test(scheme) || schemeParts.every((s) => this.#schemes.has(s));
+        res = !REG_SCRIPT.test(scheme) && REG_SCHEME_EXT.test(scheme) || schemeParts.every((s) => this.#schemes.has(s));
       } catch (e) {
         res = false;
       }
@@ -206,19 +212,6 @@ var URISchemes = class {
 };
 
 // bundle_wo_dompurify/mjs/sanitizer.js
-var HEX2 = 16;
-var REG_DATA_URL = /data:[\w#&+\-./;=]*,/;
-var REG_DATA_URL_BASE64 = /data:[\w#&+\-./;=]*base64,[\w+/\-=]+/i;
-var REG_DATA_URL_G = /data:[\w#&+\-./;=]*,[^"]+/g;
-var REG_END_COLON2 = /:$/;
-var REG_END_NUM = /(?:#|%23)$/;
-var REG_END_QUEST = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
-var REG_HTML_SP = /[<>"'\s]/g;
-var REG_HTML_URL_ENC = /%(?:2(?:2|7)|3(?:C|E))/g;
-var REG_MIME_DOM = /^(?:text\/(?:ht|x)ml|application\/(?:[\w#&\-.;]+\+)?xml|image\/svg\+xml)/;
-var REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
-var REG_TAG_QUOT = /%(?:2(?:2|7)|3(?:C|E))|[<>"']/;
-var REG_URL_ENC_AMP = /%26/g;
 var URLSanitizer = class extends URISchemes {
   /* private fields */
   #nest;
@@ -246,8 +239,8 @@ var URLSanitizer = class extends URISchemes {
       const items = [...matchedDataUrls].reverse();
       for (const item of items) {
         let [dataUrl] = item;
-        if (REG_DATA_URL_BASE64.test(dataUrl)) {
-          [dataUrl] = REG_DATA_URL_BASE64.exec(dataUrl);
+        if (REG_DATA_URL_B64.test(dataUrl)) {
+          [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
@@ -277,11 +270,11 @@ var URLSanitizer = class extends URISchemes {
     if (!isString(dom)) {
       throw new TypeError(`Expected String but got ${getType(dom)}.`);
     }
-    let purifiedDom = DOMPurify.sanitize(decodeURIComponent(dom));
+    let purifiedDom = dompurify_default.sanitize(decodeURIComponent(dom));
     if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
       purifiedDom = this.replace(purifiedDom);
     }
-    purifiedDom = purifiedDom.replace(REG_END_NUM, "").replace(REG_END_QUEST, "");
+    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, "").replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, "");
     return encodeURI(purifiedDom);
   }
   /**
@@ -298,7 +291,7 @@ var URLSanitizer = class extends URISchemes {
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt) {
-    if (this.#nest > HEX2) {
+    if (this.#nest > HEX) {
       this.#nest = 0;
       throw new Error("Data URLs nested too deeply.");
     }
@@ -378,7 +371,7 @@ var URLSanitizer = class extends URISchemes {
     let sanitizedUrl;
     if (super.verify(url)) {
       const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(REG_END_COLON2, "");
+      const scheme = protocol.replace(/:$/, "");
       const schemeParts = scheme.split("+");
       let bool;
       if (restrictScheme) {
@@ -407,7 +400,7 @@ var URLSanitizer = class extends URISchemes {
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
             const { protocol: dataScheme } = new URL(decodedData);
-            const dataSchemeParts = dataScheme.replace(REG_END_COLON2, "").split("+");
+            const dataSchemeParts = dataScheme.replace(/:$/, "").split("+");
             if (dataSchemeParts.some((s) => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = "";
             }
@@ -447,10 +440,10 @@ var URLSanitizer = class extends URISchemes {
           urlToSanitize = urlToSanitize.substring(0, index);
         }
         if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize.replace(REG_HTML_SP, getURLEncodedString).replace(REG_URL_ENC_AMP, escapeURLEncodedHTMLChars);
+          sanitizedUrl = urlToSanitize.replace(REG_TAG_QUOT_SPACE_G, getURLEncodedString).replace(/%26/g, escapeURLEncodedHTMLChars);
           if (finalize) {
             if (!isDataUrl) {
-              sanitizedUrl = sanitizedUrl.replace(REG_HTML_URL_ENC, escapeURLEncodedHTMLChars);
+              sanitizedUrl = sanitizedUrl.replace(REG_TAG_QUOT_ENC_G, escapeURLEncodedHTMLChars);
             }
             this.#nest = 0;
           }
@@ -497,7 +490,7 @@ var URLSanitizer = class extends URISchemes {
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
       const { pathname, protocol } = urlObj;
-      const schemeParts = protocol.replace(REG_END_COLON2, "").split("+");
+      const schemeParts = protocol.replace(/:$/, "").split("+");
       const isDataUrl = schemeParts.includes("data");
       parsedUrl.set("valid", true);
       if (isDataUrl) {
@@ -548,7 +541,7 @@ var sanitizeURL = async (url, opt = {
     let scheme;
     try {
       const { protocol } = new URL(url);
-      scheme = protocol.replace(REG_END_COLON2, "");
+      scheme = protocol.replace(/:$/, "");
     } catch (e) {
     }
     if (scheme === "blob") {
@@ -589,7 +582,7 @@ var sanitizeURLSync = (url, opt) => {
     let scheme;
     try {
       const { protocol } = new URL(url);
-      scheme = protocol.replace(REG_END_COLON2, "");
+      scheme = protocol.replace(/:$/, "");
     } catch (e) {
     }
     if (scheme === "blob") {
@@ -610,8 +603,9 @@ var isURI = async (uri) => {
   return res;
 };
 var isURISync = (uri) => urlSanitizer.verify(uri);
+var sanitizer_default = urlSanitizer;
 export {
-  urlSanitizer as default,
+  sanitizer_default as default,
   isURI,
   isURISync,
   parseURL,
