@@ -26,13 +26,13 @@
     "jsdom": "^24.0.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.23.9",
+    "@babel/eslint-parser": "^7.23.10",
     "@babel/plugin-syntax-import-assertions": "^7.23.3",
     "@types/dompurify": "^3.0.5",
     "@types/jsdom": "^21.1.6",
     "c8": "^9.1.0",
     "chai": "^5.0.3",
-    "commander": "^11.1.0",
+    "commander": "^12.0.0",
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
     "esbuild": "^0.20.0",
@@ -47,7 +47,7 @@
     "npm-run-all": "^4.1.5",
     "sinon": "^17.0.1",
     "typescript": "^5.3.3",
-    "undici": "^6.5.0"
+    "undici": "^6.6.0"
   },
   "scripts": {
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",

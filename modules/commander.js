@@ -128,26 +128,31 @@ export const parseCommand = args => {
   if (Array.isArray(args) && args.some(arg => reg.test(arg))) {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
-    commander.command('char')
-      .description('create text chars table')
-      .option('-i, --info', 'console info')
-      .action(createCharTable);
-    commander.command('clean')
-      .description('clean directory')
-      .option('-d, --dir <name>', 'specify directory')
-      .option('-i, --info', 'console info')
-      .action(cleanDirectory);
-    commander.command('include')
-      .description('include library packages')
-      .option('-d, --dir <name>', 'specify library directory')
-      .option('-i, --info', 'console info')
-      .action(includeLibraries);
-    commander.command('rename')
-      .description('rename file')
-      .option('-o, --oldpath <name>', 'old path')
-      .option('-n, --newpath <name>', 'new path')
-      .option('-i, --info', 'console info')
-      .action(renameFile);
+    if (args.includes('char')) {
+      commander.command('char')
+        .description('create text chars table')
+        .option('-i, --info', 'console info')
+        .action(createCharTable);
+    } else if (args.includes('clean')) {
+      commander.command('clean')
+        .description('clean directory')
+        .option('-d, --dir <name>', 'specify directory')
+        .option('-i, --info', 'console info')
+        .action(cleanDirectory);
+    } else if (args.includes('include')) {
+      commander.command('include')
+        .description('include library packages')
+        .option('-d, --dir <name>', 'specify library directory')
+        .option('-i, --info', 'console info')
+        .action(includeLibraries);
+    } else if (args.includes('rename')) {
+      commander.command('rename')
+        .description('rename file')
+        .option('-o, --oldpath <name>', 'old path')
+        .option('-n, --newpath <name>', 'new path')
+        .option('-i, --info', 'console info')
+        .action(renameFile);
+    }
     commander.parse(args);
   }
 };
