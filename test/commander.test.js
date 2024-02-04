@@ -394,7 +394,6 @@ describe('parse command', () => {
     spyCmd.restore();
   });
 
-
   it('should parse', () => {
     const stubParse = sinon.stub(commander, 'parse');
     const stubVer = sinon.stub(commander, 'version');
@@ -415,7 +414,6 @@ describe('parse command', () => {
     spyCmd.restore();
   });
 
-
   it('should parse', () => {
     const stubParse = sinon.stub(commander, 'parse');
     const stubVer = sinon.stub(commander, 'version');
@@ -435,7 +433,6 @@ describe('parse command', () => {
     stubVer.restore();
     spyCmd.restore();
   });
-
 
   it('should parse', () => {
     const stubParse = sinon.stub(commander, 'parse');
