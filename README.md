@@ -18,14 +18,12 @@ npm i url-sanitizer
 ```
 
 For browsers and web sites, standalone ESM builds are available in `dist/` directory.
-* node_modules/url-sanitizer/dist/url-sanitizer.js
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
-* node_modules/url-sanitizer/dist/url-sanitizer-wo-dompurify.js
 * node_modules/url-sanitizer/dist/url-sanitizer-wo-dompurify.min.js
 
 Or, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 
-NOTE: `url-sanitizer-wo-dompurify.js` and `url-sanitizer-wo-dompurify.min.js` are built without [DOMPurify](https://www.npmjs.com/package/dompurify).
+NOTE: `url-sanitizer-wo-dompurify.min.js` is built without [DOMPurify](https://www.npmjs.com/package/dompurify).
 If you use them, make sure DOMPurify is exposed globally, e.g. `window.DOMPurify`.
 
 ## Usage
