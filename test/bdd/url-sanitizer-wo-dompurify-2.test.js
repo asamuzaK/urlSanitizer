@@ -3,11 +3,12 @@
  */
 
 /* test */
+import { assert } from '../../node_modules/chai/chai.js';
 import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
 } from '../../dist/url-sanitizer-wo-dompurify.js';
 
-const { chai: { assert }, describe, it } = globalThis;
+const { describe, it } = globalThis;
 const isString = o => typeof o === 'string';
 
 describe('dist URL Sanitizer', () => {

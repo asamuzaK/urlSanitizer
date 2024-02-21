@@ -3,8 +3,8 @@
  */
 
 /* shared */
-import textChars from '../lib/file/text-chars.json' assert { type: 'json' };
 import { getType, isString } from './common.js';
+import { textChars } from './lib-util.js';
 
 /* constants */
 import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './constant.js';
