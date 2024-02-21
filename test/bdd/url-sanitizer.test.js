@@ -6,7 +6,7 @@
 import { assert } from '../../node_modules/chai/chai.js';
 import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
-} from '../../dist/url-sanitizer.js';
+} from '../../dist/url-sanitizer.min.js';
 
 const { describe, it } = globalThis;
 const isString = o => typeof o === 'string';
