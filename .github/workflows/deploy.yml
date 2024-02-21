@@ -18,27 +18,11 @@ jobs:
           - node-version: 20.x
             os: ubuntu-latest
             python-version: '3.x'
-            asset-name: url-sanitizer.tar.gz
-            pkg-dir: pkg/dist
-            file-name: url-sanitizer.js
-            file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.tar.gz LICENSE README.md url-sanitizer.js url-sanitizer.js.map && cd ../../
-          - node-version: 20.x
-            os: ubuntu-latest
-            python-version: '3.x'
             asset-name: url-sanitizer.min.tar.gz
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
-          - node-version: 20.x
-            os: ubuntu-latest
-            python-version: '3.x'
-            asset-name: url-sanitizer-wo-dompurify.tar.gz
-            pkg-dir: pkg/dist
-            file-name: url-sanitizer-wo-dompurify.js
-            file-map: url-sanitizer-wo-dompurify.js.map
-            zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer-wo-dompurify.tar.gz LICENSE README.md url-sanitizer-wo-dompurify.js url-sanitizer-wo-dompurify.js.map && cd ../../
           - node-version: 20.x
             os: ubuntu-latest
             python-version: '3.x'
@@ -50,27 +34,11 @@ jobs:
           - node-version: 20.x
             os: ubuntu-latest
             python-version: '3.x'
-            asset-name: url-sanitizer.zip
-            pkg-dir: pkg/dist
-            file-name: url-sanitizer.js
-            file-map: url-sanitizer.js.map
-            zip-cmd: cd ./pkg/dist && zip -r url-sanitizer.zip ./ && cd ../../
-          - node-version: 20.x
-            os: ubuntu-latest
-            python-version: '3.x'
             asset-name: url-sanitizer.min.zip
             pkg-dir: pkg/dist
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && zip -r url-sanitizer.min.zip ./ && cd ../../
-          - node-version: 20.x
-            os: ubuntu-latest
-            python-version: '3.x'
-            asset-name: url-sanitizer-wo-dompurify.zip
-            pkg-dir: pkg/dist
-            file-name: url-sanitizer-wo-dompurify.js
-            file-map: url-sanitizer-wo-dompurify.js.map
-            zip-cmd: cd ./pkg/dist && zip -r url-sanitizer-wo-dompurify.zip ./ && cd ../../
           - node-version: 20.x
             os: ubuntu-latest
             python-version: '3.x'
