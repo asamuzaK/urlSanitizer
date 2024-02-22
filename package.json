@@ -9,18 +9,17 @@
     "type": "git",
     "url": "git+https://github.com/asamuzaK/urlSanitizer.git"
   },
-  "engines": {
-    "node": ">=18"
-  },
   "files": [
     "dist",
     "src",
     "types"
   ],
   "type": "module",
-  "main": "src/index.js",
+  "exports": {
+    "import": "src/index.js",
+    "browser": "dist/url-sanitizer.min.js"
+  },
   "types": "types/index.d.ts",
-  "browser": "dist/url-sanitizer.js",
   "dependencies": {
     "dompurify": "^3.0.9",
     "jsdom": "^24.0.0"
