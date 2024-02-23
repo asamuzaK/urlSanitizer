@@ -38,7 +38,7 @@
     "eslint": "^8.56.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jsdoc": "^48.1.0",
+    "eslint-plugin-jsdoc": "^48.2.0",
     "eslint-plugin-regexp": "^2.2.0",
     "eslint-plugin-unicorn": "^51.0.1",
     "http-server": "^14.1.1",
@@ -65,5 +65,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node modules/index clean --dir=types -i && npx tsc"
   },
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
