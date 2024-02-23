@@ -4,4 +4,6 @@
 
 const { DOMPurify } = globalThis;
 
-export default DOMPurify;
+export {
+  DOMPurify as domPurify
+};

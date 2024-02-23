@@ -3,7 +3,7 @@
  */
 
 /* shared */
-import domPurify from './dompurify.js';
+import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
   createDataURLFromBlob, escapeURLEncodedHTMLChars, getURLEncodedString,

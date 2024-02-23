@@ -2,4 +2,8 @@
  * dompurify.js
  */
 
-export { default } from 'dompurify';
+import DOMPurify from 'dompurify';
+
+export {
+  DOMPurify as domPurify
+};
