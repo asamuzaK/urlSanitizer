@@ -21,12 +21,12 @@
   },
   "types": "types/index.d.ts",
   "dependencies": {
-    "dompurify": "^3.0.9",
+    "dompurify": "^3.0.11",
     "jsdom": "^24.0.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.23.10",
-    "@babel/plugin-syntax-import-assertions": "^7.23.3",
+    "@babel/eslint-parser": "^7.24.1",
+    "@babel/plugin-syntax-import-assertions": "^7.24.1",
     "@types/dompurify": "^3.0.5",
     "@types/jsdom": "^21.1.6",
     "c8": "^9.1.0",
@@ -34,19 +34,19 @@
     "commander": "^12.0.0",
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
-    "esbuild": "^0.20.1",
-    "eslint": "^8.56.0",
+    "esbuild": "^0.20.2",
+    "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jsdoc": "^48.2.0",
-    "eslint-plugin-regexp": "^2.2.0",
+    "eslint-plugin-jsdoc": "^48.2.1",
+    "eslint-plugin-regexp": "^2.3.0",
     "eslint-plugin-unicorn": "^51.0.1",
     "http-server": "^14.1.1",
     "mocha": "^10.3.0",
     "npm-run-all": "^4.1.5",
     "sinon": "^17.0.1",
-    "typescript": "^5.3.3",
-    "undici": "^6.6.2"
+    "typescript": "^5.4.3",
+    "undici": "^6.10.1"
   },
   "scripts": {
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
@@ -65,5 +65,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node modules/index clean --dir=types -i && npx tsc"
   },
-  "version": "1.0.2"
+  "version": "1.0.3"
 }
