@@ -67,12 +67,7 @@ describe('URL Sanitizer', () => {
     it('should get result', async () => {
       const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = await sanitizeURL(url);
-      assert.strictEqual(res,
-        'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
-        'decode');
+      assert.strictEqual(res, 'http://example.com/', 'result');
     });
 
     it('should get result', async () => {
@@ -149,12 +144,7 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url, {
         only: ['data', 'git', 'https']
       });
-      assert.strictEqual(res,
-        'https://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;',
-        'decode');
+      assert.strictEqual(res, 'https://example.com/', 'result');
     });
 
     it('should get result', async () => {
@@ -162,12 +152,7 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url, {
         only: ['data', 'git', 'https']
       });
-      assert.strictEqual(res,
-        'git+https://example.com/foo.git?%26lt;script%26gt;alert(1)%26lt;/script%26gt;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;',
-        'decode');
+      assert.strictEqual(res, 'git+https://example.com/foo.git', 'result');
     });
 
     it('should get null', async () => {
@@ -187,12 +172,7 @@ describe('URL Sanitizer', () => {
     it('should get result', () => {
       const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = sanitizeURLSync(url);
-      assert.strictEqual(res,
-        'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
-        'decode');
+      assert.strictEqual(res, 'http://example.com/', 'result');
     });
 
     it('should get result', () => {
@@ -264,12 +244,7 @@ describe('URL Sanitizer', () => {
       const res = sanitizeURLSync(url, {
         only: ['data', 'git', 'https']
       });
-      assert.strictEqual(res,
-        'https://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;',
-        'decode');
+      assert.strictEqual(res, 'https://example.com/', 'result');
     });
 
     it('should get result', () => {
@@ -277,12 +252,7 @@ describe('URL Sanitizer', () => {
       const res = sanitizeURLSync(url, {
         only: ['data', 'git', 'https']
       });
-      assert.strictEqual(res,
-        'git+https://example.com/foo.git?%26lt;script%26gt;alert(1)%26lt;/script%26gt;',
-        'result');
-      assert.strictEqual(decodeURIComponent(res),
-        'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;',
-        'decode');
+      assert.strictEqual(res, 'git+https://example.com/foo.git', 'result');
     });
   });
 

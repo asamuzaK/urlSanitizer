@@ -567,38 +567,25 @@ describe('sanitizer', () => {
         const res = sanitizer
           .sanitize("http://example.com/?<script>alert('XSS');</script>");
         const url = new URL(res);
-        assert.strictEqual(res,
-          'http://example.com/?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
-          'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
+        assert.strictEqual(res, 'http://example.com/', 'result');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [], 'search');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize("http://example.com/?foo=bar&<script>alert('XSS');</script>");
         const url = new URL(res);
-        assert.strictEqual(res,
-          'http://example.com/?foo=bar&%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?foo=bar&&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;',
-          'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['foo', 'bar'], ['&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;', '']], 'search');
+        assert.strictEqual(res, 'http://example.com/?foo=bar', 'result');
+        assert.deepEqual(Array.from(url.searchParams.entries()), [
+          ['foo', 'bar']
+        ], 'search');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
         const res =
           sanitizer.sanitize('http://example.com/"onmouseover="alert(1)"');
-        assert.strictEqual(res,
-          'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;',
-          'decode');
+        assert.strictEqual(res, 'http://example.com/', 'result');
       });
 
       it('should get null if data scheme is not explicitly allowed', () => {
@@ -978,7 +965,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           remove: true
         });
-        assert.strictEqual(res, 'https://example.com/?', 'result');
+        assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
       it('should get sanitized value', () => {
@@ -988,7 +975,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           remove: true
         });
-        assert.strictEqual(res, 'https://example.com/?', 'result');
+        assert.strictEqual(res, 'https://example.com/', 'result');
       });
     });
 
