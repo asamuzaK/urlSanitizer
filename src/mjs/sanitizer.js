@@ -6,12 +6,12 @@
 import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
-  createDataURLFromBlob, escapeURLEncodedHTMLChars, getURLEncodedString,
-  parseBase64, parseURLEncodedNumCharRef, URISchemes
+  createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
+  parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
   HEX, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G, REG_MIME_DOM,
-  REG_SCRIPT_BLOB, REG_TAG_QUOT, REG_TAG_QUOT_ENC_G, REG_TAG_QUOT_SPACE_G
+  REG_SCRIPT_BLOB, REG_TAG_QUOT
 } from './constant.js';
 
 /* typedef */
@@ -275,14 +275,9 @@ export class URLSanitizer extends URISchemes {
             urlToSanitize.substring(0, index).replace(/[?&]$/, '');
         }
         if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize
-            .replace(REG_TAG_QUOT_SPACE_G, getURLEncodedString)
-            .replace(/%26/g, escapeURLEncodedHTMLChars);
+          sanitizedUrl =
+            urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
           if (finalize) {
-            if (!isDataUrl) {
-              sanitizedUrl = sanitizedUrl
-                .replace(REG_TAG_QUOT_ENC_G, escapeURLEncodedHTMLChars);
-            }
             this.#nest = 0;
           }
         } else {

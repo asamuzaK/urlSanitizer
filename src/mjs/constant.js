@@ -22,6 +22,4 @@ export const REG_SCHEME_EXT = /^(?:ext|web)\+[a-z]+$/;
 export const REG_SCRIPT = /(?:java|vb)script/;
 export const REG_SCRIPT_BLOB = /(?:java|vb)script|blob/;
 export const REG_TAG_QUOT = /%(?:2[27]|3[CE])|[<>"']/;
-export const REG_TAG_QUOT_ENC_G = /%(?:2[27]|3[CE])/g;
-export const REG_TAG_QUOT_SPACE_G = /[<>"'\s]/g;
 export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
