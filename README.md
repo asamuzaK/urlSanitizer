@@ -49,20 +49,19 @@ Sanitize the given URL.
   * `opt.deny` **[Array][4]<[string][1]>?** Array of denied schemes, e.g. `['web+foo']`.
   * `opt.only` **[Array][4]<[string][1]>?** Array of specific schemes to allow, e.g. `['git', 'https']`.
     `only` takes precedence over `allow` and `deny`.
-  * `opt.remove` **[boolean][2]?** Remove tag or quote and the rest following it.
 
 Returns **[Promise][5]<[string][1]?>** Sanitized URL, `null`able.
 
 ```javascript
 // Sanitize tags and quotes
-const res1 = await sanitizeURL('http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>');
-// => 'http://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;?%26lt;script%26gt;alert(%26%2339;XSS%26%2339;);%26lt;/script%26gt;'
+const res1 = await sanitizeURL('https://example.com/?<script>alert(1)</script>');
+// => 'https://example.com/'
 
-console.log(decodeURIComponent(res1));
-// => 'http://example.com/&quot;onmouseover=&quot;alert(1)&quot;?&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;'
+const res1_2 = await sanitizeURL('https://example.com/" onclick="alert(1)"');
+// => 'https://example.com/'
 
 
-// Parse and purify data URL
+// Can parse and sanitize data URL
 const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
 })
@@ -72,7 +71,7 @@ console.log(decodeURIComponent(res2));
 // => 'data:text/html,<div></div><p></p>'
 
 
-// Can parse and purify base64 encoded data
+// Also can parse and sanitize base64 encoded data
 const base64data3 = btoa('<div><script>alert(1);</script></div>');
 const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
   allow: ['data']
@@ -120,32 +119,14 @@ const res6 = await sanitizeURL('http://example.com', {
 const res6_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 });
-// => 'https://example.com/%26quot;onmouseover=%26quot;alert(1)%26quot;'
-
-console.log(decodeURIComponent(res6_2));
-// => 'https://example.com/&quot;onmouseover=&quot;alert(1)&quot;'
+// => 'https://example.com/'
 
 
 // `only` also allows combination of the schemes in the list
 const res7 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
 });
-// => 'git+https://example.com/foo.git?%26lt;script%26gt;alert(1)%26lt;/script%26gt;'
-
-console.log(decodeURIComponent(res7));
-// => 'git+https://example.com/foo.git?&lt;script&gt;alert(1)&lt;/script&gt;'
-
-
-// Remove the tag or quote and the rest of the URL following it.
-const res8 = await sanitizeURL('https://example.com/" onclick="alert(1)"', {
-  remove: true
-});
-// => 'https://example.com/'
-
-const res8_2 = await sanitizeURL('https://example.com/?<script>alert(1)</script>', {
-  remove: true
-});
-// => 'https://example.com/?'
+// => 'git+https://example.com/foo.git'
 ```
 
 

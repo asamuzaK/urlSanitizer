@@ -119,7 +119,6 @@ export class URLSanitizer extends URISchemes {
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
    * @param {Array.<string>} [opt.deny] - array of denied schemes
    * @param {Array.<string>} [opt.only] - array of specific schemes to allow
-   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt) {
@@ -127,7 +126,7 @@ export class URLSanitizer extends URISchemes {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only, remove } = opt ?? {};
+    const { allow, deny, only } = opt ?? {};
     const schemeMap = new Map([
       ['blob', false],
       ['data', false],
@@ -269,10 +268,11 @@ export class URLSanitizer extends URISchemes {
         } else {
           finalize = true;
         }
-        if (!isDataUrl && remove && REG_TAG_QUOT.test(urlToSanitize)) {
+        if (!isDataUrl && REG_TAG_QUOT.test(urlToSanitize)) {
           const item = REG_TAG_QUOT.exec(urlToSanitize);
           const { index } = item;
-          urlToSanitize = urlToSanitize.substring(0, index);
+          urlToSanitize =
+            urlToSanitize.substring(0, index).replace(/[?&]$/, '');
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize
@@ -305,7 +305,6 @@ export class URLSanitizer extends URISchemes {
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
    * @param {Array.<string>} [opt.deny] - array of denied schemes
    * @param {Array.<string>} [opt.only] - array of specific schemes to allow
-   * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
    * @returns {ParsedURL} - result with additional props based on URL API
    */
   parse(url, opt) {
@@ -384,7 +383,6 @@ const urlSanitizer = new URLSanitizer();
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
  * @param {Array.<string>} [opt.deny] - array of denied schemes
  * @param {Array.<string>} [opt.only] - array of specific schemes to allow
- * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
  * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt = {
@@ -447,7 +445,6 @@ export const sanitizeURL = async (url, opt = {
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
  * @param {Array.<string>} [opt.deny] - array of denied schemes
  * @param {Array.<string>} [opt.only] - array of specific schemes to allow
- * @param {boolean} [opt.remove] - remove tag and/or quote and the rest
  * @returns {?string} - sanitized URL
  */
 export const sanitizeURLSync = (url, opt) => {
