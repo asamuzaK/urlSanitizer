@@ -14,6 +14,4 @@ export const REG_SCHEME_EXT: RegExp;
 export const REG_SCRIPT: RegExp;
 export const REG_SCRIPT_BLOB: RegExp;
 export const REG_TAG_QUOT: RegExp;
-export const REG_TAG_QUOT_ENC_G: RegExp;
-export const REG_TAG_QUOT_SPACE_G: RegExp;
 export const REG_URL_ENC: RegExp;
