@@ -5,13 +5,11 @@ export class URLSanitizer extends URISchemes {
         allow?: Array<string>;
         deny?: Array<string>;
         only?: Array<string>;
-        remove?: boolean;
     }): string | null;
     parse(url: string, opt?: {
         allow?: Array<string>;
         deny?: Array<string>;
         only?: Array<string>;
-        remove?: boolean;
     }): ParsedURL;
     #private;
 }
@@ -19,13 +17,11 @@ export function sanitizeURL(url: string, opt?: {
     allow?: Array<string>;
     deny?: Array<string>;
     only?: Array<string>;
-    remove?: boolean;
 }): Promise<string | null>;
 export function sanitizeURLSync(url: string, opt?: {
     allow?: Array<string>;
     deny?: Array<string>;
     only?: Array<string>;
-    remove?: boolean;
 }): string | null;
 export function parseURL(url: string): Promise<ParsedURL>;
 export function parseURLSync(url: string): ParsedURL;
