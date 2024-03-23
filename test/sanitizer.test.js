@@ -942,9 +942,7 @@ describe('sanitizer', () => {
         const xss = '" onclick="alert(1)"';
         const url = `https://example.com/${xss}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(url, {
-          remove: true
-        });
+        const res = sanitizer.sanitize(url);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
@@ -952,9 +950,7 @@ describe('sanitizer', () => {
         const xss = '" onclick="alert(1)"';
         const url = `https://example.com/${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(url, {
-          remove: true
-        });
+        const res = sanitizer.sanitize(url);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
@@ -962,9 +958,7 @@ describe('sanitizer', () => {
         const xss = '<script>alert(1)</script>';
         const url = `https://example.com/?${xss}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(url, {
-          remove: true
-        });
+        const res = sanitizer.sanitize(url);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
@@ -972,9 +966,7 @@ describe('sanitizer', () => {
         const xss = '<script>alert(1)</script>';
         const url = `https://example.com/?${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize(url, {
-          remove: true
-        });
+        const res = sanitizer.sanitize(url);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
     });
@@ -1345,8 +1337,7 @@ describe('sanitizer', () => {
       it('should get sanitized value', async () => {
         const url = 'https://example.com/"quoted"';
         const res = await func(url, {
-          allow: ['data', 'file'],
-          remove: true
+          allow: ['data', 'file']
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
@@ -1354,8 +1345,7 @@ describe('sanitizer', () => {
       it('should get sanitized value', async () => {
         const url = "https://example.com/'quoted'";
         const res = await func(url, {
-          allow: ['data', 'file'],
-          remove: true
+          allow: ['data', 'file']
         });
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
@@ -1363,8 +1353,7 @@ describe('sanitizer', () => {
       it('should get sanitized value', async () => {
         const url = 'https://example.com/?q="quoted"';
         const res = await func(url, {
-          allow: ['data', 'file'],
-          remove: true
+          allow: ['data', 'file']
         });
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
@@ -1372,8 +1361,7 @@ describe('sanitizer', () => {
       it('should get sanitized value', async () => {
         const url = "https://example.com/?q='quoted'";
         const res = await func(url, {
-          allow: ['data', 'file'],
-          remove: true
+          allow: ['data', 'file']
         });
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
