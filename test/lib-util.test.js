@@ -7,10 +7,10 @@ import { assert } from 'chai';
 import { describe, it } from 'mocha';
 
 /* test */
-import textChars from '../src/lib/file/text-chars.json' assert {
+import textChars from '../src/lib/file/text-chars.json' with {
   type: 'json'
 };
-import uriSchemes from '../src/lib/iana/uri-schemes.json' assert {
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with {
   type: 'json'
 };
 import * as mjs from '../src/mjs/lib-util.js';

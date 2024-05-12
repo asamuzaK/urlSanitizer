@@ -8,7 +8,7 @@ import { describe, it } from 'mocha';
 import { isString } from '../modules/common.js';
 
 /* test */
-import uriSchemes from '../src/lib/iana/uri-schemes.json' assert {
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with {
   type: 'json'
 };
 import urlSanitizer, * as mjs from '../src/mjs/sanitizer.js';
