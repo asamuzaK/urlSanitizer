@@ -228,4 +228,4 @@ export class URISchemes {
       this.#schemes.add(scheme);
     }
   }
-};
+}
