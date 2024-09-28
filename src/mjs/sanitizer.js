@@ -107,7 +107,7 @@ export class URLSanitizer extends URISchemes {
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
     return encodeURI(purifiedDom);
-  };
+  }
 
   /**
    * sanitize URL
@@ -363,7 +363,7 @@ export class URLSanitizer extends URISchemes {
     this.#nest = 0;
     this.#recurse.clear();
   }
-};
+}
 
 /* aliases and async wrappers */
 /* instance */
