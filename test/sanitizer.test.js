@@ -1054,9 +1054,57 @@ describe('sanitizer', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
+        const data = '<div onclick="alert(1)"/></div>';
+        const encodedData = encodeURI('<div></div>');
+        const url = `data:text/html,${encodeURIComponent(data)}`;
+        const obj = new URL(`data:text/html,${encodedData}`);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'text/html',
+          data: encodedData,
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const encodedData = encodeURI('<svg><g></g></svg>');
         const url = `data:image/svg+xml,${encodeURI(data)}`;
+        const obj = new URL(`data:image/svg+xml,${encodedData}`);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          mime: 'image/svg+xml',
+          data: encodedData,
+          base64: false
+        };
+        const res = sanitizer.parse(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('should get value', () => {
+        const sanitizer = new URLSanitizer();
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const encodedData = encodeURI('<svg><g></g></svg>');
+        const url = `data:image/svg+xml,${encodeURIComponent(data)}`;
         const obj = new URL(`data:image/svg+xml,${encodedData}`);
         const items = {};
         for (const key in obj) {
