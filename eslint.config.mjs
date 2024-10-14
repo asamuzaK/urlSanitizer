@@ -29,7 +29,7 @@ export default [
           babelrc: false,
           configFile: false,
           plugins: [
-            '@babel/plugin-syntax-import-assertions'
+            '@babel/plugin-syntax-import-attributes'
           ]
         }
       }
