@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - node-version: 20.x
+          - node-version: 22.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.tar.gz
@@ -23,7 +23,7 @@ jobs:
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
-          - node-version: 20.x
+          - node-version: 22.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer-wo-dompurify.min.tar.gz
@@ -31,7 +31,7 @@ jobs:
             file-name: url-sanitizer-wo-dompurify.min.js
             file-map: url-sanitizer-wo-dompurify.min.js.map
             zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer-wo-dompurify.min.tar.gz LICENSE README.md url-sanitizer-wo-dompurify.min.js url-sanitizer-wo-dompurify.min.js.map && cd ../../
-          - node-version: 20.x
+          - node-version: 22.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.zip
@@ -39,7 +39,7 @@ jobs:
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && zip -r url-sanitizer.min.zip ./ && cd ../../
-          - node-version: 20.x
+          - node-version: 22.x
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer-wo-dompurify.min.zip
