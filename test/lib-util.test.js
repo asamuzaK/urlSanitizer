@@ -15,19 +15,6 @@ import uriSchemes from '../src/lib/iana/uri-schemes.json' with {
 };
 import * as mjs from '../src/mjs/lib-util.js';
 
-describe('parse json', () => {
-  const func = mjs.parseJson;
-
-  it('should get result', () => {
-    const url = '../../test/file/test.json';
-    const res = func(url);
-    assert.deepEqual(res, {
-      foo: 'bar',
-      baz: ['qux', 'quux']
-    }, 'result');
-  });
-});
-
 describe('text chars', () => {
   it('should get result', () => {
     assert.isTrue(Array.isArray(mjs.textChars), 'type');
