@@ -1,2 +1,1 @@
-export const domPurify: DOMPurify.DOMPurifyI;
-import DOMPurify from 'dompurify';
+export const domPurify: import("dompurify").DOMPurify;
