@@ -1,9 +1,9 @@
 /* api */
+import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import sinon from 'sinon';
-import { assert } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
 import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
@@ -107,8 +107,7 @@ describe('include libraries', () => {
     mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     await includeLibraries().catch(e => {
-      assert.instanceOf(e, Error, 'error');
-      assert.strictEqual(e.message, 'error', 'message');
+      assert.deepStrictEqual(e, new Error('error'));
     });
     stubWrite.restore();
   });
@@ -204,8 +203,7 @@ describe('create a table of chars', () => {
     const j = stubInfo.callCount;
     stubWrite.rejects(new Error('error'));
     const res = await createCharTable().catch(e => {
-      assert.instanceOf(e, Error, 'error');
-      assert.strictEqual(e.message, 'error', 'message');
+      assert.deepStrictEqual(e, new Error('error'));
     });
     const { callCount: writeCallCount } = stubWrite;
     const { callCount: infoCallCount } = stubInfo;
@@ -213,7 +211,7 @@ describe('create a table of chars', () => {
     stubWrite.restore();
     assert.strictEqual(writeCallCount, i + 1, 'write');
     assert.strictEqual(infoCallCount, j, 'info');
-    assert.isUndefined(res, 'result');
+    assert.strictEqual(res, undefined, 'result');
   });
 
   it('should get result', async () => {
@@ -236,14 +234,14 @@ describe('create a table of chars', () => {
 
 describe('rename file', () => {
   it('should throw', () => {
-    assert.throws(() => renameFile(),
+    assert.throws(() => renameFile(), Error,
       'No such file or directory: undefined');
   });
 
   it('should throw if file does not exist', () => {
     const oldpath = path.resolve('test', 'file', 'foo.txt');
     const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
-    assert.throws(() => renameFile({ oldpath, newpath }),
+    assert.throws(() => renameFile({ oldpath, newpath }), Error,
       `No such file or directory: ${oldpath}`);
   });
 
@@ -263,8 +261,8 @@ describe('rename file', () => {
     stubExists.restore();
     stubStat.restore();
     stubInfo.restore();
-    assert.isTrue(calledRename, 'called');
-    assert.isFalse(calledInfo, 'called');
+    assert.strictEqual(calledRename, true, 'called');
+    assert.strictEqual(calledInfo, false, 'called');
   });
 
   it('should call function', () => {
@@ -287,8 +285,8 @@ describe('rename file', () => {
     stubExists.restore();
     stubStat.restore();
     stubInfo.restore();
-    assert.isTrue(calledRename, 'called');
-    assert.isTrue(calledInfo, 'called');
+    assert.strictEqual(calledRename, true, 'called');
+    assert.strictEqual(calledInfo, true, 'called');
   });
 });
 
@@ -299,7 +297,7 @@ describe('clean directory', () => {
     cleanDirectory({ dir });
     const { called: rmCalled } = stubRm;
     stubRm.restore();
-    assert.isFalse(rmCalled, 'not called');
+    assert.strictEqual(rmCalled, false, 'not called');
   });
 
   it('should call funtion', () => {
@@ -311,8 +309,8 @@ describe('clean directory', () => {
     const { called: infoCalled } = stubInfo;
     stubRm.restore();
     stubInfo.restore();
-    assert.isTrue(rmCalled, 'called');
-    assert.isFalse(infoCalled, 'not called');
+    assert.strictEqual(rmCalled, true, 'called');
+    assert.strictEqual(infoCalled, false, 'not called');
   });
 
   it('should call funtion', () => {
@@ -324,8 +322,8 @@ describe('clean directory', () => {
     const { calledOnce: infoCalled } = stubInfo;
     stubRm.restore();
     stubInfo.restore();
-    assert.isTrue(rmCalled, 'called');
-    assert.isTrue(infoCalled, 'not called');
+    assert.strictEqual(rmCalled, true, 'called');
+    assert.strictEqual(infoCalled, true, 'called');
   });
 });
 

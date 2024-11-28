@@ -3,7 +3,7 @@
  */
 
 /* api */
-import { assert } from 'chai';
+import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 
 /* test */
@@ -13,9 +13,9 @@ describe('constants', () => {
   const items = Object.entries(constant);
   for (const [key, value] of items) {
     it('should get string or number or regexp', () => {
-      assert.isTrue(/^[A-Z][A-Z_\d]+$/.test(key), 'key');
-      assert.isTrue(typeof value === 'string' || Number.isInteger(value) ||
-        value instanceof RegExp, 'value');
+      assert.strictEqual(/^[A-Z][A-Z_\d]+$/.test(key), true, 'key');
+      assert.strictEqual(typeof value === 'string' || Number.isInteger(value) ||
+        value instanceof RegExp, true, 'value');
     });
   }
 });

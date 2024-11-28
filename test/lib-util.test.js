@@ -3,7 +3,7 @@
  */
 
 /* api */
-import { assert } from 'chai';
+import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 
 /* test */
@@ -30,14 +30,14 @@ describe('parse json', () => {
 
 describe('text chars', () => {
   it('should get result', () => {
-    assert.isTrue(Array.isArray(mjs.textChars), 'type');
+    assert.strictEqual(Array.isArray(mjs.textChars), true, 'type');
     assert.deepEqual(mjs.textChars, textChars, 'result');
   });
 });
 
 describe('uri schemes', () => {
   it('should get result', () => {
-    assert.isTrue(Array.isArray(mjs.uriSchemes), 'type');
+    assert.strictEqual(Array.isArray(mjs.uriSchemes), true, 'type');
     assert.deepEqual(mjs.uriSchemes, uriSchemes, 'result');
   });
 });

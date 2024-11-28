@@ -1,9 +1,9 @@
 /* api */
+import { strict as assert } from 'node:assert';
 import fs, { promises as fsPromise } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sinon from 'sinon';
-import { assert } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
 import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
@@ -19,16 +19,16 @@ const TMPDIR = process.env.TMP || process.env.TMPDIR || process.env.TEMP ||
 describe('getStat', () => {
   it('should be an object', () => {
     const p = path.resolve('test', 'file', 'test.txt');
-    assert.property(getStat(p), 'mode');
+    assert.strictEqual(typeof getStat(p), 'object');
   });
 
   it('should get null if given argument is not string', () => {
-    assert.isNull(getStat());
+    assert.deepEqual(getStat(), null);
   });
 
   it('should get null if file does not exist', () => {
     const p = path.resolve('test', 'file', 'foo.txt');
-    assert.isNull(getStat(p));
+    assert.deepEqual(getStat(p), null);
   });
 });
 
@@ -47,20 +47,20 @@ describe('isDir', () => {
 describe('isFile', () => {
   it('should get true if file exists', () => {
     const p = path.resolve('test', 'file', 'test.txt');
-    assert.isTrue(isFile(p));
+    assert.strictEqual(isFile(p), true);
   });
 
   it('should get false if file does not exist', () => {
     const p = path.resolve('test', 'file', 'foo.txt');
-    assert.isFalse(isFile(p));
+    assert.strictEqual(isFile(p), false);
   });
 });
 
 describe('removeDir', () => {
   it('should throw', () => {
     const foo = path.resolve('foo');
-    assert.isFalse(isDir(foo));
-    assert.throws(() => removeDir(foo), `No such directory: ${foo}`);
+    assert.strictEqual(isDir(foo), false);
+    assert.throws(() => removeDir(foo), Error, `No such directory: ${foo}`);
   });
 
   it("should remove dir and it's files", async () => {
@@ -108,28 +108,30 @@ describe('createFile', () => {
 
   it('should throw if first argument is not a string', () => {
     createFile().catch(e => {
-      assert.strictEqual(e.message, 'Expected String but got Undefined.');
+      assert.deepStrictEqual(e,
+        new TypeError('Expected String but got Undefined.'));
     });
   });
 
   it('should throw if second argument is not a string', () => {
     const file = path.join(dirPath, 'test.txt');
     createFile(file).catch(e => {
-      assert.strictEqual(e.message, 'Expected String but got Undefined.');
+      assert.deepStrictEqual(e,
+        new TypeError('Expected String but got Undefined.'));
     });
   });
 });
 
 describe('rename file or directory', () => {
   it('should throw', () => {
-    assert.throws(() => rename(),
+    assert.throws(() => rename(), Error,
       'No such file or directory: undefined');
   });
 
   it('should throw if file does not exist', () => {
     const oldpath = path.resolve('test', 'file', 'foo.txt');
     const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
-    assert.throws(() => rename(oldpath, newpath),
+    assert.throws(() => rename(oldpath, newpath), Error,
       `No such file or directory: ${oldpath}`);
   });
 
@@ -139,7 +141,7 @@ describe('rename file or directory', () => {
     rename(oldpath);
     const { called: calledRename } = stubRename;
     stubRename.restore();
-    assert.isFalse(calledRename, 'not called');
+    assert.strictEqual(calledRename, false, 'not called');
   });
 
   it('should call function', () => {
@@ -149,7 +151,7 @@ describe('rename file or directory', () => {
     rename(oldpath, newpath);
     const { calledOnce: calledRename } = stubRename;
     stubRename.restore();
-    assert.isTrue(calledRename, 'called');
+    assert.strictEqual(calledRename, true, 'called');
   });
 });
 
@@ -167,8 +169,8 @@ describe('fetch text', () => {
 
   it('should throw', async () => {
     await fetchText().catch(e => {
-      assert.instanceOf(e, TypeError, 'error');
-      assert.strictEqual(e.message, 'Expected String but got Undefined.');
+      assert.deepStrictEqual(e,
+        new TypeError('Expected String but got Undefined.'));
     });
   });
 
@@ -176,9 +178,8 @@ describe('fetch text', () => {
     const base = 'https://example.com';
     mockAgent.get(base).intercept({ path: '/', method: 'GET' }).reply(404);
     await fetchText(base).catch(e => {
-      assert.instanceOf(e, Error, 'error');
-      assert.strictEqual(e.message,
-        `Network response was not ok. status: 404 url: ${base}`);
+      assert.deepStrictEqual(e,
+        new Error(`Network response was not ok. status: 404 url: ${base}`));
     });
   });
 

@@ -3,8 +3,8 @@
  */
 
 /* api */
+import { strict as assert } from 'node:assert';
 import sinon from 'sinon';
-import { assert } from 'chai';
 import { describe, it } from 'mocha';
 import { sleep } from '../modules/common.js';
 
@@ -17,14 +17,15 @@ describe('file-reader', () => {
   describe('progress event', () => {
     it('should create instance', () => {
       const evt = new ProgressEvent('abort');
-      assert.instanceOf(evt, Event, 'instance');
+      assert.strictEqual(evt instanceof Event, true, 'instance');
+      assert.strictEqual(evt instanceof ProgressEvent, true, 'instance');
     });
 
     describe('getter', () => {
       it('should get value', () => {
         const evt = new ProgressEvent('abort');
         const res = evt.lengthComputable;
-        assert.isFalse(res, 'result');
+        assert.strictEqual(res, false, 'result');
       });
 
       it('should get value', () => {
@@ -32,7 +33,7 @@ describe('file-reader', () => {
           lengthComputable: true
         });
         const res = evt.lengthComputable;
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should get value', () => {
@@ -84,15 +85,15 @@ describe('file-reader', () => {
   describe('file reader', () => {
     it('should create instance', () => {
       const reader = new FileReader();
-      assert.instanceOf(reader, EventTarget, 'instance');
-      assert.instanceOf(reader, FileReader, 'instance');
+      assert.strictEqual(reader instanceof EventTarget, true, 'instance');
+      assert.strictEqual(reader instanceof FileReader, true, 'instance');
     });
 
     describe('getter', () => {
       it('should get value', () => {
         const reader = new FileReader();
         const res = reader.error;
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -104,25 +105,25 @@ describe('file-reader', () => {
       it('should get value', () => {
         const reader = new FileReader();
         const res = reader.result;
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
     });
 
     describe('dispatch progress event', () => {
       it('should throw', () => {
         const reader = new FileReader();
-        assert.throws(() => reader._dispatchProgressEvent(),
+        assert.throws(() => reader._dispatchProgressEvent(), TypeError,
           'Expected String but got Undefined.');
-        assert.instanceOf(reader.error, TypeError, 'error');
+        assert.strictEqual(reader.error instanceof TypeError, true, 'error');
         assert.strictEqual(reader.error.message,
           'Expected String but got Undefined.', 'message');
       });
 
       it('should throw', () => {
         const reader = new FileReader();
-        assert.throws(() => reader._dispatchProgressEvent('foo'),
+        assert.throws(() => reader._dispatchProgressEvent('foo'), Error,
           'Invalid state.');
-        assert.instanceOf(reader.error, DOMException, 'error');
+        assert.strictEqual(reader.error instanceof DOMException, true, 'error');
         assert.strictEqual(reader.error.message,
           'Invalid state.', 'message');
       });
@@ -130,39 +131,38 @@ describe('file-reader', () => {
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('abort');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('error');
-        assert.instanceOf(reader.error, Error, 'instance');
-        assert.strictEqual(reader.error.message, 'Unknown error.', 'message');
-        assert.isTrue(res, 'result');
+        assert.deepStrictEqual(reader.error, new Error('Unknown error.'));
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('load');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('loadend');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('loadstart');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should dispatch event', () => {
         const reader = new FileReader();
         const res = reader._dispatchProgressEvent('progress');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
     });
 
@@ -225,13 +225,13 @@ describe('file-reader', () => {
           reader._read(blob, 'arrayBuffer'),
           sleep(100).then(() => reader._read(blob, 'binaryString'))
         ]).catch(e => {
-          assert.instanceOf(e, DOMException, 'error');
-          assert.strictEqual(e.message, 'Invalid state.', 'message');
+          assert.deepStrictEqual(e,
+            new DOMException('Invalid state.', 'InvalidStateError'));
         });
         assert.strictEqual(stubFunc.callCount, 1, 'called');
         assert.strictEqual(reader.readyState, 1, 'state');
         assert.strictEqual(spyFunc.callCount, i + 1, 'called');
-        assert.instanceOf(reader.error, DOMException, 'error');
+        assert.strictEqual(reader.error instanceof DOMException, true, 'error');
         assert.strictEqual(reader.error.message, 'Invalid state.');
       });
 
@@ -339,7 +339,7 @@ describe('file-reader', () => {
         await reader._read(blob, 'text', 'Shift_JIS');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.isNull(reader.result, 'result');
+        assert.deepEqual(reader.result, null, 'result');
       });
 
       it('should get result', async () => {
@@ -378,7 +378,7 @@ describe('file-reader', () => {
         await reader._read(blob, 'text', 'US-ASCII');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.isNull(reader.result, 'result');
+        assert.deepEqual(reader.result, null, 'result');
       });
 
       it('should get null', async () => {
@@ -395,7 +395,7 @@ describe('file-reader', () => {
         await reader._read(blob, 'text');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.isNull(reader.result, 'result');
+        assert.deepEqual(reader.result, null, 'result');
       });
 
       it('should get result', async () => {
@@ -460,7 +460,7 @@ describe('file-reader', () => {
         await reader._read(blob, 'text', 'US-ASCII');
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.isNull(reader.result, 'result');
+        assert.deepEqual(reader.result, null, 'result');
       });
 
       it('should get null', async () => {
@@ -478,7 +478,7 @@ describe('file-reader', () => {
         assert.strictEqual(spyFunc.callCount, i + 2, 'called');
         assert.deepEqual(reader.error, e, 'error');
         assert.strictEqual(reader.error.message, 'error', 'message');
-        assert.isNull(reader.result, 'result');
+        assert.deepEqual(reader.result, null, 'result');
       });
     });
 

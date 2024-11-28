@@ -1,5 +1,5 @@
 /* api */
-import { assert } from 'chai';
+import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 import { isString } from '../modules/common.js';
 
@@ -11,54 +11,54 @@ import urlSanitizer, {
 describe('URL Sanitizer', () => {
   describe('urlSanitizer', () => {
     it('should have methods', () => {
-      assert.isFunction(urlSanitizer.get, 'get');
-      assert.isFunction(urlSanitizer.has, 'has');
-      assert.isFunction(urlSanitizer.add, 'add');
-      assert.isFunction(urlSanitizer.remove, 'remove');
+      assert.strictEqual(typeof urlSanitizer.get, 'function', 'get');
+      assert.strictEqual(typeof urlSanitizer.has, 'function', 'has');
+      assert.strictEqual(typeof urlSanitizer.add, 'function', 'add');
+      assert.strictEqual(typeof urlSanitizer.remove, 'function', 'remove');
     });
 
     describe('get', () => {
       it('should get value', () => {
         const schemes = urlSanitizer.get();
-        assert.isArray(schemes, 'result');
+        assert.strictEqual(Array.isArray(schemes), true, 'result');
       });
     });
 
     describe('has', () => {
       it('should get result', () => {
         const res = urlSanitizer.has('https');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
 
       it('should get result', () => {
         const res = urlSanitizer.has('foo');
-        assert.isFalse(res, 'result');
+        assert.strictEqual(res, false, 'result');
       });
     });
 
     describe('add', () => {
       it('should get value', () => {
-        assert.isFalse(urlSanitizer.has('foo'));
+        assert.strictEqual(urlSanitizer.has('foo'), false);
         const res = urlSanitizer.add('foo');
-        assert.isTrue(urlSanitizer.has('foo'));
-        assert.isArray(res, 'result');
+        assert.strictEqual(urlSanitizer.has('foo'), true);
+        assert.strictEqual(Array.isArray(res), true, 'result');
         urlSanitizer.remove('foo');
       });
     });
 
     describe('remove', () => {
       it('should get result', () => {
-        assert.isTrue(urlSanitizer.has('aaa'));
+        assert.strictEqual(urlSanitizer.has('aaa'), true);
         const res = urlSanitizer.remove('aaa');
-        assert.isFalse(urlSanitizer.has('aaa'));
-        assert.isTrue(res, 'result');
+        assert.strictEqual(urlSanitizer.has('aaa'), false);
+        assert.strictEqual(res, true, 'result');
         urlSanitizer.add('aaa');
       });
 
       it('should get result', () => {
-        assert.isFalse(urlSanitizer.has('foo'));
+        assert.strictEqual(urlSanitizer.has('foo'), false);
         const res = urlSanitizer.remove('foo');
-        assert.isFalse(res, 'result');
+        assert.strictEqual(res, false, 'result');
       });
     });
   });
@@ -129,14 +129,14 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL('web+foo://example.com', {
         deny: ['web+foo']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', async () => {
       const res = await sanitizeURL('http://example.com', {
         only: ['data', 'git', 'https']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get result', async () => {
@@ -158,13 +158,13 @@ describe('URL Sanitizer', () => {
     it('should get null', async () => {
       const url = 'javascript&colon;alert(1)';
       const res = await sanitizeURL(url);
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', async () => {
       const url = 'javasc&Tab;ript:alert(1);';
       const res = await sanitizeURL(url);
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
   });
 
@@ -222,21 +222,21 @@ describe('URL Sanitizer', () => {
         allow: ['blob']
       });
       URL.revokeObjectURL(url);
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', () => {
       const res = sanitizeURLSync('web+foo://example.com', {
         deny: ['web+foo']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', () => {
       const res = sanitizeURLSync('http://example.com', {
         only: ['data', 'git', 'https']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get result', () => {
@@ -461,64 +461,64 @@ describe('URL Sanitizer', () => {
   describe('is URI', () => {
     it('should get result', async () => {
       const res = await isURI('https://example.com/foo');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('mailto:foo@example.com');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('foo:bar');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('web+foo:bar');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('web+javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
   });
 
   describe('is URI sync', () => {
     it('should get result', () => {
       const res = isURISync('https://example.com/foo');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('mailto:foo@example.com');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('foo:bar');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('web+foo:bar');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('web+javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
   });
 });

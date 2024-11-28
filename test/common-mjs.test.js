@@ -3,7 +3,7 @@
  */
 
 /* api */
-import { assert } from 'chai';
+import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 
 /* test */
@@ -15,37 +15,37 @@ describe('common', () => {
 
     it('should get Array', () => {
       const res = func([]);
-      assert.deepEqual(res, 'Array');
+      assert.strictEqual(res, 'Array');
     });
 
     it('should get Object', () => {
       const res = func({});
-      assert.deepEqual(res, 'Object');
+      assert.strictEqual(res, 'Object');
     });
 
     it('should get String', () => {
       const res = func('');
-      assert.deepEqual(res, 'String');
+      assert.strictEqual(res, 'String');
     });
 
     it('should get Number', () => {
       const res = func(1);
-      assert.deepEqual(res, 'Number');
+      assert.strictEqual(res, 'Number');
     });
 
     it('should get Boolean', () => {
       const res = func(true);
-      assert.deepEqual(res, 'Boolean');
+      assert.strictEqual(res, 'Boolean');
     });
 
     it('should get Undefined', () => {
       const res = func();
-      assert.deepEqual(res, 'Undefined');
+      assert.strictEqual(res, 'Undefined');
     });
 
     it('should get Null', () => {
       const res = func(null);
-      assert.deepEqual(res, 'Null');
+      assert.strictEqual(res, 'Null');
     });
   });
 
@@ -64,14 +64,14 @@ describe('common', () => {
         true
       ];
       for (const item of items) {
-        assert.isFalse(func(item));
+        assert.strictEqual(func(item), false);
       }
     });
 
     it('should get true', () => {
       const items = ['', 'foo'];
       for (const item of items) {
-        assert.isTrue(func(item));
+        assert.strictEqual(func(item), true);
       }
     });
   });

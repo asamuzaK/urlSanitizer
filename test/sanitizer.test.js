@@ -3,7 +3,7 @@
  */
 
 /* api */
-import { assert } from 'chai';
+import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 import { isString } from '../modules/common.js';
 
@@ -16,7 +16,8 @@ import urlSanitizer, * as mjs from '../src/mjs/sanitizer.js';
 describe('sanitizer', () => {
   describe('default', () => {
     it('should be instance of URLSanitizer', () => {
-      assert.instanceOf(urlSanitizer, mjs.URLSanitizer, 'instance');
+      assert.strictEqual(urlSanitizer instanceof mjs.URLSanitizer, true,
+        'instance');
     });
   });
 
@@ -25,13 +26,13 @@ describe('sanitizer', () => {
 
     it('should be instance of URLSanitizer', () => {
       const sanitizer = new URLSanitizer();
-      assert.instanceOf(sanitizer, URLSanitizer, 'instance');
+      assert.strictEqual(sanitizer instanceof URLSanitizer, true, 'instance');
     });
 
     describe('replace matched data URLs', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.replace(),
+        assert.throws(() => sanitizer.replace(), TypeError,
           'Expected String but got Undefined.');
       });
 
@@ -141,7 +142,7 @@ describe('sanitizer', () => {
     describe('purify URL encoded DOM', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.purify(),
+        assert.throws(() => sanitizer.purify(), TypeError,
           'Expected String but got Undefined.');
       });
 
@@ -231,13 +232,13 @@ describe('sanitizer', () => {
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize();
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('foo');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -276,25 +277,25 @@ describe('sanitizer', () => {
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('../../');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('/../');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert("XSS")');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+javascript:alert("XSS")');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -306,7 +307,7 @@ describe('sanitizer', () => {
       it('should get null if scheme is not registered', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('foo:bar');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -315,7 +316,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'https']
         });
-        assert.isTrue(sanitizer.has('foo'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -325,8 +326,8 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'https']
         });
-        assert.isFalse(sanitizer.has('foo'), 'scheme');
-        assert.isTrue(sanitizer.has('bar'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(sanitizer.has('bar'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -336,7 +337,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           allow: ['foo']
         });
-        assert.isTrue(sanitizer.has('foo'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -346,8 +347,8 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           allow: ['foo']
         });
-        assert.isFalse(sanitizer.has('foo'), 'scheme');
-        assert.isTrue(sanitizer.has('bar'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(sanitizer.has('bar'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -356,7 +357,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('Foo:bar', {
           only: ['Foo', 'https']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -364,13 +365,13 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('Foo:bar', {
           allow: ['Foo']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null if file scheme is not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should override allow and get null', () => {
@@ -379,7 +380,7 @@ describe('sanitizer', () => {
           deny: ['file'],
           allow: ['file']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -389,7 +390,7 @@ describe('sanitizer', () => {
         const url = URL.createObjectURL(blob);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url);
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null even if blob scheme is in the allowed list', () => {
@@ -401,7 +402,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['blob']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null even if blob scheme is in the only list', () => {
@@ -413,7 +414,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           only: ['blob']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -437,7 +438,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('web+foo:bar', {
           deny: ['web+foo']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -445,7 +446,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('http://example.com', {
           only: ['git', 'https']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -462,7 +463,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'git', 'https']
         });
-        assert.isTrue(sanitizer.has('foo'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -472,8 +473,8 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'git', 'https']
         });
-        assert.isFalse(sanitizer.has('foo'), 'scheme');
-        assert.isTrue(sanitizer.has('bar'), 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(sanitizer.has('bar'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -482,7 +483,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('web+foo:bar', {
           only: ['foo', 'git', 'https']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -498,7 +499,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('Foo:bar', {
           only: ['Foo', 'git', 'https']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should override allow and get null', () => {
@@ -507,7 +508,7 @@ describe('sanitizer', () => {
           allow: ['data'],
           only: ['git', 'https']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should override deny and get value', () => {
@@ -522,25 +523,25 @@ describe('sanitizer', () => {
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert(1)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+javascript:alert(1)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -591,7 +592,7 @@ describe('sanitizer', () => {
       it('should get null if data scheme is not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should override allow and get null', () => {
@@ -600,7 +601,7 @@ describe('sanitizer', () => {
           allow: ['data'],
           deny: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -693,7 +694,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', () => {
@@ -701,7 +702,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize("data:text/html,%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E", {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', () => {
@@ -711,7 +712,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', () => {
@@ -828,7 +829,7 @@ describe('sanitizer', () => {
         const sanitizer = new URLSanitizer();
         assert.throws(() => sanitizer.sanitize(url, {
           allow: ['data']
-        }), 'Data URLs nested too deeply.');
+        }), Error, 'Data URLs nested too deeply.');
       });
 
       it('should get null', () => {
@@ -837,7 +838,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -846,7 +847,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -855,7 +856,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -864,7 +865,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -873,7 +874,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -882,7 +883,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -891,7 +892,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -900,7 +901,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
@@ -909,7 +910,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', () => {
@@ -974,7 +975,7 @@ describe('sanitizer', () => {
     describe('parse sanitized URL', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.parse(),
+        assert.throws(() => sanitizer.parse(), TypeError,
           'Expected String but got Undefined.');
       });
 
@@ -1200,7 +1201,7 @@ describe('sanitizer', () => {
         sanitizer.remove('http');
         sanitizer.reset();
         const res = sanitizer.get();
-        assert.isTrue(sanitizer.has('http'), 'scheme');
+        assert.strictEqual(sanitizer.has('http'), true, 'scheme');
         assert.deepEqual(res, uriSchemes, 'result');
       });
     });
@@ -1208,12 +1209,12 @@ describe('sanitizer', () => {
 
   describe('alias', () => {
     it('should get aliases', () => {
-      assert.isTrue(typeof mjs.sanitizeURL === 'function');
-      assert.isTrue(typeof mjs.sanitizeURLSync === 'function');
-      assert.isTrue(typeof mjs.parseURL === 'function');
-      assert.isTrue(typeof mjs.parseURLSync === 'function');
-      assert.isTrue(typeof mjs.isURI === 'function');
-      assert.isTrue(typeof mjs.isURISync === 'function');
+      assert.strictEqual(typeof mjs.sanitizeURL, 'function');
+      assert.strictEqual(typeof mjs.sanitizeURLSync, 'function');
+      assert.strictEqual(typeof mjs.parseURL, 'function');
+      assert.strictEqual(typeof mjs.parseURLSync, 'function');
+      assert.strictEqual(typeof mjs.isURI, 'function');
+      assert.strictEqual(typeof mjs.isURISync, 'function');
     });
 
     describe('sanitize URL async', () => {
@@ -1221,17 +1222,17 @@ describe('sanitizer', () => {
 
       it('should get null', async () => {
         const res = await func();
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', async () => {
         const res = await func('foo');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', async () => {
         const res = await func('javascript:alert(1)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', async () => {
@@ -1243,7 +1244,7 @@ describe('sanitizer', () => {
         const res = await func('foo:bar', {
           allow: ['foo']
         });
-        assert.isFalse(urlSanitizer.has('foo'), 'scheme');
+        assert.strictEqual(urlSanitizer.has('foo'), false, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -1255,11 +1256,10 @@ describe('sanitizer', () => {
         const url = URL.createObjectURL(blob);
         const res = await func(url);
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
-        assert.isNull(res, 'result');
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', async () => {
@@ -1273,11 +1273,10 @@ describe('sanitizer', () => {
           deny: ['blob']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
-        assert.isNull(res, 'result');
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', async () => {
@@ -1290,11 +1289,10 @@ describe('sanitizer', () => {
           only: ['https']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
-        assert.isNull(res, 'result');
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', async () => {
@@ -1307,10 +1305,9 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
+        assert.strictEqual(revoked, true, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1330,11 +1327,10 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
-        assert.isNull(res, 'result');
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', async () => {
@@ -1348,10 +1344,9 @@ describe('sanitizer', () => {
           deny: ['data']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
+        assert.strictEqual(revoked, true, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1370,10 +1365,9 @@ describe('sanitizer', () => {
           only: ['blob', 'https']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
+        assert.strictEqual(revoked, true, 'revoked');
         assert.strictEqual(res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
           'result');
@@ -1420,17 +1414,17 @@ describe('sanitizer', () => {
 
       it('should get null', () => {
         const res = func();
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const res = func('foo');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get null', () => {
         const res = func('javascript:alert(1)');
-        assert.isNull(res, 'result');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get value', () => {
@@ -1442,7 +1436,7 @@ describe('sanitizer', () => {
         const res = func('foo:bar', {
           allow: ['foo']
         });
-        assert.isFalse(urlSanitizer.has('foo'), 'scheme');
+        assert.strictEqual(urlSanitizer.has('foo'), false, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -1456,11 +1450,10 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const revoked = await fetch(url).catch(e => {
-          assert.instanceOf(e, Error, 'error');
           return (e instanceof Error);
         });
-        assert.isTrue(revoked, 'revoked');
-        assert.isNull(res, 'result');
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
     });
 
@@ -1511,7 +1504,7 @@ describe('sanitizer', () => {
 
       it('should get value', async () => {
         const res = await func('https://example.com');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
     });
 
@@ -1520,7 +1513,7 @@ describe('sanitizer', () => {
 
       it('should get value', () => {
         const res = func('https://example.com');
-        assert.isTrue(res, 'result');
+        assert.strictEqual(res, true, 'result');
       });
     });
   });
