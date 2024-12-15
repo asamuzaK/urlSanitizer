@@ -1,7 +1,7 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
-import { isString } from '../modules/common.js';
+import { isString } from '../scripts/common.js';
 
 /* test */
 import urlSanitizer, {

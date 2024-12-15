@@ -6,7 +6,7 @@
 import { strict as assert } from 'node:assert';
 import sinon from 'sinon';
 import { describe, it } from 'mocha';
-import { sleep } from '../modules/common.js';
+import { sleep } from '../scripts/common.js';
 
 /* test */
 import {

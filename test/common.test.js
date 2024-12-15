@@ -6,7 +6,7 @@ import sinon from 'sinon';
 /* test */
 import {
   getType, isString, logErr, logMsg, logWarn, sleep, throwErr
-} from '../modules/common.js';
+} from '../scripts/common.js';
 
 describe('getType', () => {
   it('should get Undefined', () => {

@@ -11,7 +11,7 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 import {
   commander, cleanDirectory, createCharTable, includeLibraries, parseCommand,
   renameFile, saveUriSchemes, storeTextChars
-} from '../modules/commander.js';
+} from '../scripts/commander.js';
 
 /* constants */
 const BASE_URL_IANA = 'https://www.iana.org';

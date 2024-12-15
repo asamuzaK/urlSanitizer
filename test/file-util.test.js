@@ -10,7 +10,7 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 /* test */
 import {
   createFile, fetchText, getStat, isDir, isFile, removeDir, rename
-} from '../modules/file-util.js';
+} from '../scripts/file-util.js';
 
 /* constants */
 const TMPDIR = process.env.TMP || process.env.TMPDIR || process.env.TEMP ||
