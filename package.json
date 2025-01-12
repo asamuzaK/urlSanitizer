@@ -16,9 +16,11 @@
   ],
   "type": "module",
   "exports": {
-    "import": "./src/index.js",
-    "browser": "./dist/url-sanitizer.min.js",
-    "default": "./dist/url-sanitizer.min.js"
+    "browser": "./dist/url-sanitizer-wo-dompurify.min.js",
+    "default": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    }
   },
   "types": "types/index.d.ts",
   "dependencies": {
