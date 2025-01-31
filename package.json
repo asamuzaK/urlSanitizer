@@ -24,34 +24,34 @@
   },
   "types": "types/index.d.ts",
   "dependencies": {
-    "dompurify": "^3.2.3",
-    "jsdom": "^25.0.1"
+    "dompurify": "^3.2.4",
+    "jsdom": "^26.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/eslint-parser": "^7.25.9",
+    "@babel/core": "^7.26.7",
+    "@babel/eslint-parser": "^7.26.5",
     "@babel/plugin-syntax-import-attributes": "^7.26.0",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.13.0",
     "c8": "^10.1.3",
     "chai": "^5.1.2",
-    "commander": "^12.1.0",
+    "commander": "^13.1.0",
     "copyfiles": "^2.4.1",
     "csvtojson": "^2.0.10",
-    "esbuild": "^0.24.0",
-    "eslint": "^9.17.0",
-    "eslint-plugin-import-x": "^4.5.0",
-    "eslint-plugin-jsdoc": "^50.6.1",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.19.0",
+    "eslint-plugin-import-x": "^4.6.1",
+    "eslint-plugin-jsdoc": "^50.6.3",
     "eslint-plugin-regexp": "^2.7.0",
     "eslint-plugin-unicorn": "^56.0.1",
-    "globals": "^15.13.0",
+    "globals": "^15.14.0",
     "http-server": "^14.1.1",
-    "mocha": "^11.0.1",
+    "mocha": "^11.1.0",
     "neostandard": "^0.12.0",
-    "npm-run-all2": "^7.0.1",
+    "npm-run-all2": "^7.0.2",
     "sinon": "^19.0.2",
-    "typescript": "^5.7.2",
-    "undici": "^7.1.0"
+    "typescript": "^5.7.3",
+    "undici": "^7.3.0"
   },
   "scripts": {
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
@@ -70,5 +70,5 @@
     "test-bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node scripts/index clean --dir=types -i && npx tsc"
   },
-  "version": "2.0.6"
+  "version": "2.0.7"
 }
