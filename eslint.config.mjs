@@ -1,5 +1,4 @@
 import babelParser from '@babel/eslint-parser';
-import importX from 'eslint-plugin-import-x';
 import jsdoc from 'eslint-plugin-jsdoc';
 import regexp from 'eslint-plugin-regexp';
 import unicorn from 'eslint-plugin-unicorn';
@@ -39,7 +38,6 @@ export default [
     },
     plugins: {
       '@stylistic': neostdplugins['@stylistic'],
-      'import-x': importX,
       regexp,
       unicorn
     },
