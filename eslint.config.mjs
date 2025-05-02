@@ -1,4 +1,3 @@
-import babelParser from '@babel/eslint-parser';
 import jsdoc from 'eslint-plugin-jsdoc';
 import regexp from 'eslint-plugin-regexp';
 import unicorn from 'eslint-plugin-unicorn';
@@ -21,17 +20,7 @@ export default [
         ...globals.node,
         ...globals.webextensions
       },
-      parser: babelParser,
-      parserOptions: {
-        requireConfigFile: false,
-        babelOptions: {
-          babelrc: false,
-          configFile: false,
-          plugins: [
-            '@babel/plugin-syntax-import-attributes'
-          ]
-        }
-      }
+      ecmaVersion: 'latest'
     },
     linterOptions: {
       reportUnusedDisableDirectives: true
