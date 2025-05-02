@@ -1,4 +1,6 @@
 name: deploy
+permissions:
+  contents: read
 
 on:
   push:
@@ -15,7 +17,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - node-version: 22.x
+          - node-version: lts/*
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.tar.gz
@@ -23,7 +25,7 @@ jobs:
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer.min.tar.gz LICENSE README.md url-sanitizer.min.js url-sanitizer.min.js.map && cd ../../
-          - node-version: 22.x
+          - node-version: lts/*
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer-wo-dompurify.min.tar.gz
@@ -31,7 +33,7 @@ jobs:
             file-name: url-sanitizer-wo-dompurify.min.js
             file-map: url-sanitizer-wo-dompurify.min.js.map
             zip-cmd: cd ./pkg/dist && tar -cvzf url-sanitizer-wo-dompurify.min.tar.gz LICENSE README.md url-sanitizer-wo-dompurify.min.js url-sanitizer-wo-dompurify.min.js.map && cd ../../
-          - node-version: 22.x
+          - node-version: lts/*
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer.min.zip
@@ -39,7 +41,7 @@ jobs:
             file-name: url-sanitizer.min.js
             file-map: url-sanitizer.min.js.map
             zip-cmd: cd ./pkg/dist && zip -r url-sanitizer.min.zip ./ && cd ../../
-          - node-version: 22.x
+          - node-version: lts/*
             os: ubuntu-latest
             python-version: '3.x'
             asset-name: url-sanitizer-wo-dompurify.min.zip
@@ -59,8 +61,8 @@ jobs:
       - name: use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          check-latest: true
           node-version: ${{ matrix.node-version }}
+          check-latest: true
       - name: install dependencies
         run: npm ci
       - name: make directories
