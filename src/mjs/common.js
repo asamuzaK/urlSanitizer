@@ -7,7 +7,7 @@ import { TYPE_FROM, TYPE_TO } from './constant.js';
 
 /**
  * get type
- * @param {*} o - object to check
+ * @param {object} o - object to check
  * @returns {string} - type of object
  */
 export const getType = o =>
@@ -15,7 +15,7 @@ export const getType = o =>
 
 /**
  * is string
- * @param {*} o - object to check
+ * @param {object} o - object to check
  * @returns {boolean} - result
  */
 export const isString = o => typeof o === 'string' || o instanceof String;

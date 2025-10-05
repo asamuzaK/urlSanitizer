@@ -11,7 +11,7 @@ const CHAR = 'utf8';
 /**
  * parse json
  * @param {string} url - file url
- * @returns {*} - parsed json
+ * @returns {string|Array|object} - parsed json
  */
 export const parseJson = url => {
   const { href } = new URL(url, import.meta.url);
