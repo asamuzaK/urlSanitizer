@@ -5,8 +5,8 @@
 /* api */
 import path from 'node:path';
 import process from 'node:process';
-import csvToJson from 'csvtojson';
 import { program as commander } from 'commander';
+import papa from 'papaparse';
 import { throwErr } from './common.js';
 import {
   createFile, fetchText, isDir, isFile, removeDir, rename
@@ -30,7 +30,7 @@ export const saveUriSchemes = async (cmdOpts = {}) => {
   const libPath = path.resolve(DIR_CWD, PATH_LIB, 'iana');
   const csvFile = 'uri-schemes-1.csv';
   const csvText = await fetchText(`${BASE_URL_IANA}${csvFile}`);
-  const items = await csvToJson().fromString(csvText);
+  const { data: items } = papa.parse(csvText, { header: true });
   const schemes = new Set(['moz-extension']);
   for (const item of items) {
     const { 'URI Scheme': scheme, Status: status } = item;
