@@ -16,28 +16,28 @@
   ],
   "type": "module",
   "exports": {
-    "browser": "./dist/url-sanitizer-wo-dompurify.min.js",
-    "default": {
+    ".": {
       "types": "./types/index.d.ts",
+      "browser": "./dist/url-sanitizer-wo-dompurify.min.js",
       "default": "./src/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
-  "types": "types/index.d.ts",
   "dependencies": {
-    "dompurify": "^3.3.2",
+    "dompurify": "^3.3.3",
     "jsdom": "^28.1.0"
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.0",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.5.0",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
     "commander": "^14.0.3",
     "copyfiles-ng": "^2.4.6",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.27.4",
     "eslint": "^9.39.4",
-    "eslint-plugin-jsdoc": "^62.7.1",
-    "eslint-plugin-regexp": "^3.0.0",
+    "eslint-plugin-jsdoc": "^62.8.0",
+    "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^63.0.0",
     "globals": "^17.4.0",
     "http-server": "^14.1.1",
@@ -47,7 +47,7 @@
     "papaparse": "^5.5.3",
     "sinon": "^21.0.2",
     "typescript": "^5.9.3",
-    "undici": "^7.22.0"
+    "undici": "^7.24.1"
   },
   "overrides": {
     "c8": {
