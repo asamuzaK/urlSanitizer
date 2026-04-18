@@ -47,7 +47,7 @@
     "papaparse": "^5.5.3",
     "sinon": "^21.1.2",
     "typescript": "^6.0.3",
-    "undici": "^8.1.0"
+    "undici": "^8.0.2"
   },
   "overrides": {
     "c8": {
