@@ -24,7 +24,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "dompurify": "^3.3.3",
+    "dompurify": "^3.4.0",
     "jsdom": "^29.0.2"
   },
   "devDependencies": {
@@ -39,15 +39,15 @@
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^64.0.0",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "http-server": "^14.1.1",
     "mocha": "^11.7.5",
     "neostandard": "^0.13.0",
     "npm-run-all2": "^8.0.4",
     "papaparse": "^5.5.3",
-    "sinon": "^21.1.1",
-    "typescript": "^6.0.2",
-    "undici": "^8.0.2"
+    "sinon": "^21.1.2",
+    "typescript": "^6.0.3",
+    "undici": "^8.1.0"
   },
   "overrides": {
     "c8": {
@@ -55,6 +55,9 @@
     },
     "eslint": {
       "brace-expansion": "^1.1.13"
+    },
+    "mocha": {
+      "diff": "^8.0.3"
     },
     "serialize-javascript": "^7.0.4"
   },
