@@ -1,15 +1,15 @@
 export class ProgressEvent extends Event {
     constructor(type: string, opt?: {
-        bubbles?: boolean;
-        cancelable?: boolean;
-        composed?: boolean;
-        lengthComputable?: boolean;
-        loaded?: number;
-        total?: number;
+        bubbles?: boolean | undefined;
+        cancelable?: boolean | undefined;
+        composed?: boolean | undefined;
+        lengthComputable?: boolean | undefined;
+        loaded?: number | undefined;
+        total?: number | undefined;
     });
     get lengthComputable(): boolean;
-    get loaded(): number;
-    get total(): number;
+    get loaded(): number | undefined;
+    get total(): number | undefined;
     #private;
 }
 export class FileReader extends EventTarget {

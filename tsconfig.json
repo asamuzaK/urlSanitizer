@@ -10,6 +10,7 @@
     "newLine": "LF",
     "removeComments": true,
     "resolveJsonModule": true,
+    "rootDir": "./src",
     "target": "esnext"
   },
   "include": ["src/index.js"]

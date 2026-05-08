@@ -2,26 +2,26 @@ export class URLSanitizer extends URISchemes {
     replace(data: string): string;
     purify(dom: string): string;
     sanitize(url: string, opt?: {
-        allow?: Array<string>;
-        deny?: Array<string>;
-        only?: Array<string>;
+        allow?: string[] | undefined;
+        deny?: string[] | undefined;
+        only?: string[] | undefined;
     }): string | null;
     parse(url: string, opt?: {
-        allow?: Array<string>;
-        deny?: Array<string>;
-        only?: Array<string>;
+        allow?: string[] | undefined;
+        deny?: string[] | undefined;
+        only?: string[] | undefined;
     }): ParsedURL;
     #private;
 }
 export function sanitizeURL(url: string, opt?: {
-    allow?: Array<string>;
-    deny?: Array<string>;
-    only?: Array<string>;
+    allow?: string[] | undefined;
+    deny?: string[] | undefined;
+    only?: string[] | undefined;
 }): Promise<string | null>;
 export function sanitizeURLSync(url: string, opt?: {
-    allow?: Array<string>;
-    deny?: Array<string>;
-    only?: Array<string>;
+    allow?: string[] | undefined;
+    deny?: string[] | undefined;
+    only?: string[] | undefined;
 }): string | null;
 export function parseURL(url: string): Promise<ParsedURL>;
 export function parseURLSync(url: string): ParsedURL;
@@ -32,21 +32,21 @@ export type ParsedURL = {
     input: string;
     valid: boolean;
     data?: {
-        mime?: string;
-        base64?: boolean;
-        data?: string;
-    };
-    href?: string;
-    origin?: string;
-    protocol?: string;
-    username?: string;
-    password?: string;
-    host?: string;
-    hostname?: string;
-    port?: string;
-    pathname?: string;
-    search?: string;
-    hash?: string;
+        mime?: string | undefined;
+        base64?: boolean | undefined;
+        data?: string | undefined;
+    } | undefined;
+    href?: string | undefined;
+    origin?: string | undefined;
+    protocol?: string | undefined;
+    username?: string | undefined;
+    password?: string | undefined;
+    host?: string | undefined;
+    hostname?: string | undefined;
+    port?: string | undefined;
+    pathname?: string | undefined;
+    search?: string | undefined;
+    hash?: string | undefined;
 };
 import { URISchemes } from './uri-util.js';
 declare const urlSanitizer: URLSanitizer;

@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.1",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.6.2",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
     "commander": "^14.0.3",
@@ -45,7 +45,7 @@
     "neostandard": "^0.13.0",
     "npm-run-all2": "^8.0.4",
     "papaparse": "^5.5.3",
-    "sinon": "^21.1.2",
+    "sinon": "^22.0.0",
     "typescript": "^6.0.3",
     "undici": "^8.0.2"
   },
@@ -78,5 +78,5 @@
     "test:bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node scripts/index clean --dir=types -i && npx tsc"
   },
-  "version": "2.0.11"
+  "version": "2.0.12"
 }
