@@ -16,9 +16,9 @@ export class FileReader extends EventTarget {
     EMPTY: number;
     LOADING: number;
     DONE: number;
-    get error(): any;
+    get error(): null;
     get readyState(): number;
-    get result(): any;
+    get result(): null;
     _dispatchProgressEvent(type: string): boolean;
     abort(): void;
     _read(blob: object, format: string, encoding?: string): Promise<void>;

@@ -1,18 +1,3 @@
-export class URLSanitizer extends URISchemes {
-    replace(data: string): string;
-    purify(dom: string): string;
-    sanitize(url: string, opt?: {
-        allow?: string[] | undefined;
-        deny?: string[] | undefined;
-        only?: string[] | undefined;
-    }): string | null;
-    parse(url: string, opt?: {
-        allow?: string[] | undefined;
-        deny?: string[] | undefined;
-        only?: string[] | undefined;
-    }): ParsedURL;
-    #private;
-}
 export function sanitizeURL(url: string, opt?: {
     allow?: string[] | undefined;
     deny?: string[] | undefined;
@@ -48,5 +33,20 @@ export type ParsedURL = {
     search?: string | undefined;
     hash?: string | undefined;
 };
-import { URISchemes } from './uri-util.js';
+export class URLSanitizer extends URISchemes {
+    replace(data: string): string;
+    purify(dom: string): string;
+    sanitize(url: string, opt?: {
+        allow?: string[] | undefined;
+        deny?: string[] | undefined;
+        only?: string[] | undefined;
+    }): string | null;
+    parse(url: string, opt?: {
+        allow?: string[] | undefined;
+        deny?: string[] | undefined;
+        only?: string[] | undefined;
+    }): ParsedURL;
+    #private;
+}
 declare const urlSanitizer: URLSanitizer;
+import { URISchemes } from './uri-util.js';

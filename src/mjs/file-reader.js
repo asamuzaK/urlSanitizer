@@ -67,10 +67,10 @@ export class ProgressEvent extends Event {
  */
 export class FileReader extends EventTarget {
   /* private fields */
-  #error;
-  #state;
-  #result;
-  #terminate;
+  #error = null;
+  #state = EMPTY;
+  #result = null;
+  #terminate = false;
 
   /**
    * construct
@@ -80,10 +80,6 @@ export class FileReader extends EventTarget {
     this.EMPTY = EMPTY;
     this.LOADING = LOADING;
     this.DONE = DONE;
-    this.#error = null;
-    this.#state = this.EMPTY;
-    this.#result = null;
-    this.#terminate = false;
   }
 
   /* getter */

@@ -39,10 +39,10 @@ import {
 /**
  * URL sanitizer
  */
-export class URLSanitizer extends URISchemes {
+class URLSanitizer extends URISchemes {
   /* private fields */
   #nest;
-  #recurse;
+  #recurse = new Set();
 
   /**
    * construct
@@ -50,7 +50,6 @@ export class URLSanitizer extends URISchemes {
   constructor() {
     super();
     this.#nest = 0;
-    this.#recurse = new Set();
   }
 
   /**
@@ -364,6 +363,7 @@ export class URLSanitizer extends URISchemes {
     this.#recurse.clear();
   }
 }
+export { URLSanitizer };
 
 /* aliases and async wrappers */
 /* instance */
