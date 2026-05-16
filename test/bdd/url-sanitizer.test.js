@@ -3,7 +3,7 @@
  */
 
 /* test */
-import { assert } from '../../node_modules/chai/chai.js';
+import { assert } from '../../node_modules/chai/index.js';
 import urlSanitizer, {
   isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
 } from '../../dist/url-sanitizer.min.js';
