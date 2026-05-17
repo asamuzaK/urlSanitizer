@@ -34,7 +34,7 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 
 ### Node.js
 
-``` shell
+``` console
 npm i url-sanitizer
 ```
 
