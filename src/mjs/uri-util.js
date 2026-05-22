@@ -8,7 +8,8 @@ import { FileReader } from './file-reader.js';
 import { textChars, uriSchemes } from './lib-util.js';
 
 import {
-  HEX, REG_B64, REG_NUM_REF, REG_SCHEME, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME, REG_SCHEME_EXT,
+  REG_SCRIPT, REG_URL_ENC
 } from './constant.js';
 
 /**
@@ -128,15 +129,25 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
 /**
  * create data URL from blob
  * @param {object} blob - blob
+ * @param {number} maxBlobSize - max blob size
  * @returns {Promise.<?string>} - data URL
  */
-export const createDataURLFromBlob = blob => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.addEventListener('error', () => reject(reader.error));
-  reader.addEventListener('abort', () => resolve(reader.result));
-  reader.addEventListener('load', () => resolve(reader.result));
-  reader.readAsDataURL(blob);
-});
+export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
+  new Promise((resolve, reject) => {
+    if (!Number.isInteger(blob?.size)) {
+      return resolve(null);
+    } else if (Number.isInteger(maxBlobSize) && blob.size > maxBlobSize) {
+      return reject(new DOMException(
+        `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`,
+        'NotReadableError'
+      ));
+    }
+    const reader = new FileReader();
+    reader.addEventListener('error', () => reject(reader.error));
+    reader.addEventListener('abort', () => resolve(reader.result));
+    reader.addEventListener('load', () => resolve(reader.result));
+    reader.readAsDataURL(blob);
+  });
 
 /**
  * URI schemes

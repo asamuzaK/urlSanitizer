@@ -7,7 +7,9 @@ import { getType, isString } from './common.js';
 import { textChars } from './lib-util.js';
 
 /* constants */
-import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './constant.js';
+import {
+  CHUNK_SIZE, REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT
+} from './constant.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
@@ -163,7 +165,11 @@ export class FileReader extends EventTarget {
         const mediaTypes = type ? type.split(';') : [];
         const buffer = await blob.arrayBuffer();
         const uint8arr = new Uint8Array(buffer);
-        const binary = String.fromCharCode(...uint8arr);
+        const chunkSize = CHUNK_SIZE;
+        let binary = '';
+        for (let i = 0; i < uint8arr.length; i += chunkSize) {
+          binary += String.fromCharCode(...uint8arr.subarray(i, i + chunkSize));
+        }
         this._dispatchProgressEvent('loadstart');
         switch (format) {
           case 'arrayBuffer':

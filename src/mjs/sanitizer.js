@@ -10,8 +10,8 @@ import {
   parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
-  HEX, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G, REG_MIME_DOM,
-  REG_SCRIPT_BLOB, REG_TAG_QUOT
+  HEX, MAX_BLOB_SIZE, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G,
+  REG_MIME_DOM, REG_SCRIPT_BLOB, REG_TAG_QUOT
 } from './constant.js';
 
 /* typedef */
@@ -399,9 +399,13 @@ export const sanitizeURL = async (url, opt = {
   allow: [],
   deny: [],
   only: [],
-  debug: false
+  debug: false,
+  maxBlobSize: MAX_BLOB_SIZE
 }) => {
   const isDebug = !!opt?.debug;
+  const maxBlobSize = Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
+    ? opt.maxBlobSize
+    : MAX_BLOB_SIZE;
   let res;
   if (url && isString(url)) {
     let scheme;
@@ -418,8 +422,9 @@ export const sanitizeURL = async (url, opt = {
           (Array.isArray(only) && only.includes('blob'))) {
         let data;
         try {
-          data =
-            await fetch(url).then(r => r.blob()).then(createDataURLFromBlob);
+          data = await fetch(url)
+            .then(r => r.blob())
+            .then(b => createDataURLFromBlob(b, maxBlobSize));
         } catch (e) {
           const msg = `Failed to fetch and convert blob URL: ${url}`;
           logDebug(isDebug, msg, e);

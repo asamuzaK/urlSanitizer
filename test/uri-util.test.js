@@ -220,6 +220,24 @@ describe('uri-util', () => {
       const res = await func(url);
       assert.deepEqual(res, null, 'result');
     });
+
+    it('should reject if blob size exceeds maxBlobSize', async () => {
+      const data = 'a'.repeat(100);
+      const blob = new Blob([data], { type: 'text/plain' });
+      const maxBlobSize = 50;
+      await assert.rejects(
+        () => func(blob, maxBlobSize),
+        err => {
+          assert.strictEqual(err.name, 'NotReadableError', 'error name');
+          assert.strictEqual(
+            err.message,
+            `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`,
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
   });
 
   describe('URI schemes', () => {
