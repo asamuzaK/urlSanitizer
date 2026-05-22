@@ -4,7 +4,8 @@
 
 /* api */
 import { strict as assert } from 'node:assert';
-import { describe, it } from 'mocha';
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import sinon from 'sinon';
 import { isString } from '../scripts/common.js';
 
 /* test */
@@ -18,6 +19,49 @@ describe('sanitizer', () => {
     it('should be instance of URLSanitizer', () => {
       assert.strictEqual(urlSanitizer instanceof mjs.URLSanitizer, true,
         'instance');
+    });
+  });
+
+  describe('logDebug', () => {
+    const { logDebug } = mjs;
+    let warnStub;
+    beforeEach(() => {
+      warnStub = sinon.stub(console, 'warn');
+    });
+    afterEach(() => {
+      warnStub.restore();
+    });
+
+    it('should call console.warn with a message when isDebug is true', () => {
+      logDebug(true, 'Test message');
+      assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+      assert.strictEqual(
+        warnStub.calledWith('[URLSanitizer Debug] Test message', ''),
+        true,
+        'should output message with an empty error string'
+      );
+    });
+
+    it('should call console.warn with a message and error.message when error is provided', () => {
+      const testError = new Error('Test error detail');
+      logDebug(true, 'Test message', testError);
+      assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+      assert.strictEqual(
+        warnStub.calledWith('[URLSanitizer Debug] Test message', 'Test error detail'),
+        true,
+        'should output message with the error.message'
+      );
+    });
+
+    it('should not call console.warn when isDebug is false', () => {
+      logDebug(false, 'Test message');
+      assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+    });
+
+    it('should not call console.warn when isDebug is false even if error is provided', () => {
+      const testError = new Error('Test error detail');
+      logDebug(false, 'Test message', testError);
+      assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
     });
   });
 
@@ -1454,6 +1498,32 @@ describe('sanitizer', () => {
         });
         assert.strictEqual(revoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
+      });
+
+      it('should log debug message for invalid URL when debug is true', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        const invalidUrl = 'invalid-url-string';
+        const res = func(invalidUrl, { debug: true });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(warnStub.calledOnce, true,
+          'console.warn should be called once');
+        const expectedPrefix =
+          `[URLSanitizer Debug] Failed to parse URL: ${invalidUrl}`;
+        assert.strictEqual(warnStub.firstCall.args[0], expectedPrefix,
+          'should output the correct debug message');
+        assert.strictEqual(isString(warnStub.firstCall.args[1]), true,
+          'should output the error message');
+        warnStub.restore();
+      });
+
+      it('should NOT log debug message for invalid URL when debug is false', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        const invalidUrl = 'invalid-url-string';
+        const res = func(invalidUrl, { debug: false });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(warnStub.called, false,
+          'console.warn should not be called');
+        warnStub.restore();
       });
     });
 

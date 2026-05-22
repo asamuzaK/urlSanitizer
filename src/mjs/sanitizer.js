@@ -37,6 +37,18 @@ import {
  */
 
 /**
+ * Internal debug logger.
+ * @param {boolean} isDebug - Debug flag.
+ * @param {string} message - Output message.
+ * @param {Error} [error] - Caught error object.
+ */
+export const logDebug = (isDebug, message, error) => {
+  if (isDebug) {
+    console.warn(`[URLSanitizer Debug] ${message}`, error ? error.message : '');
+  }
+};
+
+/**
  * URL sanitizer
  */
 class URLSanitizer extends URISchemes {
@@ -125,7 +137,7 @@ class URLSanitizer extends URISchemes {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only } = opt ?? {};
+    const { allow, deny, only, debug = false } = opt ?? {};
     const schemeMap = new Map([
       ['blob', false],
       ['data', false],
@@ -151,7 +163,8 @@ class URLSanitizer extends URISchemes {
               try {
                 super.add(item);
               } catch (e) {
-                // fall through
+                const msg = `Failed to add scheme '${item}' in 'only' list.`;
+                logDebug(debug, msg, e);
               }
               if (super.has(item)) {
                 schemeMap.set(item, true);
@@ -177,7 +190,8 @@ class URLSanitizer extends URISchemes {
                 try {
                   super.add(item);
                 } catch (e) {
-                  // fall through
+                  const msg = `Failed to add scheme '${item}' in 'allow' list.`;
+                  logDebug(debug, msg, e);
                 }
                 if (super.has(item)) {
                   schemeMap.set(item, true);
@@ -237,7 +251,8 @@ class URLSanitizer extends URISchemes {
               urlToSanitize = '';
             }
           } catch (e) {
-            // fall through
+            const msg = 'Failed to parse inner data URL protocol.';
+            logDebug(debug, msg, e);
           }
           const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
@@ -383,8 +398,10 @@ const urlSanitizer = new URLSanitizer();
 export const sanitizeURL = async (url, opt = {
   allow: [],
   deny: [],
-  only: []
+  only: [],
+  debug: false
 }) => {
+  const isDebug = !!opt?.debug;
   let res;
   if (url && isString(url)) {
     let scheme;
@@ -392,7 +409,7 @@ export const sanitizeURL = async (url, opt = {
       const { protocol } = new URL(url);
       scheme = protocol.replace(/:$/, '');
     } catch (e) {
-      // fall through;
+      logDebug(isDebug, `Invalid URL input format: ${url}`, e);
     }
     if (scheme === 'blob') {
       const { allow, deny, only } = opt;
@@ -404,7 +421,8 @@ export const sanitizeURL = async (url, opt = {
           data =
             await fetch(url).then(r => r.blob()).then(createDataURLFromBlob);
         } catch (e) {
-          // fall through
+          const msg = `Failed to fetch and convert blob URL: ${url}`;
+          logDebug(isDebug, msg, e);
         }
         if (data) {
           if (Array.isArray(only)) {
@@ -450,7 +468,8 @@ export const sanitizeURLSync = (url, opt) => {
       const { protocol } = new URL(url);
       scheme = protocol.replace(/:$/, '');
     } catch (e) {
-      // fall through;
+      const msg = `Failed to parse URL: ${url}`;
+      logDebug(opt?.debug, msg, e);
     }
     if (scheme === 'blob') {
       URL.revokeObjectURL(url);
