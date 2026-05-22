@@ -1027,6 +1027,34 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
+
+      it('should sanitize relative URLs when allowRelative is true', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(
+          sanitizer.sanitize('/about/us', { allowRelative: false }),
+          null
+        );
+        assert.strictEqual(
+          sanitizer.sanitize('/about/us?q=1#top', { allowRelative: true }),
+          '/about/us?q=1#top'
+        );
+        assert.strictEqual(
+          sanitizer.sanitize('javascript:alert(1)', { allowRelative: true }),
+          null
+        );
+        assert.strictEqual(
+          sanitizer.sanitize('http://[::1', { allowRelative: true }),
+          null
+        );
+        assert.strictEqual(
+          sanitizer.sanitize('http://\x00', { allowRelative: true }),
+          null
+        );
+        assert.strictEqual(
+          sanitizer.sanitize('//example.com/foo.png', { allowRelative: true }),
+          null
+        );
+      });
     });
 
     describe('parse sanitized URL', () => {
