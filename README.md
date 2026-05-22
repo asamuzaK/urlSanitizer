@@ -81,6 +81,16 @@ Sanitizes the given URL asynchronously.
   * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
   * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
     `only` takes precedence over `allow` and `deny`.
+  #### Parameters
+
+* url **string** URL input.
+* opt **object?** Options.
+  * opt.allow **Array<string>?** Array of allowed schemes, e.g., ['data'].
+  * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
+  * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
+    `only` takes precedence over `allow` and `deny`.
+  * opt.debug **boolean?** If `true`, outputs internal error/warning logs to the console. Default is `false`.
+  * opt.maxBlobSize **number?** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
 **Returns** **Promise<string?>** Sanitized URL, nullable.
 
