@@ -3,8 +3,8 @@
  */
 
 /* api */
-import { describe, it } from 'mocha';
 import fc from 'fast-check';
+import { describe, it } from 'mocha';
 
 /* test target */
 import { sanitizeURLSync } from '../src/mjs/sanitizer.js';
