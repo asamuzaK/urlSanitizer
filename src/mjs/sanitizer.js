@@ -65,6 +65,35 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
+   * helper to register schemes for allow/only options
+   * @private
+   * @param {string} item - scheme to register
+   * @param {string} listName - name of the option list
+   * @param {object} ctx - local context for state management
+   * @returns {boolean} - true if scheme is acceptable
+   */
+  #registerScheme(item, listName, ctx) {
+    if (!REG_SCRIPT_BLOB.test(item)) {
+      if (super.has(item)) {
+        ctx.schemeMap.set(item, true);
+      } else {
+        try {
+          super.add(item);
+        } catch (e) {
+          const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
+          logDebug(ctx.debug, msg, e);
+        }
+        if (super.has(item)) {
+          ctx.schemeMap.set(item, true);
+          ctx.tempScheme.add(item);
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * replace matched data URLs
    * @param {string} data - data URL
    * @returns {string} - replaced data URL
@@ -168,65 +197,32 @@ class URLSanitizer extends URISchemes {
       ['vbscript', false]
     ]);
     const tempScheme = new Set();
+    const ctx = { schemeMap, tempScheme, debug };
     let restrictScheme = false;
     if (Array.isArray(only) && only.length) {
       const schemes = super.get();
       for (const item of schemes) {
         schemeMap.set(item, false);
       }
-      const items = Object.values(only);
-      for (let item of items) {
+      for (let item of only) {
         if (isString(item)) {
           item = item.trim();
-          if (!REG_SCRIPT_BLOB.test(item)) {
-            if (super.has(item)) {
-              schemeMap.set(item, true);
-            } else {
-              try {
-                super.add(item);
-              } catch (e) {
-                const msg = `Failed to add scheme '${item}' in 'only' list.`;
-                logDebug(debug, msg, e);
-              }
-              if (super.has(item)) {
-                schemeMap.set(item, true);
-                tempScheme.add(item);
-              }
-            }
-            if (!restrictScheme && schemeMap.has(item)) {
-              restrictScheme = schemeMap.get(item);
-            }
+          const registered = this.#registerScheme(item, 'only', ctx);
+          if (registered && !restrictScheme && schemeMap.has(item)) {
+            restrictScheme = schemeMap.get(item);
           }
         }
       }
     } else {
       if (Array.isArray(allow) && allow.length) {
-        const items = Object.values(allow);
-        for (let item of items) {
+        for (const item of allow) {
           if (isString(item)) {
-            item = item.trim();
-            if (!REG_SCRIPT_BLOB.test(item)) {
-              if (super.has(item)) {
-                schemeMap.set(item, true);
-              } else {
-                try {
-                  super.add(item);
-                } catch (e) {
-                  const msg = `Failed to add scheme '${item}' in 'allow' list.`;
-                  logDebug(debug, msg, e);
-                }
-                if (super.has(item)) {
-                  schemeMap.set(item, true);
-                  tempScheme.add(item);
-                }
-              }
-            }
+            this.#registerScheme(item.trim(), 'allow', ctx);
           }
         }
       }
       if (Array.isArray(deny) && deny.length) {
-        const items = Object.values(deny);
-        for (let item of items) {
+        for (let item of deny) {
           if (isString(item)) {
             item = item.trim();
             if (item) {
