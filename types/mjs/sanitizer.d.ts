@@ -41,6 +41,8 @@ export class URLSanitizer extends URISchemes {
         allow?: string[] | undefined;
         deny?: string[] | undefined;
         only?: string[] | undefined;
+        allowRelative?: boolean | undefined;
+        debug?: boolean | undefined;
     }): string | null;
     parse(url: string, opt?: {
         allow?: string[] | undefined;
