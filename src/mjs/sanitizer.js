@@ -84,9 +84,15 @@ class URLSanitizer extends URISchemes {
         }
         this.#nest++;
         this.#recurse.add(dataUrl);
-        const parsedDataUrl = this.sanitize(dataUrl, {
-          allow: ['data']
-        });
+        let parsedDataUrl;
+        try {
+          parsedDataUrl = this.sanitize(dataUrl, {
+            allow: ['data']
+          });
+        } finally {
+          this.#nest--;
+          this.#recurse.delete(dataUrl);
+        }
         const { index } = item;
         const [preDataUrl, postDataUrl] = [
           replacedData.substring(0, index),
@@ -149,7 +155,6 @@ class URLSanitizer extends URISchemes {
    */
   sanitize(url, opt) {
     if (this.#nest > HEX) {
-      this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
     const {
@@ -159,7 +164,7 @@ class URLSanitizer extends URISchemes {
       ['blob', false],
       ['data', false],
       ['file', false],
-      ['javascrpt', false],
+      ['javascript', false],
       ['vbscript', false]
     ]);
     const tempScheme = new Set();
@@ -271,7 +276,6 @@ class URLSanitizer extends URISchemes {
       }
       if (bool) {
         const isDataUrl = isRelative ? false : schemeParts.includes('data');
-        let finalize;
         let urlToSanitize = isRelative ? url : href;
         if (isDataUrl) {
           const [mediaType, ...dataParts] = pathname.split(',');
@@ -297,15 +301,7 @@ class URLSanitizer extends URISchemes {
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
               parsedData = this.replace(parsedData);
-            } else if (this.#recurse.has(url)) {
-              this.#recurse.delete(url);
-            } else {
-              finalize = true;
             }
-          } else if (this.#recurse.has(url)) {
-            this.#recurse.delete(url);
-          } else {
-            finalize = true;
           }
           if (!mediaType || REG_MIME_DOM.test(mediaType)) {
             parsedData = this.purify(parsedData);
@@ -318,8 +314,6 @@ class URLSanitizer extends URISchemes {
           } else {
             urlToSanitize = '';
           }
-        } else {
-          finalize = true;
         }
         if (!isDataUrl && REG_TAG_QUOT.test(urlToSanitize)) {
           const item = REG_TAG_QUOT.exec(urlToSanitize);
@@ -330,11 +324,6 @@ class URLSanitizer extends URISchemes {
         if (urlToSanitize) {
           sanitizedUrl =
             urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
-          if (finalize) {
-            this.#nest = 0;
-          }
-        } else {
-          this.#nest = 0;
         }
       }
       if (tempScheme.size) {
