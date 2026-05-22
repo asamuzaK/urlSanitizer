@@ -40,6 +40,7 @@
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^64.0.0",
+    "fast-check": "^4.8.0",
     "globals": "^17.6.0",
     "http-server": "^14.1.1",
     "mocha": "^11.7.5",

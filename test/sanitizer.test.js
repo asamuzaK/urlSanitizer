@@ -270,6 +270,19 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:,https://example.com/',
           'result');
       });
+
+      it('should get value even if decodeURIComponent throws URIError', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.purify('%');
+        assert.strictEqual(res, '%25', 'result');
+      });
+
+      it('should get value even if encodeURI throws URIError', () => {
+        const sanitizer = new URLSanitizer();
+        const loneSurrogate = '\uD800';
+        const res = sanitizer.purify(loneSurrogate);
+        assert.strictEqual(res, loneSurrogate, 'result');
+      });
     });
 
     describe('sanitize URL', () => {
