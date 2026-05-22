@@ -348,6 +348,27 @@ Remove a scheme from the list of registered URI schemes.
 
 Reset registered schemes to the default list and clear internal cache.
 
+## Performance
+
+Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
+
+### Benchmark Results
+
+| Library | Normal HTTP URL | XSS URL (`javascript:`) | Complex Data URL |
+| :--- | :--- | :--- | :--- |
+| **`url-sanitizer`** | **~2.78 µs/iter** (Fastest) | **~1.34 µs/iter** (Fastest) | ~262.78 µs/iter |
+| `strict-url-sanitise` | ~3.98 µs/iter | ~10.11 µs/iter | ~9.82 µs/iter |
+| `@braintree/sanitize-url` | ~4.66 µs/iter | ~1.64 µs/iter | **~2.89 µs/iter** (Fastest) |
+
+### Technical Details
+
+* **Normal HTTP URL**
+  * `url-sanitizer` leverages the native `URL` API and optimized early-return logic to minimize overhead for standard web routing.
+* **XSS URL**
+  * `strict-url-sanitise` throws an `Error` object, which introduces V8 execution overhead (stack trace generation). `url-sanitizer` rejects invalid schemes during the native parsing phase and returns `null`.
+* **Complex Data URL**
+  * `@braintree/sanitize-url` passes the payload string without inspection. `strict-url-sanitise` throws an immediate exception based on the scheme. `url-sanitizer` decodes the Base64 payload, runs `DOMPurify` to sanitize the DOM tree, and re-encodes the result.
+
 ## Acknowledgments
 
 The following resources have been of great help in the development of the URL Sanitizer:

@@ -29,6 +29,7 @@
     "jsdom": "^29.1.1"
   },
   "devDependencies": {
+    "@braintree/sanitize-url": "^7.1.2",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^25.8.0",
     "c8": "^11.0.0",
@@ -43,11 +44,13 @@
     "fast-check": "^4.8.0",
     "globals": "^17.6.0",
     "http-server": "^14.1.1",
+    "mitata": "^1.0.34",
     "mocha": "^11.7.5",
     "neostandard": "^0.13.0",
     "npm-run-all2": "^8.0.4",
     "papaparse": "^5.5.3",
     "sinon": "^22.0.0",
+    "strict-url-sanitise": "^0.0.1",
     "typescript": "^6.0.3",
     "undici": "^8.0.2"
   },
@@ -64,6 +67,7 @@
     "serialize-javascript": "^7.0.4"
   },
   "scripts": {
+    "bench": "node benchmark/benchmark.js",
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
     "bundle": "npm-run-all -s bundle:*",
     "bundle:min": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.min.js --bundle --minify --sourcemap bundle/index.js",
