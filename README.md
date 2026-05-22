@@ -15,7 +15,7 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 * **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
 * **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
 * **Relative & Absolute Path Support**: Safely allows same-origin absolute paths and relative paths via an opt-in parameter.
-* **DOMPurify Integration**: Safely purifies HTML/SVG content embedded within data URLs.
+* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs. *Note: This library is optimized for URL sanitization and is not intended as a complete HTML sanitizer for arbitrary untrusted markup.*
 * **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
 
 ## Table of Contents
