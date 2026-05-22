@@ -3,8 +3,8 @@
  */
 
 /* shared */
+import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { getType, isString } from './common.js';
-import { textChars } from './lib-util.js';
 
 /* constants */
 import {
@@ -103,19 +103,17 @@ export class FileReader extends EventTarget {
    * @returns {boolean} - result
    */
   _dispatchProgressEvent(type) {
-    if (isString(type)) {
-      type = type.trim();
-      if (!/abort|error|load(?:end|start)?|progress/.test(type)) {
-        this.#error = new DOMException('Invalid state.', 'InvalidStateError');
-        this._dispatchProgressEvent('error');
-        throw this.#error;
-      }
-    } else {
+    if (!isString(type)) {
       this.#error = new TypeError(`Expected String but got ${getType(type)}.`);
       this._dispatchProgressEvent('error');
       throw this.#error;
     }
-    if (type === 'error' && !this.#error) {
+    type = type.trim();
+    if (!/abort|error|load(?:end|start)?|progress/.test(type)) {
+      this.#error = new DOMException('Invalid state.', 'InvalidStateError');
+      this._dispatchProgressEvent('error');
+      throw this.#error;
+    } else if (type === 'error' && !this.#error) {
       this.#error = new Error('Unknown error.');
     }
     const evt = new ProgressEvent(type, {

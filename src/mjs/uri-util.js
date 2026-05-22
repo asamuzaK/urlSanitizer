@@ -3,10 +3,12 @@
  */
 
 /* shared */
+import textChars from '../lib/file/text-chars.json' with { type: 'json' };
+import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
-import { textChars, uriSchemes } from './lib-util.js';
 
+/* constants */
 import {
   HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME, REG_SCHEME_EXT,
   REG_SCRIPT, REG_URL_ENC
@@ -154,14 +156,7 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
  */
 export class URISchemes {
   /* private fields */
-  #schemes;
-
-  /**
-   * construct
-   */
-  constructor() {
-    this.#schemes = new Set(uriSchemes);
-  }
+  #schemes = new Set(uriSchemes);
 
   /**
    * get schemes
@@ -234,9 +229,6 @@ export class URISchemes {
    * @returns {void}
    */
   reset() {
-    this.#schemes.clear();
-    for (const scheme of uriSchemes) {
-      this.#schemes.add(scheme);
-    }
+    this.#schemes = new Set(uriSchemes);
   }
 }
