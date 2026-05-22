@@ -111,13 +111,26 @@ class URLSanitizer extends URISchemes {
     if (!isString(dom)) {
       throw new TypeError(`Expected String but got ${getType(dom)}.`);
     }
-    let purifiedDom = domPurify.sanitize(decodeURIComponent(dom));
+    let decodedDom = dom;
+    try {
+      // prevent URIError caused by malformed percent-encoding
+      // e.g., a standalone '%'
+      decodedDom = decodeURIComponent(dom);
+    } catch (e) {
+      // fall through
+    }
+    let purifiedDom = domPurify.sanitize(decodedDom);
     if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
       purifiedDom = this.replace(purifiedDom);
     }
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
-    return encodeURI(purifiedDom);
+    try {
+      // prevent URIError caused by lone surrogates
+      return encodeURI(purifiedDom);
+    } catch (e) {
+      return purifiedDom;
+    }
   }
 
   /**
