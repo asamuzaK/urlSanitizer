@@ -143,6 +143,8 @@ class URLSanitizer extends URISchemes {
    * @param {Array.<string>} [opt.allow] - array of allowed schemes
    * @param {Array.<string>} [opt.deny] - array of denied schemes
    * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+   * @param {boolean} [opt.allowRelative] - allow relative URLs
+   * @param {boolean} [opt.debug] - enable debug mode
    * @returns {?string} - sanitized URL
    */
   sanitize(url, opt) {
@@ -150,7 +152,9 @@ class URLSanitizer extends URISchemes {
       this.#nest = 0;
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only, debug = false } = opt ?? {};
+    const {
+      allow, deny, only, allowRelative = false, debug = false
+    } = opt ?? {};
     const schemeMap = new Map([
       ['blob', false],
       ['data', false],
@@ -228,25 +232,47 @@ class URLSanitizer extends URISchemes {
       }
     }
     let sanitizedUrl;
-    if (super.verify(url)) {
-      const { hash, href, pathname, protocol, search } = new URL(url);
-      const scheme = protocol.replace(/:$/, '');
-      const schemeParts = scheme.split('+');
-      let bool;
-      if (restrictScheme) {
-        bool = schemeParts.every(s => schemeMap.get(s));
+    let isVerified = super.verify(url);
+    let isRelative = false;
+    if (!isVerified && allowRelative) {
+      try {
+        const { hostname, protocol } = new URL(url, 'http://dummy.local');
+        if (protocol === 'http:' && hostname === 'dummy.local') {
+          isVerified = true;
+          isRelative = true;
+        }
+      } catch (e) {
+        logDebug(debug, 'Failed to parse relative URL.', e);
+      }
+    }
+    if (isVerified) {
+      let hash, href, pathname, protocol, search;
+      let scheme = '';
+      let schemeParts = [];
+      let bool = false;
+      if (isRelative) {
+        bool = true;
       } else {
-        for (const [key, value] of schemeMap.entries()) {
-          bool = value || (scheme !== key && schemeParts.every(s => s !== key));
-          if (!bool) {
-            break;
+        const urlObj = new URL(url);
+        ({ hash, href, pathname, protocol, search } = urlObj);
+        scheme = protocol.replace(/:$/, '');
+        schemeParts = scheme.split('+');
+        if (restrictScheme) {
+          bool = schemeParts.every(s => schemeMap.get(s));
+        } else {
+          for (const [key, value] of schemeMap.entries()) {
+            bool =
+              value || (scheme !== key && schemeParts.every(s => s !== key));
+            if (!bool) {
+              break;
+            }
           }
         }
       }
       if (bool) {
-        const isDataUrl = schemeParts.includes('data');
+        const isDataUrl = isRelative ? false : schemeParts.includes('data');
         let finalize;
-        let urlToSanitize = href;
+        let urlToSanitize = isRelative ? url : href;
         if (isDataUrl) {
           const [mediaType, ...dataParts] = pathname.split(',');
           const data = `${dataParts.join(',')}${search}${hash}`;
@@ -412,6 +438,7 @@ export const sanitizeURL = async (url, opt = {
   allow: [],
   deny: [],
   only: [],
+  allowRelative: false,
   debug: false,
   maxBlobSize: MAX_BLOB_SIZE
 }) => {
@@ -460,7 +487,7 @@ export const sanitizeURL = async (url, opt = {
         }
       }
       URL.revokeObjectURL(url);
-    } else if (scheme) {
+    } else if (scheme || opt.allowRelative) {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
@@ -491,7 +518,7 @@ export const sanitizeURLSync = (url, opt) => {
     }
     if (scheme === 'blob') {
       URL.revokeObjectURL(url);
-    } else if (scheme) {
+    } else if (scheme || opt?.allowRelative) {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
