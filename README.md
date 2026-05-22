@@ -14,6 +14,7 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 * **Secure by Default**: Automatically denies `javascript:` and `vbscript:` schemes.
 * **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
 * **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
+* **Relative & Absolute Path Support**: Safely allows same-origin absolute paths and relative paths via an opt-in parameter.
 * **DOMPurify Integration**: Safely purifies HTML/SVG content embedded within data URLs.
 * **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
 
@@ -81,14 +82,7 @@ Sanitizes the given URL asynchronously.
   * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
   * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
     `only` takes precedence over `allow` and `deny`.
-  #### Parameters
-
-* url **string** URL input.
-* opt **object?** Options.
-  * opt.allow **Array<string>?** Array of allowed schemes, e.g., ['data'].
-  * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
-  * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
-    `only` takes precedence over `allow` and `deny`.
+  * opt.allowRelative **boolean?** If `true`, allows safe same-origin absolute paths and relative paths. Default is `false`.
   * opt.debug **boolean?** If `true`, outputs internal error/warning logs to the console. Default is `false`.
   * opt.maxBlobSize **number?** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
@@ -354,20 +348,21 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 ### Benchmark Results
 
-| Library | Normal HTTP URL | XSS URL (`javascript:`) | Complex Data URL |
+| URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **`url-sanitizer`** | **~2.78 µs/iter** (Fastest) | **~1.34 µs/iter** (Fastest) | ~262.78 µs/iter |
-| `strict-url-sanitise` | ~3.98 µs/iter | ~10.11 µs/iter | ~9.82 µs/iter |
-| `@braintree/sanitize-url` | ~4.66 µs/iter | ~1.64 µs/iter | **~2.89 µs/iter** (Fastest) |
+| **Normal HTTP URL** | ~2.78 µs/iter | ~4.66 µs/iter | ~3.98 µs/iter |
+| **XSS URL** | ~1.34 µs/iter | ~1.64 µs/iter | ~10.11 µs/iter |
+| **Complex Data URL** | ~262.78 µs/iter | ~2.89 µs/iter | ~9.82 µs/iter |
 
-### Technical Details
+### Characteristics & Trade-offs
 
-* **Normal HTTP URL**
-  * `url-sanitizer` leverages the native `URL` API and optimized early-return logic to minimize overhead for standard web routing.
-* **XSS URL**
-  * `strict-url-sanitise` throws an `Error` object, which introduces V8 execution overhead (stack trace generation). `url-sanitizer` rejects invalid schemes during the native parsing phase and returns `null`.
-* **Complex Data URL**
-  * `@braintree/sanitize-url` passes the payload string without inspection. `strict-url-sanitise` throws an immediate exception based on the scheme. `url-sanitizer` decodes the Base64 payload, runs `DOMPurify` to sanitize the DOM tree, and re-encodes the result.
+* **Optimized for Standard Routing & XSS Rejection**
+  * For **Normal HTTP URLs** and **XSS URLs**, `url-sanitizer` achieves high performance by leveraging the native `URL` API and optimized early-return logic.
+* **Deep Inspection for High-Risk Payloads**
+  * For **Complex Data URLs**, `url-sanitizer` prioritizes security over execution speed. The following steps are taken to perform sanitization:
+    1. Decodes the Base64 payload.
+    2. Runs `DOMPurify` to construct and clean the DOM tree.
+    3. Re-encodes the purified content back into a safe URL.
 
 ## Acknowledgments
 
