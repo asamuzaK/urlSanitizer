@@ -1,4 +1,6 @@
+export const CHUNK_SIZE: number;
 export const HEX: 16;
+export const MAX_BLOB_SIZE: number;
 export const TYPE_FROM: 8;
 export const TYPE_TO: -1;
 export const REG_B64: RegExp;

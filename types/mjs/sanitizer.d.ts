@@ -1,3 +1,4 @@
+export function logDebug(isDebug: boolean, message: string, error?: Error): void;
 export function sanitizeURL(url: string, opt?: {
     allow?: string[] | undefined;
     deny?: string[] | undefined;

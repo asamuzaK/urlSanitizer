@@ -66,7 +66,8 @@ describe('dist URL Sanitizer', () => {
       await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, TypeError, 'error');
+        assert.instanceOf(e, Error, 'error');
+        assert.include(e.message, 'DOMPurify is not available');
       });
     });
 
@@ -76,7 +77,8 @@ describe('dist URL Sanitizer', () => {
       await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, TypeError, 'error');
+        assert.instanceOf(e, Error, 'error');
+        assert.include(e.message, 'DOMPurify is not available');
       });
     });
 
@@ -87,7 +89,8 @@ describe('dist URL Sanitizer', () => {
       await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, TypeError, 'error');
+        assert.instanceOf(e, Error, 'error');
+        assert.include(e.message, 'DOMPurify is not available');
       });
     });
 
@@ -100,7 +103,8 @@ describe('dist URL Sanitizer', () => {
       await sanitizeURL(url, {
         allow: ['blob']
       }).catch(e => {
-        assert.instanceOf(e, TypeError, 'error');
+        assert.instanceOf(e, Error, 'error');
+        assert.include(e.message, 'DOMPurify is not available');
       });
       URL.revokeObjectURL(url);
     });
@@ -254,7 +258,8 @@ describe('dist URL Sanitizer', () => {
     it('should throw', async () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
       await parseURL(`data:image/svg+xml;base64,${btoa(data)}`).catch(e => {
-        assert.instanceOf(e, TypeError, 'error');
+        assert.instanceOf(e, Error, 'error');
+        assert.include(e.message, 'DOMPurify is not available');
       });
     });
 
