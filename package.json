@@ -25,29 +25,28 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "dompurify": "^3.4.3",
+    "dompurify": "^3.4.5",
     "jsdom": "^29.1.1"
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
     "@types/jsdom": "^28.0.3",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.1",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
     "commander": "^14.0.3",
     "copyfiles-ng": "^2.4.7",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
-    "eslint-plugin-jsdoc": "^62.9.0",
+    "eslint-plugin-jsdoc": "^63.0.0",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^64.0.0",
     "fast-check": "^4.8.0",
     "globals": "^17.6.0",
     "http-server": "^14.1.1",
     "mitata": "^1.0.34",
-    "mocha": "^11.7.5",
+    "mocha": "^11.7.6",
     "neostandard": "^0.13.0",
-    "npm-run-all2": "^8.0.4",
     "papaparse": "^5.5.3",
     "sinon": "^22.0.0",
     "strict-url-sanitise": "^0.0.1",
@@ -69,11 +68,11 @@
   "scripts": {
     "bench": "node benchmark/benchmark.js",
     "build": "npm run include && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
-    "bundle": "npm-run-all -s bundle:*",
+    "bundle": "npm run bundle:min && npm run bundle:min-wo-dompurify",
     "bundle:min": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.min.js --bundle --minify --sourcemap bundle/index.js",
     "bundle:min-wo-dompurify": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer-wo-dompurify.min.js --bundle --minify --sourcemap bundle_wo_dompurify/index.js",
     "char": "node scripts/index char -i",
-    "copy": "npm-run-all -s copy:*",
+    "copy": "npm run copy:src && npm run copy:src-wo-dompurify && npm run copy:repl && npm run copy:repl-wo-dompurify",
     "copy:src": "copyfiles-ng src/**/* bundle --up=1 --verbose --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js",
     "copy:src-wo-dompurify": "copyfiles-ng src/**/* bundle_wo_dompurify --up=1 --verbose --exclude=src/mjs/dompurify.js --exclude=src/mjs/file-reader.js",
     "copy:repl": "copyfiles-ng repl/dompurify.js repl/file-reader.js bundle/mjs --up=1 --verbose",
@@ -84,5 +83,8 @@
     "test:bdd": "http-server ./ -c-1 -o test/bdd/url-sanitizer.test.html",
     "tsc": "node scripts/index clean --dir=types -i && npx tsc"
   },
-  "version": "2.3.1"
+  "engines": {
+    "node": ">=22"
+  },
+  "version": "3.0.0"
 }
