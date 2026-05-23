@@ -44,7 +44,7 @@ npm i url-sanitizer
 
 You can import directly in your code without installing:
 ``` javascript
-import urlSanitizer from "npm:url-sanitizer";
+import urlSanitizer from 'npm:url-sanitizer';
 ```
 
 ### Browsers and Websites
