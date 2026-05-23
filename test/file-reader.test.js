@@ -167,36 +167,75 @@ describe('file-reader', () => {
     });
 
     describe('abort', () => {
-      it('should call function twice', () => {
+      it('should do nothing if state is EMPTY', () => {
         const reader = new FileReader();
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
         reader.abort();
+        assert.strictEqual(reader.readyState, 0, 'state');
+        assert.strictEqual(spyFunc.callCount, i, 'called');
+      });
+
+      it('should abort properly if state is LOADING', async () => {
+        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const p = reader._read(blob, 'text');
+        assert.strictEqual(reader.readyState, 1, 'state before abort');
+        const i = spyFunc.callCount;
+        reader.abort();
+        assert.strictEqual(reader.readyState, 2, 'state after abort');
+        assert.strictEqual(spyFunc.callCount, i + 2, 'called (abort, loadend)');
+        assert.strictEqual(reader.error.name, 'AbortError', 'error name');
+        await p;
+      });
+
+      it('should do nothing if state is DONE', async () => {
+        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
+        const reader = new FileReader();
+        await reader._read(blob, 'text');
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        reader.abort();
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
+        assert.strictEqual(spyFunc.callCount, i, 'called');
       });
     });
 
     describe('read blob', () => {
-      it('should abort', async () => {
+      it('should throw TypeError if blob is invalid', async () => {
         const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read();
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
+        await assert.rejects(
+          () => reader._read(),
+          {
+            name: 'TypeError',
+            message: 'Expected Blob but got Undefined.'
+          }
+        );
       });
 
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
+      it('should throw TypeError if format is missing', async () => {
+        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
         const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob);
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
+        await assert.rejects(
+          () => reader._read(blob),
+          {
+            name: 'TypeError',
+            message: 'Expected String but got Undefined.'
+          }
+        );
+      });
+
+      it('should throw TypeError if encoding is not a string', async () => {
+        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
+        const reader = new FileReader();
+        await assert.rejects(
+          () => reader._read(blob, 'text', 123),
+          {
+            name: 'TypeError',
+            message: 'Expected String but got Number.'
+          }
+        );
       });
 
       it('should abort', async () => {
@@ -235,14 +274,20 @@ describe('file-reader', () => {
         assert.strictEqual(reader.error.message, 'Invalid state.');
       });
 
-      it('should abort', async () => {
+      it('should throw TypeError if blob is a string', async () => {
         const blob = 'Hello, world!';
         const reader = new FileReader();
         const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
         const i = spyFunc.callCount;
-        await reader._read(blob, 'arrayBuffer');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
+        await assert.rejects(
+          () => reader._read(blob, 'arrayBuffer'),
+          {
+            name: 'TypeError',
+            message: 'Expected Blob but got String.'
+          }
+        );
+        assert.strictEqual(reader.readyState, 0, 'state');
+        assert.strictEqual(spyFunc.callCount, i, 'called');
       });
 
       it('should get result', async () => {
