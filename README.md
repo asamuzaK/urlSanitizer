@@ -15,7 +15,7 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 * **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
 * **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
 * **Relative & Absolute Path Support**: Safely allows same-origin absolute paths and relative paths via an opt-in parameter.
-* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs. *Note: This library is optimized for URL sanitization and is not intended as a complete HTML sanitizer for arbitrary untrusted markup.*
+* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs. **Note:** This library is optimized for URL sanitization and is **not intended** as a complete HTML sanitizer for arbitrary untrusted markup.
 * **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
 
 ## Table of Contents
@@ -42,7 +42,8 @@ npm i url-sanitizer
 
 ### Deno
 
-You can import directly in your code without installing:
+You can import directly in your code without installing.
+
 ``` javascript
 import urlSanitizer from 'npm:url-sanitizer';
 ```
@@ -55,14 +56,14 @@ Standalone ESM builds are available in the `dist/` directory:
 * node_modules/url-sanitizer/dist/url-sanitizer-wo-dompurify.min.js
 
 Alternatively, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
-**NOTE:** url-sanitizer-wo-dompurify.min.js is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
-If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
-
-```html
+``` html
 <script type="module">
   import urlSanitizer from 'path/to/url-sanitizer.min.js';
 </script>
 ```
+
+**Note:** `url-sanitizer-wo-dompurify.min.js` is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
+If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
 
 ## Usage
 
@@ -93,65 +94,80 @@ Sanitizes the given URL asynchronously.
   * opt.debug **boolean?** If `true`, outputs internal error/warning logs to the console. Default is `false`.
   * opt.maxBlobSize **number?** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
-**Returns** **Promise<string?>** Sanitized URL, nullable.
+**Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
 
 #### Samples
 
+Never allow `javascript:` and/or `vbscript:` schemes:
+``` javascript
+const res1 = await sanitizeURL('javascript:alert(1)');
+// => null
+
+const res1_2 = await sanitizeURL('vbscript:msgbox("XSS")');
+// => null
+
+// Even if explicitly added to the `allow` or `only` list, they are strictly blocked:
+const res1_3 = await sanitizeURL('javascript:alert(1)', {
+  allow: ['javascript']
+});
+// => null
+```
+
 Sanitize tags and quotes:
 ``` javascript
-const res1 = await sanitizeURL('https://example.com/?<script>alert(1)</script>');
+const res2 = await sanitizeURL('https://example.com/?<script>alert(1)</script>');
 // => 'https://example.com/'
 
-const res1_2 = await sanitizeURL('https://example.com/" onclick="alert(1)"');
+const res2_2 = await sanitizeURL('https://example.com/" onclick="alert(1)"');
 // => 'https://example.com/'
 ```
 
 Parse and sanitize data URLs:
 ``` javascript
-const res2 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
+const res3 = await sanitizeURL('data:text/html,<div><script>alert(1);</script></div><p onclick="alert(2)"></p>', {
   allow: ['data']
 });
 // => 'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E'
 
-console.log(decodeURIComponent(res2));
+console.log(decodeURIComponent(res3));
 // => 'data:text/html,<div></div><p></p>'
 
 // Also can parse and sanitize base64 encoded data:
-const base64data3 = btoa('<div><script>alert(1);</script></div>');
-const res3 = await sanitizeURL(`data:text/html;base64,${base64data3}`, {
+const base64data4 = btoa('<div><script>alert(1);</script></div>');
+const res4 = await sanitizeURL(`data:text/html;base64,${base64data4}`, {
   allow: ['data']
 });
 // => 'data:text/html,%3Cdiv%3E%3C/div%3E'
 
-console.log(decodeURIComponent(res3));
+console.log(decodeURIComponent(res4));
 // => 'data:text/html,<div></div>'
 
-const base64data3_2 = btoa('<div><img src="javascript:alert(1)"></div>');
-const res3_2 = await sanitizeURL(`data:text/html;base64,${base64data3_2}`);
+const base64data4_2 = btoa('<div><img src="javascript:alert(1)"></div>');
+const res4_2 = await sanitizeURL(`data:text/html;base64,${base64data4_2}`);
 // => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E'
 
-console.log(decodeURIComponent(res3_2));
+console.log(decodeURIComponent(res4_2));
 // => 'data:text/html,<div><img></div>'
 ```
 
 Parse and sanitize blob URLs:
 ``` javascript
-const blob4 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
-const url4 = URL.createObjectURL(blob4);
-const res4 = await sanitizeURL(url4, {
+const url5 = URL.createObjectURL(blob5);
+const res5 = await sanitizeURL(url5, {
   allow: ['blob']
 });
 // => 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
 
-console.log(decodeURIComponent(res4));
+console.log(decodeURIComponent(res5));
 // => 'data:image/svg+xml,<svg><g></g></svg>'
 ```
 
 Denies if the scheme matches the `deny` list:
 ``` javascript
-const res5 = await sanitizeURL('web+foo://example.com', {
+const res6 = await sanitizeURL('web+foo://example.com', {
   deny: ['web+foo']
 });
 // => null
@@ -159,18 +175,18 @@ const res5 = await sanitizeURL('web+foo://example.com', {
 
 Allows only if the scheme matches the `only` list:
 ``` javascript
-const res6 = await sanitizeURL('http://example.com', {
+const res7 = await sanitizeURL('http://example.com', {
   only: ['data', 'git', 'https']
 });
 // => null
 
-const res6_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
+const res7_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', {
   only: ['data', 'git', 'https']
 });
 // => 'https://example.com/'
 
 // `only` also allows combination of the schemes in the list
-const res7 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
+const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
   only: ['data', 'git', 'https']
 });
 // => 'git+https://example.com/foo.git'
@@ -181,19 +197,23 @@ const res7 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)
 Synchronous version of `sanitizeURL()`.
 
 * `data` and `file` schemes must be explicitly allowed.
-* `blob` scheme is not supported and will return `null`. Use the async version for `blob`.
+
+**Note:** `blob` scheme is **not supported** and will return `null`.
+Use the async version for `blob`.
 
 ### parseURL(url)
 
 Parses the given URL asynchronously.
 
-* Blob URLs are simply parsed and not yet sanitized at this stage.
+* **Data URLs**: Parsed, decoded, and **sanitized** during this process.
+  For example, if the payload contains HTML/SVG, malicious attributes are removed and the content is safely re-encoded.
+* **Blob URLs**: Simply parsed and **not yet sanitized** at this stage.
 
 #### Parameters
 
 * url **string** URL input.
 
-**Returns** **Promise<ParsedURL>** Result.
+**Returns** **Promise&lt;ParsedURL&gt;** Result.
 
 #### ParsedURL
 
@@ -287,16 +307,20 @@ Synchronous version of `parseURL()`.
 
 ### isURI(uri)
 
-Verifies if the given URI is valid and registered.
+Checks if the given string is a valid URI and whether its scheme is recognized as safe and allowed.
+
+Specifically, it verifies that the input has a correct URI syntax, is not a denied scheme (like `javascript:`), and meets one of the following criteria:
+* The scheme is registered in the default list (e.g., IANA registered schemes, `https`, `mailto`).
+* The scheme has a custom prefix like `web+` or `ext+` (which are always allowed for web applications).
 
 #### Parameters
 
 * uri **string** URI input.
 
-**Returns** **Promise<boolean>** Result.
+**Returns** **Promise&lt;boolean&gt;** `true` if the URI is syntactically valid and uses an allowed/registered scheme; otherwise `false`.
 
-* Always `true` for `web+*` and `ext+*` schemes (except `web+javascript`, `web+vbscript`, `ext+javascript`, and `ext+vbscript`).
-* `false` for `javascript` and `vbscript` schemes.
+* Always `true` for valid `web+*` and `ext+*` schemes (except `web+javascript`, `web+vbscript`, `ext+javascript`, and `ext+vbscript`).
+* Always `false` for `javascript` and `vbscript` schemes, or any unknown/unregistered schemes (e.g., `foo:`).
 
 ``` javascript
 const res1 = await isURI('https://example.com/foo');
@@ -357,9 +381,9 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **Normal HTTP URL** | ~2.90 µs/iter | ~4.55 µs/iter | ~4.17 µs/iter |
-| **XSS URL** | ~1.31 µs/iter | ~1.58 µs/iter | ~10.19 µs/iter |
-| **Complex Data URL** | ~263.16 µs/iter | ~2.76 µs/iter | ~9.76 µs/iter |
+| **Normal HTTP URL** | ~2.63 µs/iter | ~4.24 µs/iter | ~4.02 µs/iter |
+| **XSS URL** | ~1.23 µs/iter | ~1.55 µs/iter | ~9.47 µs/iter |
+| **Complex Data URL** | ~246.46 µs/iter | ~2.76 µs/iter | ~9.60 µs/iter |
 
 ### Characteristics & Trade-offs
 
