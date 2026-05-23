@@ -9,16 +9,9 @@ A robust URL sanitizer for Node.js, browsers, and websites.
 It sanitizes not only regular URLs but also deeply inspects `data` URLs and `blob` URLs.
 It also provides built-in utilities to parse URLs and verify URI schemes.
 
-## Features
-
-* **Secure by Default**: Automatically denies `javascript:` and `vbscript:` schemes.
-* **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
-* **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
-* **Relative & Absolute Path Support**: Safely allows same-origin absolute paths and relative paths via an opt-in parameter.
-* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs. **Note:** This library is optimized for URL sanitization and is **not intended** as a complete HTML sanitizer for arbitrary untrusted markup.
-* **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
-
 ## Table of Contents
+* [Features](#features)
+* [Threat Model](#threat-model)
 * [Install](#install)
 * [Usage](#usage)
 * [API Reference](#api-reference)
@@ -31,6 +24,36 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
   * [urlSanitizer Instance](#urlsanitizer)
 * [Performance](#performance)
 * [Acknowledgments](#acknowledgments)
+
+## Features
+
+* **Secure by Default**: Strictly blocks `javascript:` and `vbscript:` schemes.
+* **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
+* **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
+* **Relative & Absolute Path Support**: Safely allows root-relative paths (e.g., `/foo`) and relative paths (e.g., `./foo`) via an opt-in parameter.
+* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs.
+* **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
+
+## Threat Model
+
+To help you decide if this library fits your security requirements, here is the defined threat model detailing what `url-sanitizer` does and does not protect against.
+
+### In-Scope (What we protect against)
+
+This library is primarily designed to prevent **Cross-Site Scripting (XSS)** and unauthorized protocol execution via malicious URLs.
+
+* **Direct XSS Execution:** Blocks `javascript:` and `vbscript:` schemes outright, even if they are obfuscated with whitespaces or control characters.
+* **Nested XSS in Data/Blob URLs:** Deeply inspects and sanitizes payloads within `data:` and `blob:` URLs. If an attacker tries to hide malicious HTML/SVG within a Base64-encoded data URL, the embedded content is purified using DOMPurify and re-encoded back into a sanitized URL.
+* **Unauthorized Schemes:** Denies unknown or unregistered URI schemes by default, preventing application-specific or OS-level protocol hijacking (unless explicitly allowed).
+
+### Out-of-Scope (What we DO NOT protect against)
+
+This library validates the *syntax and safe construction* of a URL, but it does not validate the *destination or intent* of the server it points to, nor does it secure a compromised host environment.
+
+* **Server-Side Request Forgery (SSRF):** We do not check if a URL points to an internal IP address (e.g., `http://localhost`, `http://169.254.169.254`) or a malicious external server.
+* **Phishing & Open Redirects:** A perfectly valid HTTP URL pointing to a phishing site (e.g., `https://evil-example.com/login`) will be considered safe. You must implement your own domain allow-listing if you need to restrict destinations.
+* **General HTML Sanitization:** While we sanitize HTML/SVG *inside* data URLs, this library is not a general-purpose HTML body sanitizer. Do not use it to sanitize arbitrary user-generated DOM content.
+* **Compromised Host Environment:** We assume the native `URL` API is intact. We do not protect against runtime attacks where the global `URL` object has been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
 
 ## Install
 
@@ -80,7 +103,9 @@ import urlSanitizer, {
 Sanitizes the given URL asynchronously.
 
 * `blob`, `data`, and `file` schemes must be explicitly allowed.
-* Given a blob URL, it returns a sanitized **data** URL.
+* **Blob URLs:** Given a blob URL, it returns a sanitized **data** URL.
+* <a name="about-file-scheme">**WARNING**</a><br>
+  **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications, as it may expose the host's local file system to attacks like Local File Inclusion (LFI). Only allow it if you fully trust the input or are operating in a strictly isolated local environment.
 
 #### Parameters
 
@@ -90,7 +115,7 @@ Sanitizes the given URL asynchronously.
   * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
   * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
     `only` takes precedence over `allow` and `deny`.
-  * opt.allowRelative **boolean?** If `true`, allows safe same-origin absolute paths and relative paths. Default is `false`.
+  * opt.allowRelative **boolean?** If `true`, allows root-relative paths (e.g. `/foo`) and relative paths (e.g. `./foo`). Default is `false`.
   * opt.debug **boolean?** If `true`, outputs internal error/warning logs to the console. Default is `false`.
   * opt.maxBlobSize **number?** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
@@ -197,17 +222,18 @@ const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)
 Synchronous version of `sanitizeURL()`.
 
 * `data` and `file` schemes must be explicitly allowed.
-
-**Note:** `blob` scheme is **not supported** and will return `null`.
-Use the async version for `blob`.
+* **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications. [See above](#about-file-scheme)
+* **Blob URLs:** `blob` scheme is **not supported** and will return `null`.
+  Use the async version for `blob`.
 
 ### parseURL(url)
 
 Parses the given URL asynchronously.
 
-* **Data URLs**: Parsed, decoded, and **sanitized** during this process.
+* **Data URLs:** Parsed, decoded, and **sanitized** during this process.
   For example, if the payload contains HTML/SVG, malicious attributes are removed and the content is safely re-encoded.
-* **Blob URLs**: Simply parsed and **not yet sanitized** at this stage.
+* **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
+  To process and sanitize the content of a blob URL, use [sanitizeURL()](#sanitizeurlurl-opt).
 
 #### Parameters
 
