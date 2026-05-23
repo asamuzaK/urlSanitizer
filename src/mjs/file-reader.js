@@ -15,7 +15,7 @@ const EMPTY = 0;
 const LOADING = 1;
 
 /**
- * progress event
+ * Represents a progress event.
  * @see {@link https://xhr.spec.whatwg.org/#interface-progressevent}
  */
 export class ProgressEvent extends Event {
@@ -25,15 +25,15 @@ export class ProgressEvent extends Event {
   #total;
 
   /**
-   * construct
-   * @param {string} type - type
-   * @param {object} [opt] - init options
-   * @param {boolean} [opt.bubbles] - bubbles
-   * @param {boolean} [opt.cancelable] - cancelable
-   * @param {boolean} [opt.composed] - composed
-   * @param {boolean} [opt.lengthComputable] - lengthComputable
-   * @param {number} [opt.loaded] - loaded
-   * @param {number} [opt.total] - total
+   * Creates a new ProgressEvent instance.
+   * @param {string} type - The event type.
+   * @param {object} [opt] - Initialization options.
+   * @param {boolean} [opt.bubbles] - Whether the event bubbles.
+   * @param {boolean} [opt.cancelable] - Whether the event is cancelable.
+   * @param {boolean} [opt.composed] - Whether the event is composed.
+   * @param {boolean} [opt.lengthComputable] - Whether the length is computable.
+   * @param {number} [opt.loaded] - The amount of work already performed.
+   * @param {number} [opt.total] - The total amount of work to be performed.
    */
   constructor(type, opt = {}) {
     const {
@@ -49,7 +49,7 @@ export class ProgressEvent extends Event {
     this.#total = Number.isInteger(total) && total > 0 ? total : 0;
   }
 
-  /* getter */
+  /* getters */
   get lengthComputable() {
     return this.#lengthComputable;
   }
@@ -64,7 +64,7 @@ export class ProgressEvent extends Event {
 }
 
 /**
- * file reader
+ * Asynchronously reads the contents of files (or raw data buffers).
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  */
 export class FileReader extends EventTarget {
@@ -75,7 +75,7 @@ export class FileReader extends EventTarget {
   #terminate = false;
 
   /**
-   * construct
+   * Creates a new FileReader instance.
    */
   constructor() {
     super();
@@ -84,7 +84,7 @@ export class FileReader extends EventTarget {
     this.DONE = DONE;
   }
 
-  /* getter */
+  /* getters */
   get error() {
     return this.#error;
   }
@@ -98,9 +98,10 @@ export class FileReader extends EventTarget {
   }
 
   /**
-   * dispatch progress event
-   * @param {string} type - event type
-   * @returns {boolean} - result
+   * Dispatches a progress event.
+   * @private
+   * @param {string} type - The type of the event to dispatch.
+   * @returns {boolean} True if dispatched and not canceled, false otherwise.
    */
   _dispatchProgressEvent(type) {
     if (!isString(type)) {
@@ -126,7 +127,7 @@ export class FileReader extends EventTarget {
   }
 
   /**
-   * abort
+   * Aborts the ongoing read operation.
    * @returns {void}
    */
   abort() {
@@ -144,11 +145,12 @@ export class FileReader extends EventTarget {
   }
 
   /**
-   * read blob
-   * @param {object} blob - blob
-   * @param {string} format - format to read as
-   * @param {string} [encoding] - character encoding
-   * @returns {Promise.<void>} - void
+   * Reads the given blob based on the specified format.
+   * @private
+   * @param {Blob} blob - The target Blob object.
+   * @param {string} format - The format in which to read the blob data.
+   * @param {string} [encoding] - The character encoding for text formats.
+   * @returns {Promise<void>}
    */
   async _read(blob, format, encoding = '') {
     if (!(blob instanceof Blob)) {
@@ -264,37 +266,37 @@ export class FileReader extends EventTarget {
   }
 
   /**
-   * read as arrayBuffer
-   * @param {object} blob - blob
-   * @returns {Promise.<void>} - void
+   * Reads the contents of the specified Blob as an ArrayBuffer.
+   * @param {Blob} blob - The target Blob object.
+   * @returns {Promise<void>}
    */
   async readAsArrayBuffer(blob) {
     await this._read(blob, 'arrayBuffer');
   }
 
   /**
-   * read as binary string
-   * @param {object} blob - blob
-   * @returns {Promise.<void>} - void
+   * Reads the contents of the specified Blob as a binary string.
+   * @param {Blob} blob - The target Blob object.
+   * @returns {Promise<void>}
    */
   async readAsBinaryString(blob) {
     await this._read(blob, 'binaryString');
   }
 
   /**
-   * read as data URL
-   * @param {object} blob - blob
-   * @returns {Promise.<void>} - void
+   * Reads the contents of the specified Blob as a base64-encoded data URL.
+   * @param {Blob} blob - The target Blob object.
+   * @returns {Promise<void>}
    */
   async readAsDataURL(blob) {
     await this._read(blob, 'dataURL');
   }
 
   /**
-   * read as text
-   * @param {object} blob - blob
-   * @param {string} [encoding] - encoding
-   * @returns {Promise.<void>} - void
+   * Reads the contents of the specified Blob as text.
+   * @param {Blob} blob - The target Blob object.
+   * @param {string} [encoding] - The character encoding to use.
+   * @returns {Promise<void>}
    */
   async readAsText(blob, encoding) {
     await this._read(blob, 'text', encoding);
