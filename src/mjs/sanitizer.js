@@ -417,6 +417,9 @@ const urlSanitizer = new URLSanitizer();
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
  * @param {Array.<string>} [opt.deny] - array of denied schemes
  * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+ * @param {boolean} [opt.allowRelative] - allow relative URLs
+ * @param {boolean} [opt.debug] - enable debug mode
+ * @param {number} [opt.maxBlobSize] - max blob size
  * @returns {Promise.<?string>} - sanitized URL
  */
 export const sanitizeURL = async (url, opt = {
@@ -468,12 +471,12 @@ export const sanitizeURL = async (url, opt = {
               deny.splice(i, 1);
             }
           }
-          res = urlSanitizer.sanitize(data, opt);
+          res = await urlSanitizer.sanitize(data, opt);
         }
       }
       URL.revokeObjectURL(url);
     } else if (scheme || opt.allowRelative) {
-      res = urlSanitizer.sanitize(url, opt);
+      res = await urlSanitizer.sanitize(url, opt);
     }
   }
   return res || null;
@@ -488,6 +491,8 @@ export const sanitizeURL = async (url, opt = {
  * @param {Array.<string>} [opt.allow] - array of allowed schemes
  * @param {Array.<string>} [opt.deny] - array of denied schemes
  * @param {Array.<string>} [opt.only] - array of specific schemes to allow
+ * @param {boolean} [opt.allowRelative] - allow relative URLs
+ * @param {boolean} [opt.debug] - enable debug mode
  * @returns {?string} - sanitized URL
  */
 export const sanitizeURLSync = (url, opt) => {
@@ -516,7 +521,7 @@ export const sanitizeURLSync = (url, opt) => {
  * @returns {Promise.<ParsedURL>} - result
  */
 export const parseURL = async url => {
-  const res = urlSanitizer.parse(url);
+  const res = await urlSanitizer.parse(url);
   return res;
 };
 
@@ -533,7 +538,7 @@ export const parseURLSync = url => urlSanitizer.parse(url);
  * @returns {Promise.<boolean>} - result
  */
 export const isURI = async uri => {
-  const res = urlSanitizer.verify(uri);
+  const res = await urlSanitizer.verify(uri);
   return res;
 };
 
