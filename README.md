@@ -58,6 +58,13 @@ Alternatively, download them from [Releases](https://github.com/asamuzaK/urlSani
 **NOTE:** url-sanitizer-wo-dompurify.min.js is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
 If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
 
+Since the library is pure ESM, you can also import it directly into your HTML using `<script type="module">` via a CDN like jsDelivr.
+
+**Using the full bundle:**
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/url-sanitizer/dist/url-sanitizer.min.js"></script>
+```
+
 ## Usage
 
 ``` javascript
