@@ -6,16 +6,16 @@
 import { TYPE_FROM, TYPE_TO } from './constant.js';
 
 /**
- * get type
- * @param {object} o - object to check
- * @returns {string} - type of object
+ * Gets the exact type of the given object.
+ * @param {object} o - The object to check.
+ * @returns {string} The specific type of the object.
  */
 export const getType = o =>
   Object.prototype.toString.call(o).slice(TYPE_FROM, TYPE_TO);
 
 /**
- * is string
- * @param {object} o - object to check
- * @returns {boolean} - result
+ * Checks if the given value is a string.
+ * @param {object} o - The value to check.
+ * @returns {boolean} True if the value is a string, false otherwise.
  */
 export const isString = o => typeof o === 'string' || o instanceof String;

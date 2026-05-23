@@ -358,7 +358,7 @@ Synchronous version of `parseURL()`.
 
 ### isURI(uri)
 
-Checks if the given string is a valid URI and whether its scheme is recognized as safe and allowed.
+Checks if the given string is a valid URI and whether its scheme is registered in the allowed list.
 
 Specifically, it verifies that the input has a correct URI syntax, is not a denied scheme (like `javascript:`), and meets one of the following criteria:
 * The scheme is registered in the default list (e.g., IANA registered schemes, `https`, `mailto`).

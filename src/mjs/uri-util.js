@@ -15,9 +15,9 @@ import {
 } from './constant.js';
 
 /**
- * get URL encoded string
- * @param {string} str - string
- * @returns {string} - URL encoded string
+ * Gets the URL-encoded representation of a given string.
+ * @param {string} str - The target string.
+ * @returns {string} The completely URL-encoded string.
  */
 export const getURLEncodedString = str => {
   if (!isString(str)) {
@@ -31,9 +31,9 @@ export const getURLEncodedString = str => {
 };
 
 /**
- * escape URL encoded HTML special chars
- * @param {string} ch - URL encoded (percent encoded) char
- * @returns {string} - escaped URL encoded HTML special char / URL encoded char
+ * Escapes URL-encoded HTML special characters.
+ * @param {string} ch - A URL-encoded (percent-encoded) character.
+ * @returns {string} The escaped HTML special character, or the given character.
  */
 export const escapeURLEncodedHTMLChars = ch => {
   if (isString(ch) && REG_URL_ENC.test(ch)) {
@@ -59,9 +59,9 @@ export const escapeURLEncodedHTMLChars = ch => {
 };
 
 /**
- * parse base64 encoded data
- * @param {string} data - base64 encoded data
- * @returns {string} - parsed text data / base64 encoded data if binary
+ * Parses base64-encoded data.
+ * @param {string} data - The base64-encoded string.
+ * @returns {string} The parsed text, or the original base64 if binary.
  */
 export const parseBase64 = data => {
   if (!isString(data)) {
@@ -82,10 +82,10 @@ export const parseBase64 = data => {
 };
 
 /**
- * parse URL encoded numeric character references in the range 0x00 to 0xFF
- * @param {string} str - string
- * @param {number} [nest] - nest level
- * @returns {string} - parsed string
+ * Parses URL-encoded numeric character references in the range 0x00 to 0xFF.
+ * @param {string} str - The target string to parse.
+ * @param {number} [nest] - The current nesting depth for recursive parsing.
+ * @returns {string} The decoded and parsed string.
  */
 export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!isString(str)) {
@@ -129,10 +129,10 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
 };
 
 /**
- * create data URL from blob
- * @param {object} blob - blob
- * @param {number} maxBlobSize - max blob size
- * @returns {Promise.<?string>} - data URL
+ * Creates a base64 data URL asynchronously from a given Blob.
+ * @param {Blob} blob - The target Blob object.
+ * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
  */
 export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
   new Promise((resolve, reject) => {
@@ -159,30 +159,30 @@ export class URISchemes {
   #schemes = new Set(uriSchemes);
 
   /**
-   * get schemes
+   * Gets the list of registered URI schemes.
    * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
-   *      - Historical schemes omitted
-   *      - 'moz-extension' scheme added
-   * @returns {Array.<string>} - array of schemes
+   * - Historical schemes are omitted.
+   * - The 'moz-extension' scheme is added by default.
+   * @returns {string[]} An array of registered schemes.
    */
   get() {
     return [...this.#schemes];
   }
 
   /**
-   * has scheme
-   * @param {string} scheme - scheme
-   * @returns {boolean} - result
+   * Checks if the specified scheme is currently registered.
+   * @param {string} scheme - The target scheme (e.g., 'https').
+   * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
     return this.#schemes.has(scheme);
   }
 
   /**
-   * add scheme
-   * NOTE: `javascript` and/or `vbscript` schemes can not be registered
-   * @param {string} scheme - scheme
-   * @returns {Array.<string>} - array of schemes
+   * Adds a new scheme to the allowed list.
+   * NOTE: `javascript` and `vbscript` schemes are blocked and cannot be added.
+   * @param {string} scheme - The scheme to add.
+   * @returns {string[]} The updated array of registered schemes.
    */
   add(scheme) {
     if (!isString(scheme)) {
@@ -195,18 +195,18 @@ export class URISchemes {
   }
 
   /**
-   * remove scheme
-   * @param {string} scheme - scheme
-   * @returns {boolean} - result
+   * Removes a scheme from the allowed list.
+   * @param {string} scheme - The scheme to remove.
+   * @returns {boolean} True if the scheme was successfully removed.
    */
   remove(scheme) {
     return this.#schemes.delete(scheme);
   }
 
   /**
-   * verify URI
-   * @param {string} uri - URI
-   * @returns {boolean} - result
+   * Verifies if the given URI is valid and its scheme is allowed.
+   * @param {string} uri - The URI string to verify.
+   * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
   verify(uri) {
     let res;
@@ -225,7 +225,7 @@ export class URISchemes {
   }
 
   /**
-   * reset schemes
+   * Resets the registered schemes back to the default initial list.
    * @returns {void}
    */
   reset() {

@@ -16,31 +16,33 @@ import {
 
 /* typedef */
 /**
- * @typedef {object} ParsedURL - object with additional props based on URL API
- * @property {string} input - URL input
- * @property {boolean} valid - is valid URI
- * @property {object} [data] - parsed result of data URL, `null`able
- * @property {string} [data.mime] - MIME type
- * @property {boolean} [data.base64] - is base64 encoded
- * @property {string} [data.data] - data part of the data URL
- * @property {string} [href] - sanitized URL input
- * @property {string} [origin] - scheme, domain and port of the sanitized URL
- * @property {string} [protocol] - protocol scheme of the sanitized URL
- * @property {string} [username] - username specified before the domain name
- * @property {string} [password] - password specified before the domain name
- * @property {string} [host] - domain and port of the sanitized URL
- * @property {string} [hostname] - domain of the sanitized URL
- * @property {string} [port] - port number of the sanitized URL
- * @property {string} [pathname] - path of the sanitized URL
- * @property {string} [search] - query string of the sanitized URL
- * @property {string} [hash] - fragment identifier of the sanitized URL
+ * A parsed URL object extending the standard URL API.
+ * @typedef {object} ParsedURL
+ * @property {string} input - The original URL input.
+ * @property {boolean} valid - Indicates whether the URI is valid.
+ * @property {object} [data] - The parsed result of a data URL, if applicable.
+ * @property {string} [data.mime] - The MIME type of the data.
+ * @property {boolean} [data.base64] - True if the data is base64-encoded.
+ * @property {string} [data.data] - The actual data part of the data URL.
+ * @property {string} [href] - The sanitized URL input.
+ * @property {string} [origin] - The scheme, the domain and the port.
+ * @property {string} [protocol] - The protocol scheme.
+ * @property {string} [username] - The specified username.
+ * @property {string} [password] - The specified password.
+ * @property {string} [host] - The domain and the port.
+ * @property {string} [hostname] - The domain.
+ * @property {string} [port] - The port number.
+ * @property {string} [pathname] - The path.
+ * @property {string} [search] - The query string.
+ * @property {string} [hash] - The fragment identifier.
  */
 
 /**
  * Internal debug logger.
- * @param {boolean} isDebug - Debug flag.
- * @param {string} message - Output message.
- * @param {Error} [error] - Caught error object.
+ * @param {boolean} isDebug - Flag to enable or disable debug output.
+ * @param {string} message - The message to output.
+ * @param {Error} [error] - The caught error object, if any.
+ * @returns {void}
  */
 export const logDebug = (isDebug, message, error) => {
   if (isDebug) {
@@ -57,7 +59,7 @@ class URLSanitizer extends URISchemes {
   #recurse = new Set();
 
   /**
-   * construct
+   * Creates a new URLSanitizer instance.
    */
   constructor() {
     super();
@@ -65,12 +67,12 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * helper to register schemes for allow/only options
+   * Helper method to register schemes for the 'allow' or 'only' options.
    * @private
-   * @param {string} item - scheme to register
-   * @param {string} listName - name of the option list
-   * @param {object} ctx - local context for state management
-   * @returns {boolean} - true if scheme is acceptable
+   * @param {string} item - The scheme to register.
+   * @param {string} listName - The name of the target option list.
+   * @param {object} ctx - The local context for state management.
+   * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, listName, ctx) {
     if (!REG_SCRIPT_BLOB.test(item)) {
@@ -94,9 +96,9 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * replace matched data URLs
-   * @param {string} data - data URL
-   * @returns {string} - replaced data URL
+   * Replaces matched data URLs within a string with their sanitized versions.
+   * @param {string} data - The string containing data URLs.
+   * @returns {string} The string with sanitized data URLs.
    */
   replace(data) {
     if (!isString(data)) {
@@ -138,9 +140,9 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * purify URL encoded DOM
-   * @param {string} dom - DOM string
-   * @returns {string} - purified DOM string
+   * Purifies a URL-encoded DOM string to prevent XSS.
+   * @param {string} dom - The URL-encoded DOM string.
+   * @returns {string} The purified DOM string.
    */
   purify(dom) {
     if (!isString(dom)) {
@@ -169,18 +171,18 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * sanitize URL
-   * NOTE: `data` and `file` schemes must be explicitly allowed
-   * `blob` URLs should be converted to `data` URLs
-   * `javascript` and `vbscript` schemes can not be allowed
-   * @param {string} url - URL
-   * @param {object} [opt] - options
-   * @param {Array.<string>} [opt.allow] - array of allowed schemes
-   * @param {Array.<string>} [opt.deny] - array of denied schemes
-   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
-   * @param {boolean} [opt.allowRelative] - allow relative URLs
-   * @param {boolean} [opt.debug] - enable debug mode
-   * @returns {?string} - sanitized URL
+   * Sanitizes the given URL.
+   * NOTE: `data` and `file` schemes must be explicitly allowed.
+   * `blob` URLs should be converted to `data` URLs prior to processing.
+   * `javascript` and `vbscript` schemes are blocked and cannot be allowed.
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} [opt] - Sanitization options.
+   * @param {string[]} [opt.allow] - An array of schemes to allow.
+   * @param {string[]} [opt.deny] - An array of schemes to deny.
+   * @param {string[]} [opt.only] - An array of specific schemes to allow.
+   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
+   * @param {boolean} [opt.debug] - Flag to enable debug mode.
+   * @returns {string|null} The sanitized URL, or null.
    */
   sanitize(url, opt) {
     if (this.#nest > HEX) {
@@ -332,13 +334,11 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * parse sanitized URL
-   * @param {string} url - URL
-   * @param {object} [opt] - options
-   * @param {Array.<string>} [opt.allow] - array of allowed schemes
-   * @param {Array.<string>} [opt.deny] - array of denied schemes
-   * @param {Array.<string>} [opt.only] - array of specific schemes to allow
-   * @returns {ParsedURL} - result with additional props based on URL API
+   * Parses the given URL with sanitization.
+   * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
+   * @param {string} url - The URL string to parse.
+   * @param {object} [opt] - Sanitization options.
+   * @returns {ParsedURL} The object containing parsed result.
    */
   parse(url, opt) {
     if (!isString(url)) {
@@ -393,7 +393,7 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * reset sanitizer
+   * Resets the sanitizer state and cleared allowed schemes back to defaults.
    * @returns {void}
    */
   reset() {
@@ -404,23 +404,22 @@ class URLSanitizer extends URISchemes {
 }
 export { URLSanitizer };
 
-/* aliases and async wrappers */
 /* instance */
 const urlSanitizer = new URLSanitizer();
 
 /**
- * sanitize URL async
- * NOTE: `blob`, `data` and `file` schemes must be explicitly allowed
- * given a `blob` URL, returns a sanitized `data` URL
+ * Asynchronously sanitizes the given URL.
+ * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
+ * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
  * @param {string} url - URL
  * @param {object} [opt] - options
- * @param {Array.<string>} [opt.allow] - array of allowed schemes
- * @param {Array.<string>} [opt.deny] - array of denied schemes
- * @param {Array.<string>} [opt.only] - array of specific schemes to allow
- * @param {boolean} [opt.allowRelative] - allow relative URLs
- * @param {boolean} [opt.debug] - enable debug mode
- * @param {number} [opt.maxBlobSize] - max blob size
- * @returns {Promise.<?string>} - sanitized URL
+ * @param {Array.<string>} [opt.allow] - The array of schemes to allow.
+ * @param {Array.<string>} [opt.deny] - The array of schemes to deny.
+ * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
+ * @param {boolean} [opt.allowRelative] - Allow relative URLs.
+ * @param {boolean} [opt.debug] - Enable debug mode.
+ * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+ * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
 export const sanitizeURL = async (url, opt = {
   allow: [],
@@ -483,17 +482,17 @@ export const sanitizeURL = async (url, opt = {
 };
 
 /**
- * sanitize URL sync
- * NOTE: `data` and `file` schemes must be explicitly allowed
- * `blob` scheme returns `null`
+ * Synchronously sanitizes the given URL.
+ * NOTE: `data` and `file` schemes must be explicitly allowed.
+ * The `blob` scheme is not supported and will return `null`.
  * @param {string} url - URL
  * @param {object} [opt] - options
- * @param {Array.<string>} [opt.allow] - array of allowed schemes
- * @param {Array.<string>} [opt.deny] - array of denied schemes
- * @param {Array.<string>} [opt.only] - array of specific schemes to allow
- * @param {boolean} [opt.allowRelative] - allow relative URLs
- * @param {boolean} [opt.debug] - enable debug mode
- * @returns {?string} - sanitized URL
+ * @param {Array.<string>} [opt.allow] - The array of schemes to allow.
+ * @param {Array.<string>} [opt.deny] - The array of schemes to deny.
+ * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
+ * @param {boolean} [opt.allowRelative] - Allow relative URLs.
+ * @param {boolean} [opt.debug] - Enable debug mode.
+ * @returns {string|null} The sanitized URL, or null if denied.
  */
 export const sanitizeURLSync = (url, opt) => {
   let res;
@@ -516,9 +515,9 @@ export const sanitizeURLSync = (url, opt) => {
 };
 
 /**
- * parse URL async
- * @param {string} url - URL
- * @returns {Promise.<ParsedURL>} - result
+ * Asynchronously parses the given URL.
+ * @param {string} url - The URL string to parse.
+ * @returns {Promise<ParsedURL>} A promise resolving to the parsed URL object.
  */
 export const parseURL = async url => {
   const res = await urlSanitizer.parse(url);
@@ -526,16 +525,16 @@ export const parseURL = async url => {
 };
 
 /**
- * parse URL sync
- * @param {string} url - URL
- * @returns {ParsedURL} - result
+ * Synchronously parses the given URL.
+ * @param {string} url - The URL string to parse.
+ * @returns {ParsedURL} The parsed URL object.
  */
 export const parseURLSync = url => urlSanitizer.parse(url);
 
 /**
- * is URI async
- * @param {string} uri - URI
- * @returns {Promise.<boolean>} - result
+ * Asynchronously checks if the given string is a valid URI and is registered.
+ * @param {string} uri - The URI string to verify.
+ * @returns {Promise<boolean>} True if valid and registered, false otherwise.
  */
 export const isURI = async uri => {
   const res = await urlSanitizer.verify(uri);
@@ -543,9 +542,9 @@ export const isURI = async uri => {
 };
 
 /**
- * is URI sync
- * @param {string} uri - URI
- * @returns {boolean} - result
+ * Synchronously checks if the given string is a valid URI and is registered.
+ * @param {string} uri - The URI string to verify.
+ * @returns {boolean} True if valid and registered, false otherwise.
  */
 export const isURISync = uri => urlSanitizer.verify(uri);
 
