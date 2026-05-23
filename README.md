@@ -347,7 +347,7 @@ Remove a scheme from the list of registered URI schemes.
 
 #### urlSanitizer.reset()
 
-Reset registered schemes to the default list and clear internal cache.
+Reset registered schemes to the default list.
 
 ## Performance
 
