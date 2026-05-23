@@ -64,6 +64,20 @@ describe('URL Sanitizer', () => {
   });
 
   describe('sanitize URL', () => {
+    it('should get null for javascript: scheme', async () => {
+      const url = 'javascript:alert(1)';
+      const res = await sanitizeURL(url);
+      assert.strictEqual(res, null, 'result');
+    });
+
+    it('should get null for javascript: scheme even if inculed in allow list', async () => {
+      const url = 'javascript:alert(1)';
+      const res = await sanitizeURL(url, {
+        allow: ['javascript']
+      });
+      assert.strictEqual(res, null, 'result');
+    });
+
     it('should get result', async () => {
       const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = await sanitizeURL(url);
