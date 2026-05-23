@@ -12,6 +12,7 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 ## Table of Contents
 * [Features](#features)
 * [Threat Model](#threat-model)
+* [AI / LLM Application Security](#ai--llm-application-security)
 * [Install](#install)
 * [Usage](#usage)
 * [API Reference](#api-reference)
@@ -55,6 +56,21 @@ This library validates the *syntax and safe construction* of a URL, but it does 
 * **General HTML Sanitization:** While we sanitize HTML/SVG *inside* data URLs, this library is not a general-purpose HTML body sanitizer. Do not use it to sanitize arbitrary user-generated DOM content.
 * **Compromised Host Environment:** We assume the native `URL` API is intact. We do not protect against runtime attacks where the global `URL` object has been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
 
+## AI / LLM Application Security
+
+With the rise of AI agents, RAG (Retrieval-Augmented Generation), and LLM-driven applications, developers increasingly render content generated directly by AI.
+Unpredictable AI outputs introduce unique security risks, and `url-sanitizer` is architected to serve as a reliable defense layer for these modern environments.
+
+### Defending Against Complex & Obfuscated Payloads
+LLMs can generate highly complex, nested, or Base64-encoded `data:` URLs — either through prompt injection, RAG data poisoning, or simply reproducing obfuscated code from their training data.
+Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the payload, purifying the inner HTML/SVG tree via DOMPurify, and re-encoding it — it physically neutralizes hidden XSS vectors, ensuring that AI-generated data URLs are safe to render.
+
+### Neutralizing Hallucinated Schemes
+LLMs generate URLs based on statistical linguistic patterns rather than factual databases.
+As a result, they frequently hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
+By operating on a **Secure by Default** whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
+This strict blocking prevents hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
+
 ## Install
 
 ### Node.js
@@ -87,6 +103,12 @@ Alternatively, download them from [Releases](https://github.com/asamuzaK/urlSani
 
 **Note:** `url-sanitizer-wo-dompurify.min.js` is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
 If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
+``` html
+<script src="https://unpkg.com/dompurify/dist/purify.min.js"></script>
+<script type="module">
+  import urlSanitizer from 'path/to/url-sanitizer-wo-dompurify.min.js';
+</script>
+```
 
 ## Usage
 
@@ -103,21 +125,24 @@ import urlSanitizer, {
 Sanitizes the given URL asynchronously.
 
 * `blob`, `data`, and `file` schemes must be explicitly allowed.
-* **Blob URLs:** Given a blob URL, it returns a sanitized **data** URL.
+* **Blob URLs:** Given a **blob** URL, it converts and returns a sanitized **data** URL.
+  * Converting a blob URL to a data URL consumes memory, so be aware of the risk of memory exhaustion when handling huge blobs.
+  * You can restrict the allowed blob size using the `opt.maxBlobSize` option (default: 32MB).
+  * The sanitized data URL will **not** be converted back to a blob URL.
 * <a name="about-file-scheme">**WARNING**</a><br>
   **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications, as it may expose the host's local file system to attacks like Local File Inclusion (LFI). Only allow it if you fully trust the input or are operating in a strictly isolated local environment.
 
 #### Parameters
 
 * url **string** URL input.
-* opt **object?** Options.
-  * opt.allow **Array<string>?** Array of allowed schemes, e.g., ['data'].
-  * opt.deny **Array<string>?** Array of denied schemes, e.g., ['web+foo'].
-  * opt.only **Array<string>?** Array of specific schemes to allow, e.g., ['git', 'https'].
+* opt **\[object\]** Options.
+  * opt.allow **\[Array&lt;string&gt;\]** Array of allowed schemes, e.g., \['data'\].
+  * opt.deny **\[Array&lt;string&gt;\]** Array of denied schemes, e.g., \['web+foo'\].
+  * opt.only **\[Array&lt;string&gt;\]** Array of specific schemes to allow, e.g., \['git', 'https'\].
     `only` takes precedence over `allow` and `deny`.
-  * opt.allowRelative **boolean?** If `true`, allows root-relative paths (e.g. `/foo`) and relative paths (e.g. `./foo`). Default is `false`.
-  * opt.debug **boolean?** If `true`, outputs internal error/warning logs to the console. Default is `false`.
-  * opt.maxBlobSize **number?** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
+  * opt.allowRelative **\[boolean\]** If `true`, allows root-relative paths (e.g. `/foo`) and relative paths (e.g. `./foo`). Default is `false`.
+  * opt.debug **\[boolean\]** If `true`, outputs internal error/warning logs to the console. Default is `false`.
+  * opt.maxBlobSize **\[number\]** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
 **Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
 
