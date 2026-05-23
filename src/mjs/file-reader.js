@@ -130,9 +130,15 @@ export class FileReader extends EventTarget {
    * @returns {void}
    */
   abort() {
+    if (this.#state === this.EMPTY || this.#state === this.DONE) {
+      this.#result = null;
+      return;
+    }
     this.#state = this.DONE;
     this.#result = null;
     this.#terminate = true;
+    this.#error =
+      new DOMException('The read operation was aborted.', 'AbortError');
     this._dispatchProgressEvent('abort');
     this._dispatchProgressEvent('loadend');
   }
@@ -145,8 +151,14 @@ export class FileReader extends EventTarget {
    * @returns {Promise.<void>} - void
    */
   async _read(blob, format, encoding = '') {
-    if (!(blob instanceof Blob && isString(format) && isString(encoding))) {
-      this.abort();
+    if (!(blob instanceof Blob)) {
+      throw new TypeError(`Expected Blob but got ${getType(blob)}.`);
+    }
+    if (!isString(format)) {
+      throw new TypeError(`Expected String but got ${getType(format)}.`);
+    }
+    if (!isString(encoding)) {
+      throw new TypeError(`Expected String but got ${getType(encoding)}.`);
     }
     if (!this.#terminate) {
       if (this.#state === this.LOADING) {
