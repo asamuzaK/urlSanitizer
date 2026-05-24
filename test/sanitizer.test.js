@@ -879,7 +879,7 @@ describe('sanitizer', () => {
         }
       });
 
-      it('should log warning and skip when circular Data URL is detected', () => {
+      it('should skip when circular Data URL is detected', () => {
         const warnStub = sinon.stub(console, 'warn');
         const originalHas = Set.prototype.has;
         const hasStub = sinon.stub(Set.prototype, 'has')
@@ -890,21 +890,20 @@ describe('sanitizer', () => {
             return originalHas.call(this, val);
           });
         try {
-          const sanitizer = new URLSanitizer();
-          sanitizer.sanitize('data:text/html,data:text/html,loop', {
-            allow: ['data'],
-            debug: true
-          });
-          assert.strictEqual(
-            warnStub.called,
-            true,
-            'console.warn should be called'
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize(
+            'data:text/html,<img src="data:text/html,loop">',
+            { allow: ['data'], debug: true }
           );
+          assert.strictEqual(warnStub.called, true,
+            'console.warn should be called');
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop',
             'should output circular warning'
           );
+          assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
+            'result');
         } finally {
           hasStub.restore();
           warnStub.restore();

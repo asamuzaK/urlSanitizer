@@ -55,20 +55,6 @@ describe('constants', () => {
     });
   });
 
-  describe('REG_DATA_URL_G', () => {
-    const { REG_DATA_URL_G } = constant;
-
-    it('should match multiple data URLs and stop at double quotes', () => {
-      const str = 'src="data:text/html,<div>" and href="data:text/plain;base64,SGVsbG8="';
-      const matches = str.match(REG_DATA_URL_G);
-
-      assert.strictEqual(matches !== null, true, 'should find matches');
-      assert.strictEqual(matches.length, 2, 'should find exactly 2 matches');
-      assert.strictEqual(matches[0], 'data:text/html,<div>', 'first match');
-      assert.strictEqual(matches[1], 'data:text/plain;base64,SGVsbG8=', 'second match');
-    });
-  });
-
   describe('REG_TAG_QUOT', () => {
     const { REG_TAG_QUOT } = constant;
 

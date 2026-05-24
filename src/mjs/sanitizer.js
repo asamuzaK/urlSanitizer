@@ -10,8 +10,8 @@ import {
   parseURLEncodedNumCharRef, URISchemes
 } from './uri-util.js';
 import {
-  HEX, MAX_BLOB_SIZE, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G,
-  REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB, REG_TAG_QUOT
+  HEX, MAX_BLOB_SIZE, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB,
+  REG_TAG_QUOT
 } from './constant.js';
 
 /* typedef */
@@ -80,57 +80,6 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Replaces matched data URLs within a string with their sanitized versions.
-   * @private
-   * @param {string} data - The string containing data URLs.
-   * @param {object} ctx - The context for state management.
-   * @returns {string} The string with sanitized data URLs.
-   */
-  #replace(data, ctx) {
-    let replacedData = data;
-    if (REG_DATA_URL.test(replacedData)) {
-      const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
-      const items = [...matchedDataUrls].reverse();
-      for (const item of items) {
-        let [dataUrl] = item;
-        if (REG_DATA_URL_B64.test(dataUrl)) {
-          [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
-        }
-        if (ctx.recurse.has(dataUrl)) {
-          const msg = `Circular Data URL detected and skipped: ${dataUrl}`;
-          logDebug(ctx.debug, msg);
-          continue;
-        }
-        ctx.nest++;
-        ctx.recurse.add(dataUrl);
-        let parsedDataUrl;
-        try {
-          parsedDataUrl = this.#process(dataUrl, {
-            allow: ['data'],
-            deny: [],
-            only: [],
-            allowRelative: false
-          }, ctx);
-        } finally {
-          ctx.nest--;
-          ctx.recurse.delete(dataUrl);
-        }
-        const { index } = item;
-        const [preDataUrl, postDataUrl] = [
-          replacedData.substring(0, index),
-          replacedData.substring(index + dataUrl.length)
-        ];
-        if (parsedDataUrl) {
-          replacedData = `${preDataUrl}${parsedDataUrl}${postDataUrl}`;
-        } else {
-          replacedData = `${preDataUrl}${postDataUrl}`;
-        }
-      }
-    }
-    return replacedData;
-  }
-
-  /**
    * Purifies a URL-encoded DOM string to prevent XSS.
    * @private
    * @param {string} dom - The URL-encoded DOM string.
@@ -146,17 +95,43 @@ class URLSanitizer extends URISchemes {
     } catch (e) {
       // fall through
     }
-    let purifiedDom = domPurify.sanitize(decodedDom);
-    if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
-      purifiedDom = this.#replace(purifiedDom, ctx);
-    }
-    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
-      .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
+    domPurify.addHook('uponSanitizeAttribute', (node, e) => {
+      if (e.attrValue && URL.canParse(e.attrValue)) {
+        const urlObj = new URL(e.attrValue);
+        if (urlObj.protocol === 'data:') {
+          if (ctx.recurse.has(e.attrValue)) {
+            logDebug(ctx.debug, `Circular Data URL detected and skipped: ${e.attrValue}`);
+            e.attrValue = '';
+            return;
+          }
+          ctx.nest++;
+          ctx.recurse.add(e.attrValue);
+          try {
+            const sanitized = this.#process(e.attrValue, {
+              allow: ['data'],
+              deny: [],
+              only: [],
+              allowRelative: false
+            }, ctx);
+            e.attrValue = sanitized || '';
+          } finally {
+            ctx.nest--;
+            ctx.recurse.delete(e.attrValue);
+          }
+        }
+      }
+    });
     try {
-      // prevent URIError caused by lone surrogates
-      return encodeURI(purifiedDom);
-    } catch (e) {
-      return purifiedDom;
+      let purifiedDom = domPurify.sanitize(decodedDom);
+      purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
+        .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
+      try {
+        return encodeURI(purifiedDom);
+      } catch (e) {
+        return purifiedDom;
+      }
+    } finally {
+      domPurify.removeHook('uponSanitizeAttribute');
     }
   }
 
@@ -212,12 +187,18 @@ class URLSanitizer extends URISchemes {
     let sanitizedUrl;
     let isVerified = super.verify(url, allowedSchemes);
     let isRelative = false;
+    let relativeParsedPath = '';
     if (!isVerified && allowRelative) {
       try {
-        const { hostname, protocol } = new URL(url, 'http://dummy.local');
-        if (protocol === 'http:' && hostname === 'dummy.local') {
+        const dummyUrl = new URL(url, 'http://dummy.local');
+        if (
+          dummyUrl.protocol === 'http:' &&
+          dummyUrl.hostname === 'dummy.local'
+        ) {
           isVerified = true;
           isRelative = true;
+          relativeParsedPath =
+            `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
         }
       } catch (e) {
         logDebug(ctx.debug, 'Failed to parse relative URL.', e);
@@ -249,7 +230,7 @@ class URLSanitizer extends URISchemes {
       }
       if (bool) {
         const isDataUrl = isRelative ? false : schemeParts.includes('data');
-        let urlToSanitize = isRelative ? url : href;
+        let urlToSanitize = isRelative ? relativeParsedPath : href;
         if (isDataUrl) {
           const [mediaType, ...dataParts] = pathname.split(',');
           const data = `${dataParts.join(',')}${search}${hash}`;
@@ -271,12 +252,6 @@ class URLSanitizer extends URISchemes {
             const msg = 'Failed to parse inner data URL protocol.';
             logDebug(ctx.debug, msg, e);
           }
-          const containsDataUrl = REG_DATA_URL.test(parsedData);
-          if (parsedData !== data || containsDataUrl) {
-            if (containsDataUrl) {
-              parsedData = this.#replace(parsedData, ctx);
-            }
-          }
           if (!mediaType || REG_MIME_DOM.test(mediaType)) {
             parsedData = this.#purify(parsedData, ctx);
           }
@@ -293,11 +268,11 @@ class URLSanitizer extends URISchemes {
           const item = REG_TAG_QUOT.exec(urlToSanitize);
           const { index } = item;
           urlToSanitize =
-          urlToSanitize.substring(0, index).replace(/[?&]$/, '');
+            urlToSanitize.substring(0, index).replace(/[?&]$/, '');
         }
         if (urlToSanitize) {
           sanitizedUrl =
-          urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
+            urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
         }
       }
     }
