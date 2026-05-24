@@ -282,75 +282,6 @@ describe('uri-util', () => {
       });
     });
 
-    describe('add scheme', () => {
-      it('should throw', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add(), TypeError,
-          'Expected String but got Undefined.');
-      });
-
-      it('should throw', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add('javascript'), Error,
-          'Invalid scheme: javascript');
-      });
-
-      it('should throw', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add('vbscript'), Error,
-          'Invalid scheme: vbscript');
-      });
-
-      it('should throw', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add('web+javascript'), Error,
-          'Invalid scheme: web+javascript');
-      });
-
-      it('should throw', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add('foo=bar'), Error,
-          'Invalid scheme: foo=bar');
-      });
-
-      it('should add scheme', () => {
-        const schemes = new URISchemes();
-        const res = schemes.add('foo');
-        assert.strictEqual(Array.isArray(res), true, 'result');
-        assert.strictEqual(res.includes('foo'), true, 'added');
-      });
-
-      it('should add scheme', () => {
-        const schemes = new URISchemes();
-        const res = schemes.add('web+foo');
-        assert.strictEqual(Array.isArray(res), true, 'result');
-        assert.strictEqual(res.includes('web+foo'), true, 'added');
-      });
-
-      it('should throw if scheme contains script', () => {
-        const schemes = new URISchemes();
-        assert.throws(() => schemes.add('web+javascript'), Error,
-          'Invalid scheme: web+javascript');
-        assert.throws(() => schemes.add('ext+vbscript'), Error,
-          'Invalid scheme: ext+vbscript');
-      });
-    });
-
-    describe('remove scheme', () => {
-      it('should get false', () => {
-        const schemes = new URISchemes();
-        const res = schemes.remove('foo');
-        assert.strictEqual(res, false, 'result');
-      });
-
-      it('should get true', () => {
-        const schemes = new URISchemes();
-        schemes.add('foo');
-        const res = schemes.remove('foo');
-        assert.strictEqual(res, true, 'result');
-      });
-    });
-
     describe('is URI', () => {
       it('should get false', () => {
         const schemes = new URISchemes();
@@ -372,8 +303,7 @@ describe('uri-util', () => {
 
       it('should get true', () => {
         const schemes = new URISchemes();
-        schemes.add('foo');
-        const res = schemes.verify('foo:bar');
+        const res = schemes.verify('foo:bar', new Set(['foo']));
         assert.strictEqual(res, true, 'result');
       });
 
@@ -539,17 +469,6 @@ describe('uri-util', () => {
         assert.strictEqual(schemes.verify('foo:test'), false, 'default false');
         assert.strictEqual(schemes.verify('foo:test', customSchemes), true, 'custom true');
         assert.strictEqual(schemes.verify('baz:test', customSchemes), false, 'custom false');
-      });
-    });
-
-    describe('reset schemes', () => {
-      it('should reset', () => {
-        const schemes = new URISchemes();
-        schemes.remove('http');
-        schemes.reset();
-        const res = schemes.get();
-        assert.strictEqual(schemes.has('http'), true, 'scheme');
-        assert.deepEqual(res, uriSchemes, 'result');
       });
     });
   });
