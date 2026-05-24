@@ -10,9 +10,62 @@ import { FileReader } from './file-reader.js';
 
 /* constants */
 import {
-  HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME, REG_SCHEME_EXT,
-  REG_SCRIPT, REG_URL_ENC
+  HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
+  REG_URL_ENC
 } from './constant.js';
+
+/**
+ * URI schemes
+ */
+export class URISchemes {
+  /* private fields */
+  #schemes = new Set(uriSchemes);
+
+  /**
+   * Gets the list of registered URI schemes.
+   * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
+   * - Historical schemes are omitted.
+   * - The 'moz-extension' scheme is added by default.
+   * @returns {string[]} An array of registered schemes.
+   */
+  get() {
+    return [...this.#schemes];
+  }
+
+  /**
+   * Checks if the specified scheme is currently registered.
+   * @param {string} scheme - The target scheme (e.g., 'https').
+   * @returns {boolean} True if the scheme is registered.
+   */
+  has(scheme) {
+    return this.#schemes.has(scheme);
+  }
+
+  /**
+   * Verifies if the given URI is valid and its scheme is allowed.
+   * @param {string} uri - The URI string to verify.
+   * @param {Set<string>} [schemes] - The set of allowed schemes.
+   * @returns {boolean} True if the URI is syntactically valid and permitted.
+   */
+  verify(uri, schemes = this.#schemes) {
+    let res;
+    if (isString(uri)) {
+      try {
+        const { protocol } = new URL(uri);
+        const scheme = protocol.replace(/:$/, '');
+        const schemeParts = scheme.split('+');
+        const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+        res = !isScript && (
+          REG_SCHEME_EXT.test(scheme) ||
+          schemeParts.every(s => schemes.has(s))
+        );
+      } catch (e) {
+        res = false;
+      }
+    }
+    return !!res;
+  }
+}
 
 /**
  * Gets the URL-encoded representation of a given string.
@@ -150,92 +203,3 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
     reader.addEventListener('load', () => resolve(reader.result));
     reader.readAsDataURL(blob);
   });
-
-/**
- * URI schemes
- */
-export class URISchemes {
-  /* private fields */
-  #schemes = new Set(uriSchemes);
-
-  /**
-   * Gets the list of registered URI schemes.
-   * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
-   * - Historical schemes are omitted.
-   * - The 'moz-extension' scheme is added by default.
-   * @returns {string[]} An array of registered schemes.
-   */
-  get() {
-    return [...this.#schemes];
-  }
-
-  /**
-   * Checks if the specified scheme is currently registered.
-   * @param {string} scheme - The target scheme (e.g., 'https').
-   * @returns {boolean} True if the scheme is registered.
-   */
-  has(scheme) {
-    return this.#schemes.has(scheme);
-  }
-
-  /**
-   * Adds a new scheme to the allowed list.
-   * NOTE: `javascript` and `vbscript` schemes are blocked and cannot be added.
-   * @param {string} scheme - The scheme to add.
-   * @returns {string[]} The updated array of registered schemes.
-   */
-  add(scheme) {
-    if (!isString(scheme)) {
-      throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    }
-    const schemeParts = scheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(scheme)) {
-      throw new Error(`Invalid scheme: ${scheme}`);
-    }
-    this.#schemes.add(scheme);
-    return [...this.#schemes];
-  }
-
-  /**
-   * Removes a scheme from the allowed list.
-   * @param {string} scheme - The scheme to remove.
-   * @returns {boolean} True if the scheme was successfully removed.
-   */
-  remove(scheme) {
-    return this.#schemes.delete(scheme);
-  }
-
-  /**
-   * Verifies if the given URI is valid and its scheme is allowed.
-   * @param {string} uri - The URI string to verify.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @returns {boolean} True if the URI is syntactically valid and permitted.
-   */
-  verify(uri, schemes = this.#schemes) {
-    let res;
-    if (isString(uri)) {
-      try {
-        const { protocol } = new URL(uri);
-        const scheme = protocol.replace(/:$/, '');
-        const schemeParts = scheme.split('+');
-        const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-        res = !isScript && (
-          REG_SCHEME_EXT.test(scheme) ||
-          schemeParts.every(s => schemes.has(s))
-        );
-      } catch (e) {
-        res = false;
-      }
-    }
-    return !!res;
-  }
-
-  /**
-   * Resets the registered schemes back to the default initial list.
-   * @returns {void}
-   */
-  reset() {
-    this.#schemes = new Set(uriSchemes);
-  }
-}

@@ -924,6 +924,28 @@ describe('sanitizer', () => {
           encodeURIStub.restore();
         }
       });
+
+      it('should catch and log debug message when relative URL parsing fails', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('http://[::1', {
+            allowRelative: true,
+            allow: ['http'],
+            debug: true
+          });
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(warnStub.calledOnce, true,
+            'console.warn should be called once');
+          assert.strictEqual(
+            warnStub.firstCall.args[0],
+            '[URLSanitizer Debug] Failed to parse relative URL.',
+            'should output the correct debug message prefix'
+          );
+        } finally {
+          warnStub.restore();
+        }
+      });
     });
 
     describe('parse sanitized URL', () => {
@@ -1146,6 +1168,75 @@ describe('sanitizer', () => {
         };
         const res = sanitizer.parse(url);
         assert.deepEqual(res, items, 'result');
+      });
+    });
+
+    describe('add scheme', () => {
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add(), TypeError,
+          'Expected String but got Undefined.');
+      });
+
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('javascript'), Error,
+          'Invalid scheme: javascript');
+      });
+
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('vbscript'), Error,
+          'Invalid scheme: vbscript');
+      });
+
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('web+javascript'), Error,
+          'Invalid scheme: web+javascript');
+      });
+
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('foo=bar'), Error,
+          'Invalid scheme: foo=bar');
+      });
+
+      it('should add scheme', () => {
+        const schemes = new URLSanitizer();
+        const res = schemes.add('foo');
+        assert.strictEqual(Array.isArray(res), true, 'result');
+        assert.strictEqual(res.includes('foo'), true, 'added');
+      });
+
+      it('should add scheme', () => {
+        const schemes = new URLSanitizer();
+        const res = schemes.add('web+foo');
+        assert.strictEqual(Array.isArray(res), true, 'result');
+        assert.strictEqual(res.includes('web+foo'), true, 'added');
+      });
+
+      it('should throw if scheme contains script', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('web+javascript'), Error,
+          'Invalid scheme: web+javascript');
+        assert.throws(() => schemes.add('ext+vbscript'), Error,
+          'Invalid scheme: ext+vbscript');
+      });
+    });
+
+    describe('remove scheme', () => {
+      it('should get false', () => {
+        const schemes = new URLSanitizer();
+        const res = schemes.remove('foo');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('should get true', () => {
+        const schemes = new URLSanitizer();
+        schemes.add('foo');
+        const res = schemes.remove('foo');
+        assert.strictEqual(res, true, 'result');
       });
     });
 
@@ -1453,6 +1544,33 @@ describe('sanitizer', () => {
           ['blob', 'data'],
           'original allow array should not be mutated'
         );
+      });
+
+      it('should silently catch and return', () => {
+        const OriginalURL = globalThis.URL;
+        let isCatchHit = false;
+        globalThis.URL = class extends OriginalURL {
+          constructor(url, base) {
+            if (url === 'data:text/html,error-trigger') {
+              isCatchHit = true;
+              throw new TypeError('Simulated URL parsing error');
+            }
+            super(url, base);
+          }
+        };
+        try {
+          const sanitizer = new mjs.URLSanitizer();
+          const innerHtml = '<a href="data:text/html,error-trigger">link</a>';
+          const base64Data = btoa(innerHtml);
+          const url = `data:text/html;base64,${base64Data}`;
+          const res = sanitizer.sanitize(url, { allow: ['data'] });
+          assert.strictEqual(isCatchHit, true,
+            'catch block should be executed');
+          assert.strictEqual(typeof res, 'string',
+            'should safely return sanitized string');
+        } finally {
+          globalThis.URL = OriginalURL;
+        }
       });
     });
 

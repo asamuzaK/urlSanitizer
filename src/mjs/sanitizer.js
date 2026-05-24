@@ -54,6 +54,14 @@ export const logDebug = (isDebug, message, error) => {
  * URL sanitizer
  */
 class URLSanitizer extends URISchemes {
+  /* private fields */
+  #allowedSchemes;
+
+  constructor() {
+    super();
+    this.#allowedSchemes = new Set(super.get());
+  }
+
   /**
    * Helper method to register schemes for the 'allow' or 'only' options.
    * @private
@@ -103,6 +111,9 @@ class URLSanitizer extends URISchemes {
       if (!e.attrValue) {
         return;
       }
+      if (!/^\s*data:/i.test(e.attrValue)) {
+        return;
+      }
       let urlObj;
       try {
         urlObj = new URL(e.attrValue);
@@ -110,8 +121,12 @@ class URLSanitizer extends URISchemes {
         return;
       }
       if (urlObj.protocol === 'data:') {
+        if (!ctx.recurse) {
+          ctx.recurse = new Set();
+        }
         if (ctx.recurse.has(e.attrValue)) {
-          logDebug(ctx.debug, `Circular Data URL detected and skipped: ${e.attrValue}`);
+          const msg = `Circular Data URL detected and skipped: ${e.attrValue}`;
+          logDebug(ctx.debug, msg);
           e.attrValue = '';
           return;
         }
@@ -158,10 +173,11 @@ class URLSanitizer extends URISchemes {
       throw new Error('Data URLs nested too deeply.');
     }
     const { allow, deny, only, allowRelative } = rules;
-    const allowedSchemes = new Set(super.get());
+    let allowedSchemes = this.#allowedSchemes;
     let restrictScheme = false;
     if (only.length) {
-      const baseSchemes = super.get();
+      allowedSchemes = new Set(this.#allowedSchemes);
+      const baseSchemes = this.#allowedSchemes;
       for (const item of baseSchemes) {
         ctx.schemeMap.set(item, false);
       }
@@ -177,6 +193,7 @@ class URLSanitizer extends URISchemes {
       }
     } else {
       if (allow.length) {
+        allowedSchemes = new Set(this.#allowedSchemes);
         for (const item of allow) {
           if (isString(item)) {
             this.#registerScheme(item.trim(), 'allow', ctx, allowedSchemes);
@@ -302,6 +319,31 @@ class URLSanitizer extends URISchemes {
    * @returns {string|null} The sanitized URL, or null.
    */
   sanitize(url, opt) {
+    if (!url || !isString(url)) {
+      return null;
+    }
+    const hasRules = opt && (
+      (Array.isArray(opt.allow) && opt.allow.length > 0) ||
+      (Array.isArray(opt.deny) && opt.deny.length > 0) ||
+      (Array.isArray(opt.only) && opt.only.length > 0)
+    );
+    if (
+      !hasRules &&
+      (url.startsWith('https://') || url.startsWith('http://')) &&
+      !REG_TAG_QUOT.test(url) &&
+      !url.includes('data:')
+    ) {
+      try {
+        const urlObj = new URL(url);
+        let res = urlObj.href;
+        if (res.includes('%26')) {
+          res = res.replace(/%26/g, escapeURLEncodedHTMLChars);
+        }
+        return res;
+      } catch {
+        return null;
+      }
+    }
     const rules = {
       allow: Array.isArray(opt?.allow) ? opt.allow : [],
       deny: Array.isArray(opt?.deny) ? opt.deny : [],
@@ -312,7 +354,7 @@ class URLSanitizer extends URISchemes {
       debug: !!opt?.debug,
       domPurify: null,
       nest: 0,
-      recurse: new Set(),
+      recurse: null,
       schemeMap: new Map([
         ['blob', false],
         ['data', false],
@@ -380,11 +422,65 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Resets the sanitizer state and cleared allowed schemes back to defaults.
+   * Gets the list of registered URI schemes.
+   * @returns {string[]} An array of registered schemes.
+   */
+  get() {
+    return [...this.#allowedSchemes];
+  }
+
+  /**
+   * Checks if the specified scheme is currently registered.
+   * @param {string} scheme - The target scheme.
+   * @returns {boolean} True if the scheme is registered.
+   */
+  has(scheme) {
+    return this.#allowedSchemes.has(scheme);
+  }
+
+  /**
+   * Adds a new scheme to the allowed list.
+   * @param {string} scheme - The scheme to add.
+   * @returns {string[]} The updated array of registered schemes.
+   */
+  add(scheme) {
+    if (!isString(scheme)) {
+      throw new TypeError(`Expected String but got ${getType(scheme)}.`);
+    }
+    const schemeParts = scheme.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    if (isScript || !REG_SCHEME.test(scheme)) {
+      throw new Error(`Invalid scheme: ${scheme}`);
+    }
+    this.#allowedSchemes.add(scheme);
+    return [...this.#allowedSchemes];
+  }
+
+  /**
+   * Removes a scheme from the allowed list.
+   * @param {string} scheme - The scheme to remove.
+   * @returns {boolean} True if the scheme was successfully removed.
+   */
+  remove(scheme) {
+    return this.#allowedSchemes.delete(scheme);
+  }
+
+  /**
+   * Resets the registered schemes back to the default initial list.
    * @returns {void}
    */
   reset() {
-    super.reset();
+    this.#allowedSchemes = new Set(super.get());
+  }
+
+  /**
+   * Verifies if the given URI is valid and its scheme is allowed.
+   * @param {string} uri - The URI string to verify.
+   * @param {Set<string>} [schemes] - The set of allowed schemes.
+   * @returns {boolean} True if the URI is syntactically valid and permitted.
+   */
+  verify(uri, schemes = this.#allowedSchemes) {
+    return super.verify(uri, schemes);
   }
 }
 export { URLSanitizer };
