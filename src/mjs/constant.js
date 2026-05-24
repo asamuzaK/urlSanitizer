@@ -12,9 +12,6 @@ export const TYPE_TO = -1;
 /* regexp */
 export const REG_B64 = /^[\w+/=-]+$/;
 export const REG_CHARSET = /^charset=([\w#&.;-]+)$/;
-export const REG_DATA_URL = /data:[\w#&+./;=-]*,/;
-export const REG_DATA_URL_B64 = /data:[\w#&+./;=^]*base64,[\w+/=-]+/i;
-export const REG_DATA_URL_G = /data:[\w#&+./;=-]*,[^\x22]+/g;
 export const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
 export const REG_MIME_DOM =
   /^(?:application\/(?:[\w#&.;-]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
