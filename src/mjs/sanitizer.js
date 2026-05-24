@@ -3,7 +3,7 @@
  */
 
 /* shared */
-import { domPurify } from './dompurify.js';
+import { createDOMPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
   createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
@@ -95,6 +95,10 @@ class URLSanitizer extends URISchemes {
     } catch (e) {
       // fall through
     }
+    if (!ctx.domPurify) {
+      ctx.domPurify = createDOMPurify();
+    }
+    const domPurify = ctx.domPurify;
     domPurify.addHook('uponSanitizeAttribute', (node, e) => {
       if (!e.attrValue) {
         return;
@@ -305,16 +309,17 @@ class URLSanitizer extends URISchemes {
       allowRelative: !!opt?.allowRelative
     };
     const ctx = {
+      debug: !!opt?.debug,
+      domPurify: null,
+      nest: 0,
+      recurse: new Set(),
       schemeMap: new Map([
         ['blob', false],
         ['data', false],
         ['file', false],
         ['javascript', false],
         ['vbscript', false]
-      ]),
-      nest: 0,
-      recurse: new Set(),
-      debug: !!opt?.debug
+      ])
     };
     return this.#process(url, rules, ctx);
   }
