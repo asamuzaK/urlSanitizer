@@ -54,52 +54,40 @@ export const logDebug = (isDebug, message, error) => {
  * URL sanitizer
  */
 class URLSanitizer extends URISchemes {
-  /* private fields */
-  #nest;
-  #recurse = new Set();
-
-  /**
-   * Creates a new URLSanitizer instance.
-   */
-  constructor() {
-    super();
-    this.#nest = 0;
-  }
-
   /**
    * Helper method to register schemes for the 'allow' or 'only' options.
    * @private
    * @param {string} item - The scheme to register.
    * @param {string} listName - The name of the target option list.
-   * @param {object} ctx - The local context for state management.
+   * @param {object} ctx - The context for state management.
    * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, listName, ctx) {
-    if (!REG_SCRIPT_BLOB.test(item)) {
+    if (REG_SCRIPT_BLOB.test(item)) {
+      return false;
+    }
+    if (super.has(item)) {
+      ctx.schemeMap.set(item, true);
+    } else {
+      try {
+        super.add(item);
+      } catch (e) {
+        const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
+        logDebug(ctx.debug, msg, e);
+      }
       if (super.has(item)) {
         ctx.schemeMap.set(item, true);
-      } else {
-        try {
-          super.add(item);
-        } catch (e) {
-          const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
-          logDebug(ctx.debug, msg, e);
-        }
-        if (super.has(item)) {
-          ctx.schemeMap.set(item, true);
-          ctx.tempScheme.add(item);
-        }
+        ctx.tempScheme.add(item);
       }
-      return true;
     }
-    return false;
+    return true;
   }
 
   /**
    * Replaces matched data URLs within a string with their sanitized versions.
    * @private
    * @param {string} data - The string containing data URLs.
-   * @param {object} ctx - The local context for state management.
+   * @param {object} ctx - The context for state management.
    * @returns {string} The string with sanitized data URLs.
    */
   #replace(data, ctx) {
@@ -112,22 +100,23 @@ class URLSanitizer extends URISchemes {
         if (REG_DATA_URL_B64.test(dataUrl)) {
           [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
         }
-        if (this.#recurse.has(dataUrl)) {
-          const msg = `Circular Data URL detected and skipped: ${dataUrl}`;
-          logDebug(ctx.debug, msg);
+        if (ctx.recurse.has(dataUrl)) {
+          logDebug(ctx.debug, `Circular Data URL detected and skipped: ${dataUrl}`);
           continue;
         }
-        this.#nest++;
-        this.#recurse.add(dataUrl);
+        ctx.nest++;
+        ctx.recurse.add(dataUrl);
         let parsedDataUrl;
         try {
-          parsedDataUrl = this.sanitize(dataUrl, {
+          parsedDataUrl = this.#process(dataUrl, {
             allow: ['data'],
-            debug: ctx.debug
-          });
+            deny: [],
+            only: [],
+            allowRelative: false
+          }, ctx);
         } finally {
-          this.#nest--;
-          this.#recurse.delete(dataUrl);
+          ctx.nest--;
+          ctx.recurse.delete(dataUrl);
         }
         const { index } = item;
         const [preDataUrl, postDataUrl] = [
@@ -148,7 +137,7 @@ class URLSanitizer extends URISchemes {
    * Purifies a URL-encoded DOM string to prevent XSS.
    * @private
    * @param {string} dom - The URL-encoded DOM string.
-   * @param {object} ctx - The local context for state management.
+   * @param {object} ctx - The context for state management.
    * @returns {string} The purified DOM string.
    */
   #purify(dom, ctx) {
@@ -175,64 +164,47 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Sanitizes the given URL.
-   * NOTE: `data` and `file` schemes must be explicitly allowed.
-   * `blob` URLs should be converted to `data` URLs prior to processing.
-   * `javascript` and `vbscript` schemes are blocked and cannot be allowed.
+   * Internal recursive method for sanitization.
+   * @private
    * @param {string} url - The URL string to sanitize.
-   * @param {object} [opt] - Sanitization options.
-   * @param {string[]} [opt.allow] - An array of schemes to allow.
-   * @param {string[]} [opt.deny] - An array of schemes to deny.
-   * @param {string[]} [opt.only] - An array of specific schemes to allow.
-   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
-   * @param {boolean} [opt.debug] - Flag to enable debug mode.
+   * @param {object} rules - Normalized sanitization rules (Required).
+   * @param {object} ctx - Internal context for state management (Required).
    * @returns {string|null} The sanitized URL, or null.
    */
-  sanitize(url, opt) {
-    if (this.#nest > HEX) {
+  #process(url, rules, ctx) {
+    if (ctx.nest > HEX) {
       throw new Error('Data URLs nested too deeply.');
     }
-    const {
-      allow, deny, only, allowRelative = false, debug = false
-    } = opt ?? {};
-    const schemeMap = new Map([
-      ['blob', false],
-      ['data', false],
-      ['file', false],
-      ['javascript', false],
-      ['vbscript', false]
-    ]);
-    const tempScheme = new Set();
-    const ctx = { schemeMap, tempScheme, debug };
+    const { allow, deny, only, allowRelative } = rules;
     let restrictScheme = false;
-    if (Array.isArray(only) && only.length) {
+    if (only.length) {
       const schemes = super.get();
       for (const item of schemes) {
-        schemeMap.set(item, false);
+        ctx.schemeMap.set(item, false);
       }
       for (let item of only) {
         if (isString(item)) {
           item = item.trim();
           const registered = this.#registerScheme(item, 'only', ctx);
-          if (registered && !restrictScheme && schemeMap.has(item)) {
-            restrictScheme = schemeMap.get(item);
+          if (registered && !restrictScheme && ctx.schemeMap.has(item)) {
+            restrictScheme = ctx.schemeMap.get(item);
           }
         }
       }
     } else {
-      if (Array.isArray(allow) && allow.length) {
+      if (allow.length) {
         for (const item of allow) {
           if (isString(item)) {
             this.#registerScheme(item.trim(), 'allow', ctx);
           }
         }
       }
-      if (Array.isArray(deny) && deny.length) {
+      if (deny.length) {
         for (let item of deny) {
           if (isString(item)) {
             item = item.trim();
             if (item) {
-              schemeMap.set(item, false);
+              ctx.schemeMap.set(item, false);
             }
           }
         }
@@ -249,7 +221,7 @@ class URLSanitizer extends URISchemes {
           isRelative = true;
         }
       } catch (e) {
-        logDebug(debug, 'Failed to parse relative URL.', e);
+        logDebug(ctx.debug, 'Failed to parse relative URL.', e);
       }
     }
     if (isVerified) {
@@ -265,9 +237,9 @@ class URLSanitizer extends URISchemes {
         scheme = protocol.replace(/:$/, '');
         schemeParts = scheme.split('+');
         if (restrictScheme) {
-          bool = schemeParts.every(s => schemeMap.get(s));
+          bool = schemeParts.every(s => ctx.schemeMap.get(s));
         } else {
-          for (const [key, value] of schemeMap.entries()) {
+          for (const [key, value] of ctx.schemeMap.entries()) {
             bool =
               value || (scheme !== key && schemeParts.every(s => s !== key));
             if (!bool) {
@@ -296,8 +268,7 @@ class URLSanitizer extends URISchemes {
               urlToSanitize = '';
             }
           } catch (e) {
-            const msg = 'Failed to parse inner data URL protocol.';
-            logDebug(debug, msg, e);
+            logDebug(ctx.debug, 'Failed to parse inner data URL protocol.', e);
           }
           const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
@@ -328,13 +299,48 @@ class URLSanitizer extends URISchemes {
             urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
         }
       }
-      if (tempScheme.size) {
-        tempScheme.forEach(item => {
+      if (ctx.tempScheme.size) {
+        ctx.tempScheme.forEach(item => {
           super.remove(item);
         });
       }
     }
     return sanitizedUrl || null;
+  }
+
+  /**
+   * Sanitizes the given URL.
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} [opt] - Sanitization options.
+   * @param {string[]} [opt.allow] - An array of schemes to allow.
+   * @param {string[]} [opt.deny] - An array of schemes to deny.
+   * @param {string[]} [opt.only] - An array of specific schemes to allow.
+   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
+   * @param {boolean} [opt.debug] - Flag to enable debug mode.
+   * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+   * @returns {string|null} The sanitized URL, or null.
+   */
+  sanitize(url, opt) {
+    const rules = {
+      allow: Array.isArray(opt?.allow) ? opt.allow : [],
+      deny: Array.isArray(opt?.deny) ? opt.deny : [],
+      only: Array.isArray(opt?.only) ? opt.only : [],
+      allowRelative: !!opt?.allowRelative
+    };
+    const ctx = {
+      schemeMap: new Map([
+        ['blob', false],
+        ['data', false],
+        ['file', false],
+        ['javascript', false],
+        ['vbscript', false]
+      ]),
+      tempScheme: new Set(),
+      nest: 0,
+      recurse: new Set(),
+      debug: !!opt?.debug
+    };
+    return this.#process(url, rules, ctx);
   }
 
   /**
@@ -348,18 +354,14 @@ class URLSanitizer extends URISchemes {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    const parsedUrl = new Map([
-      ['input', url]
-    ]);
+    const parsedUrl = new Map([['input', url]]);
     let sanitizedUrl;
     if (this.verify(url)) {
       const { protocol } = new URL(url);
       if (protocol === 'blob:') {
         sanitizedUrl = url;
       } else {
-        sanitizedUrl = this.sanitize(url, opt ?? {
-          allow: ['data', 'file']
-        });
+        sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data', 'file'] });
       }
     }
     if (sanitizedUrl) {
@@ -402,8 +404,6 @@ class URLSanitizer extends URISchemes {
    */
   reset() {
     super.reset();
-    this.#nest = 0;
-    this.#recurse.clear();
   }
 }
 export { URLSanitizer };
