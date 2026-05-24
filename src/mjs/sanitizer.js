@@ -97,10 +97,12 @@ class URLSanitizer extends URISchemes {
 
   /**
    * Replaces matched data URLs within a string with their sanitized versions.
+   * @private
    * @param {string} data - The string containing data URLs.
+   * @param {object} ctx - The local context for state management.
    * @returns {string} The string with sanitized data URLs.
    */
-  replace(data) {
+  _replace(data, ctx) {
     if (!isString(data)) {
       throw new TypeError(`Expected String but got ${getType(data)}.`);
     }
@@ -113,12 +115,18 @@ class URLSanitizer extends URISchemes {
         if (REG_DATA_URL_B64.test(dataUrl)) {
           [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
         }
+        if (this.#recurse.has(dataUrl)) {
+          const msg = `Circular Data URL detected and skipped: ${dataUrl}`;
+          logDebug(ctx.debug, msg);
+          continue;
+        }
         this.#nest++;
         this.#recurse.add(dataUrl);
         let parsedDataUrl;
         try {
           parsedDataUrl = this.sanitize(dataUrl, {
-            allow: ['data']
+            allow: ['data'],
+            debug: ctx.debug
           });
         } finally {
           this.#nest--;
@@ -141,10 +149,12 @@ class URLSanitizer extends URISchemes {
 
   /**
    * Purifies a URL-encoded DOM string to prevent XSS.
+   * @private
    * @param {string} dom - The URL-encoded DOM string.
+   * @param {object} ctx - The local context for state management.
    * @returns {string} The purified DOM string.
    */
-  purify(dom) {
+  _purify(dom, ctx) {
     if (!isString(dom)) {
       throw new TypeError(`Expected String but got ${getType(dom)}.`);
     }
@@ -158,7 +168,7 @@ class URLSanitizer extends URISchemes {
     }
     let purifiedDom = domPurify.sanitize(decodedDom);
     if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
-      purifiedDom = this.replace(purifiedDom);
+      purifiedDom = this._replace(purifiedDom, ctx);
     }
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
@@ -298,11 +308,11 @@ class URLSanitizer extends URISchemes {
           const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
-              parsedData = this.replace(parsedData);
+              parsedData = this._replace(parsedData, ctx);
             }
           }
           if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-            parsedData = this.purify(parsedData);
+            parsedData = this._purify(parsedData, ctx);
           }
           if (urlToSanitize && parsedData) {
             if (isBase64 && parsedData !== data) {

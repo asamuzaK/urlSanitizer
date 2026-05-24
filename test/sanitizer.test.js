@@ -34,7 +34,8 @@ describe('sanitizer', () => {
 
     it('should call console.warn with a message when isDebug is true', () => {
       logDebug(true, 'Test message');
-      assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+      assert.strictEqual(warnStub.calledOnce, true,
+        'console.warn should be called once');
       assert.strictEqual(
         warnStub.calledWith('[URLSanitizer Debug] Test message', ''),
         true,
@@ -42,12 +43,16 @@ describe('sanitizer', () => {
       );
     });
 
-    it('should call console.warn with a message and error.message when error is provided', () => {
+    it('should call console.warn with a message when error is provided', () => {
       const testError = new Error('Test error detail');
       logDebug(true, 'Test message', testError);
-      assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+      assert.strictEqual(warnStub.calledOnce, true,
+        'console.warn should be called once');
       assert.strictEqual(
-        warnStub.calledWith('[URLSanitizer Debug] Test message', 'Test error detail'),
+        warnStub.calledWith(
+          '[URLSanitizer Debug] Test message',
+          'Test error detail'
+        ),
         true,
         'should output message with the error.message'
       );
@@ -55,13 +60,15 @@ describe('sanitizer', () => {
 
     it('should not call console.warn when isDebug is false', () => {
       logDebug(false, 'Test message');
-      assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+      assert.strictEqual(warnStub.called, false,
+        'console.warn should not be called');
     });
 
-    it('should not call console.warn when isDebug is false even if error is provided', () => {
+    it('should not call console.warn when isDebug is false', () => {
       const testError = new Error('Test error detail');
       logDebug(false, 'Test message', testError);
-      assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+      assert.strictEqual(warnStub.called, false,
+        'console.warn should not be called');
     });
   });
 
@@ -76,20 +83,23 @@ describe('sanitizer', () => {
     describe('replace matched data URLs', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.replace(), TypeError,
+        const ctx = { debug: false };
+        assert.throws(() => sanitizer._replace(undefined, ctx), TypeError,
           'Expected String but got Undefined.');
       });
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace('https://example.com');
+        const ctx = { debug: false };
+        const res = sanitizer._replace('https://example.com', ctx);
         assert.strictEqual(res, 'https://example.com',
           'result');
       });
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace('data:,https://example.com');
+        const ctx = { debug: false };
+        const res = sanitizer._replace('data:,https://example.com', ctx);
         assert.strictEqual(res, 'data:,https://example.com',
           'result');
       });
@@ -101,10 +111,14 @@ describe('sanitizer', () => {
         const data = `<img src="${innerUrl}">`;
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
+        const ctx = { debug: false };
+        const res =
+          sanitizer._replace(`data:text/html;base64,${base64Data}`, ctx);
         assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<img src="">',
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/html,<img src="">',
           'decode');
       });
 
@@ -116,7 +130,9 @@ describe('sanitizer', () => {
         const data = `<img src="${innerUrl}">`;
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
+        const ctx = { debug: false };
+        const res =
+          sanitizer._replace(`data:text/html;base64,${base64Data}`, ctx);
         assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
           'result');
         assert.strictEqual(decodeURIComponent(res),
@@ -138,10 +154,14 @@ describe('sanitizer', () => {
         const data = `${outerData1}${outerData2}${outerData3}`;
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace(`data:text/html;base64,${base64Data}`);
-        assert.strictEqual(res,
+        const ctx = { debug: false };
+        const res =
+          sanitizer._replace(`data:text/html;base64,${base64Data}`, ctx);
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E',
-          'result');
+          'result'
+        );
         assert.strictEqual(decodeURIComponent(res),
           'data:text/html,<img src=""><img src=""><img src="">',
           'decode');
@@ -152,13 +172,18 @@ describe('sanitizer', () => {
         const base64Data = btoa(data);
         const url = `data:text/html;base64,${base64Data}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace(url);
-        assert.strictEqual(res,
+        const ctx = { debug: false };
+        const res = sanitizer._replace(url, ctx);
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cdiv%3E%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253C/svg%253E%22%3E%3C/div%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E"></div>',
-          'decode');
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -173,20 +198,57 @@ describe('sanitizer', () => {
         const html3 = `<img src="${data3}">`;
         const url = `data:text/html;base64,${btoa(encodeURIComponent(html3))}`;
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.replace(url);
-        assert.strictEqual(res,
+        const ctx = { debug: false };
+        const res = sanitizer._replace(url, ctx);
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522data:text/html,%25253Cimg%252520src=%252522%252522%25253E%2522%253E%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:text/html,<img src="data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%22%3E">',
-          'decode');
+          'decode'
+        );
+      });
+
+      it('should console.warn when circular Data URL is detected', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        const sanitizer = new URLSanitizer();
+        const ctx = { debug: true };
+        const dataUrl = 'data:text/html,loop';
+        const originalSanitize = sanitizer.sanitize;
+        sanitizer.sanitize = (url, opt) => {
+          if (url === dataUrl) {
+            return sanitizer._replace(dataUrl, ctx);
+          }
+          return originalSanitize.call(sanitizer, url, opt);
+        };
+        const res = sanitizer._replace(dataUrl, ctx);
+        assert.strictEqual(
+          res,
+          dataUrl,
+          'result should be unmodified due to skip'
+        );
+        assert.strictEqual(
+          warnStub.calledOnce,
+          true,
+          'console.warn should be called once'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[0],
+          '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop',
+          'should output circular warning'
+        );
+        warnStub.restore();
       });
     });
 
     describe('purify URL encoded DOM', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.purify(), TypeError,
+        const ctx = { debug: false };
+        assert.throws(() => sanitizer._purify(undefined, ctx), TypeError,
           'Expected String but got Undefined.');
       });
 
@@ -194,7 +256,8 @@ describe('sanitizer', () => {
         const data = '<script>alert(1)</script>';
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
         assert.strictEqual(res, '', 'result');
       });
 
@@ -202,7 +265,8 @@ describe('sanitizer', () => {
         const data = '<div><script>alert(1)</script></div>';
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
         assert.strictEqual(res, '%3Cdiv%3E%3C/div%3E', 'result');
       });
 
@@ -211,16 +275,21 @@ describe('sanitizer', () => {
           '<svg><g id="foo" onclick="alert(1)"><path/><path/></g></svg>';
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
-        assert.strictEqual(res, '%3Csvg%3E%3Cg%20id=%22foo%22%3E%3Cpath%3E%3C/path%3E%3Cpath%3E%3C/path%3E%3C/g%3E%3C/svg%3E',
-          'result');
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
+        assert.strictEqual(
+          res,
+          '%3Csvg%3E%3Cg%20id=%22foo%22%3E%3Cpath%3E%3C/path%3E%3Cpath%3E%3C/path%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
       });
 
       it('should get value', async () => {
         const data = '<img src="javascript:alert(1)">';
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
         assert.strictEqual(res, '%3Cimg%3E', 'result');
         assert.strictEqual(decodeURIComponent(res), '<img>', 'decode');
       });
@@ -229,7 +298,8 @@ describe('sanitizer', () => {
         const data = '<img src="data:,javascript:alert(1)">';
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
         assert.strictEqual(res, '%3Cimg%20src=%22%22%3E', 'result');
         assert.strictEqual(decodeURIComponent(res), '<img src="">', 'decode');
       });
@@ -241,46 +311,64 @@ describe('sanitizer', () => {
         const data = `<img src="data:image/svg+xml;base64,${base64svg}">`;
         const encData = encodeURIComponent(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify(encData);
-        assert.strictEqual(res,
+        const ctx = { debug: false };
+        const res = sanitizer._purify(encData, ctx);
+        assert.strictEqual(
+          res,
           '%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253Cg%2520id=%2522foo%2522%253E%253Cpath%253E%253C/path%253E%253Cpath%253E%253C/path%253E%253C/g%253E%253C/svg%253E%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           '<img src="data:image/svg+xml,%3Csvg%3E%3Cg%20id=%22foo%22%3E%3Cpath%3E%3C/path%3E%3Cpath%3E%3C/path%3E%3C/g%3E%3C/svg%3E">',
-          'decode');
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify('data:,https://example.com/?foo=bar&baz=qux');
+        const ctx = { debug: false };
+        const res = sanitizer._purify(
+          'data:,https://example.com/?foo=bar&baz=qux',
+          ctx
+        );
         assert.strictEqual(res, 'data:,https://example.com/?foo=bar&baz=qux',
           'result');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify('data:,https://example.com/?foo=bar&baz=<script>alert(1)</script>');
+        const ctx = { debug: false };
+        const res = sanitizer._purify(
+          'data:,https://example.com/?foo=bar&baz=<script>alert(1)</script>',
+          ctx
+        );
         assert.strictEqual(res, 'data:,https://example.com/?foo=bar&amp;baz=',
           'result');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify('data:,https://example.com/?<script>alert(1)</script>');
-        assert.strictEqual(res, 'data:,https://example.com/',
-          'result');
+        const ctx = { debug: false };
+        const res = sanitizer._purify(
+          'data:,https://example.com/?<script>alert(1)</script>',
+          ctx
+        );
+        assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
       it('should get value even if decodeURIComponent throws URIError', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.purify('%');
+        const ctx = { debug: false };
+        const res = sanitizer._purify('%', ctx);
         assert.strictEqual(res, '%25', 'result');
       });
 
       it('should get value even if encodeURI throws URIError', () => {
         const sanitizer = new URLSanitizer();
         const loneSurrogate = '\uD800';
-        const res = sanitizer.purify(loneSurrogate);
+        const ctx = { debug: false };
+        const res = sanitizer._purify(loneSurrogate, ctx);
         assert.strictEqual(res, loneSurrogate, 'result');
       });
     });
