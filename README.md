@@ -126,10 +126,9 @@ Sanitizes the given URL asynchronously.
 
 * `blob`, `data`, and `file` schemes must be explicitly allowed.
 * **Blob URLs:** Given a **blob** URL, it converts and returns a sanitized **data** URL.
-  * Converting a blob URL to a data URL consumes memory, so be aware of the risk of memory exhaustion when handling huge blobs.
   * The sanitized data URL will **not** be converted back to a blob URL.
-  * By default, the original blob URL is **not** revoked.
-    To automatically free memory, set the `opt.revokeObjectURL` option to `true`.
+  * It is highly recommended to set the `opt.revokeObjectURL` option to `true` when you allow `blob` URLs.
+  * Converting a blob URL to a data URL consumes memory, so be aware of the risk of memory exhaustion when handling huge blobs.
   * You can restrict the allowed blob size using the `opt.maxBlobSize` option (default: 32MB).
 * <a name="about-file-scheme">**WARNING**</a><br>
   **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications, as it may expose the host's local file system to attacks like Local File Inclusion (LFI). Only allow it if you fully trust the input or are operating in a strictly isolated local environment.
@@ -144,7 +143,7 @@ Sanitizes the given URL asynchronously.
     `only` takes precedence over `allow` and `deny`.
   * opt.allowRelative **\[boolean\]** If `true`, allows root-relative paths (e.g. `/foo`) and relative paths (e.g. `./foo`). Default is `false`.
   * opt.debug **\[boolean\]** If `true`, outputs internal error/warning logs to the console. Default is `false`.
-  * opt.revokeObjectURL **\[boolean\]** Revokes the blob URL after sanitization. Default is `false`.
+  * opt.revokeObjectURL **\[boolean\]** Revokes the blob URL after sanitization. Default is `false`. However, to prevent memory leaks, it is highly recommended to set this option to `true`.
   * opt.maxBlobSize **\[number\]** Maximum allowed blob size in bytes. Default is `33554432` (32MB). Exceeding this limit will result in parsing failure to prevent memory exhaustion.
 
 **Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
