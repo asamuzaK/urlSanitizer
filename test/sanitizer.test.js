@@ -1181,132 +1181,145 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null', async () => {
+      it('should get null and NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url);
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', async () => {
+      it('should get null and NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url, {
           allow: ['blob'],
           deny: ['blob']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', async () => {
+      it('should get null and NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url, {
           only: ['https']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('should get sanitized value and NOT revoke blob', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url, {
           allow: ['blob']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
-        assert.strictEqual(res,
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:image/svg+xml,<svg><g></g></svg>',
-          'decoded');
+          'decoded'
+        );
       });
 
-      it('should get null', async () => {
+      it('should get null if URL is already manually revoked', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url); // 事前に手動で破棄
         const res = await func(url, {
           allow: ['blob']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('should get sanitized value and NOT revoke blob', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url, {
           allow: ['blob'],
           deny: ['data']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
-        assert.strictEqual(res,
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:image/svg+xml,<svg><g></g></svg>',
-          'decoded');
+          'decoded'
+        );
       });
 
-      it('should get sanitized value', async () => {
+      it('should get sanitized value and NOT revoke blob', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
-        const blob = new Blob([data], {
-          type: 'image/svg+xml'
-        });
+        const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url, {
           only: ['blob', 'https']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
-        });
-        assert.strictEqual(revoked, true, 'revoked');
-        assert.strictEqual(res,
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:image/svg+xml,<svg><g></g></svg>',
-          'decoded');
+          'decoded'
+        );
+      });
+
+      it('should get sanitized value AND revoke blob', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          revokeObjectURL: true
+        });
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, true, 'should be revoked');
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+      });
+
+      it('should get null AND revoke blob', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          revokeObjectURL: true
+        });
+        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(isRevoked, true, 'should be revoked');
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', async () => {
@@ -1339,6 +1352,86 @@ describe('sanitizer', () => {
           allow: ['data', 'file']
         });
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
+      });
+
+      it('should add scheme to options.only list', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { only: ['blob', 'https'] };
+        const res = await func(url, opt);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.only,
+          ['blob', 'https'],
+          'original only array should not be mutated'
+        );
+      });
+
+      it('should keep scheme in options.only list', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { only: ['blob', 'data', 'https'] };
+        const res = await func(url, opt);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.only,
+          ['blob', 'data', 'https'],
+          'original only array should not be mutated'
+        );
+      });
+
+      it('should add to options.allow / remove from options.deny', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = {
+          allow: ['blob', 'http'],
+          deny: ['data', 'ftp']
+        };
+        const res = await func(url, opt);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.allow,
+          ['blob', 'http'],
+          'original allow array should not be mutated'
+        );
+        assert.deepEqual(
+          opt.deny,
+          ['data', 'ftp'],
+          'original deny array should not be mutated'
+        );
+      });
+
+      it('should keep scheme in options.allow', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { allow: ['blob', 'data'] };
+        const res = await func(url, opt);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.allow,
+          ['blob', 'data'],
+          'original allow array should not be mutated'
+        );
       });
     });
 

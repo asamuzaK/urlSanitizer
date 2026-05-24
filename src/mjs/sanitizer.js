@@ -422,6 +422,7 @@ const urlSanitizer = new URLSanitizer();
  * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
+ * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL after sanitization.
  * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
@@ -431,6 +432,7 @@ export const sanitizeURL = async (url, opt = {
   only: [],
   allowRelative: false,
   debug: false,
+  revokeObjectURL: false,
   maxBlobSize: MAX_BLOB_SIZE
 }) => {
   const isDebug = !!opt?.debug;
@@ -477,7 +479,9 @@ export const sanitizeURL = async (url, opt = {
           res = await urlSanitizer.sanitize(data, options);
         }
       }
-      URL.revokeObjectURL(url);
+      if (opt?.revokeObjectURL) {
+        URL.revokeObjectURL(url);
+      }
     } else if (scheme || opt.allowRelative) {
       res = await urlSanitizer.sanitize(url, opt);
     }
