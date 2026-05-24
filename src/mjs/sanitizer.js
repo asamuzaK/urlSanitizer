@@ -11,7 +11,7 @@ import {
 } from './uri-util.js';
 import {
   HEX, MAX_BLOB_SIZE, REG_DATA_URL, REG_DATA_URL_B64, REG_DATA_URL_G,
-  REG_MIME_DOM, REG_SCRIPT_BLOB, REG_TAG_QUOT
+  REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB, REG_TAG_QUOT
 } from './constant.js';
 
 /* typedef */
@@ -60,27 +60,22 @@ class URLSanitizer extends URISchemes {
    * @param {string} item - The scheme to register.
    * @param {string} listName - The name of the target option list.
    * @param {object} ctx - The context for state management.
-   * @param {Set} schemes - The list of schemes.
+   * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
    * @returns {boolean} True if the scheme is successfully registered.
    */
-  #registerScheme(item, listName, ctx, schemes) {
+  #registerScheme(item, listName, ctx, allowedSchemes) {
     if (REG_SCRIPT_BLOB.test(item)) {
       return false;
     }
-    if (super.has(item)) {
-      ctx.schemeMap.set(item, true);
-    } else {
-      try {
-        super.add(item);
-      } catch (e) {
-        const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
-        logDebug(ctx.debug, msg, e);
-      }
-      if (super.has(item)) {
-        ctx.schemeMap.set(item, true);
-        schemes.add(item);
-      }
+    const schemeParts = item.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    if (isScript || !REG_SCHEME.test(item)) {
+      const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
+      logDebug(ctx.debug, msg);
+      return false;
     }
+    ctx.schemeMap.set(item, true);
+    allowedSchemes.add(item);
     return true;
   }
 
@@ -177,142 +172,134 @@ class URLSanitizer extends URISchemes {
       throw new Error('Data URLs nested too deeply.');
     }
     const { allow, deny, only, allowRelative } = rules;
-    const schemes = new Set();
-    try {
-      let restrictScheme = false;
-      if (only.length) {
-        const baseSchemes = super.get();
-        for (const item of baseSchemes) {
-          ctx.schemeMap.set(item, false);
+    const allowedSchemes = new Set(super.get());
+    let restrictScheme = false;
+    if (only.length) {
+      const baseSchemes = super.get();
+      for (const item of baseSchemes) {
+        ctx.schemeMap.set(item, false);
+      }
+      for (let item of only) {
+        if (isString(item)) {
+          item = item.trim();
+          const registered =
+            this.#registerScheme(item, 'only', ctx, allowedSchemes);
+          if (registered && !restrictScheme && ctx.schemeMap.has(item)) {
+            restrictScheme = ctx.schemeMap.get(item);
+          }
         }
-        for (let item of only) {
+      }
+    } else {
+      if (allow.length) {
+        for (const item of allow) {
+          if (isString(item)) {
+            this.#registerScheme(item.trim(), 'allow', ctx, allowedSchemes);
+          }
+        }
+      }
+      if (deny.length) {
+        for (let item of deny) {
           if (isString(item)) {
             item = item.trim();
-            const registered =
-              this.#registerScheme(item, 'only', ctx, schemes);
-            if (registered && !restrictScheme && ctx.schemeMap.has(item)) {
-              restrictScheme = ctx.schemeMap.get(item);
+            if (item) {
+              ctx.schemeMap.set(item, false);
             }
           }
         }
-      } else {
-        if (allow.length) {
-          for (const item of allow) {
-            if (isString(item)) {
-              this.#registerScheme(item.trim(), 'allow', ctx, schemes);
-            }
-          }
-        }
-        if (deny.length) {
-          for (let item of deny) {
-            if (isString(item)) {
-              item = item.trim();
-              if (item) {
-                ctx.schemeMap.set(item, false);
-              }
-            }
-          }
-        }
-      }
-      let sanitizedUrl;
-      let isVerified = super.verify(url);
-      let isRelative = false;
-      if (!isVerified && allowRelative) {
-        try {
-          const { hostname, protocol } = new URL(url, 'http://dummy.local');
-          if (protocol === 'http:' && hostname === 'dummy.local') {
-            isVerified = true;
-            isRelative = true;
-          }
-        } catch (e) {
-          logDebug(ctx.debug, 'Failed to parse relative URL.', e);
-        }
-      }
-      if (isVerified) {
-        let hash, href, pathname, protocol, search;
-        let scheme = '';
-        let schemeParts = [];
-        let bool = false;
-        if (isRelative) {
-          bool = true;
-        } else {
-          const urlObj = new URL(url);
-          ({ hash, href, pathname, protocol, search } = urlObj);
-          scheme = protocol.replace(/:$/, '');
-          schemeParts = scheme.split('+');
-          if (restrictScheme) {
-            bool = schemeParts.every(s => ctx.schemeMap.get(s));
-          } else {
-            for (const [key, value] of ctx.schemeMap.entries()) {
-              bool =
-              value || (scheme !== key && schemeParts.every(s => s !== key));
-              if (!bool) {
-                break;
-              }
-            }
-          }
-        }
-        if (bool) {
-          const isDataUrl = isRelative ? false : schemeParts.includes('data');
-          let urlToSanitize = isRelative ? url : href;
-          if (isDataUrl) {
-            const [mediaType, ...dataParts] = pathname.split(',');
-            const data = `${dataParts.join(',')}${search}${hash}`;
-            const mediaTypes = mediaType.split(';');
-            const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
-            let parsedData = data;
-            if (isBase64) {
-              parsedData = parseBase64(data);
-            }
-            try {
-              const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-              const { protocol: dataScheme } = new URL(decodedData);
-              const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
-              if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
-                urlToSanitize = '';
-              }
-            } catch (e) {
-              const msg = 'Failed to parse inner data URL protocol.';
-              logDebug(ctx.debug, msg, e);
-            }
-            const containsDataUrl = REG_DATA_URL.test(parsedData);
-            if (parsedData !== data || containsDataUrl) {
-              if (containsDataUrl) {
-                parsedData = this.#replace(parsedData, ctx);
-              }
-            }
-            if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-              parsedData = this.#purify(parsedData, ctx);
-            }
-            if (urlToSanitize && parsedData) {
-              if (isBase64 && parsedData !== data) {
-                mediaTypes.pop();
-              }
-              urlToSanitize = `${scheme}:${mediaTypes.join(';')},${parsedData}`;
-            } else {
-              urlToSanitize = '';
-            }
-          }
-          if (!isDataUrl && REG_TAG_QUOT.test(urlToSanitize)) {
-            const item = REG_TAG_QUOT.exec(urlToSanitize);
-            const { index } = item;
-            urlToSanitize =
-            urlToSanitize.substring(0, index).replace(/[?&]$/, '');
-          }
-          if (urlToSanitize) {
-            sanitizedUrl =
-            urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
-          }
-        }
-      }
-      return sanitizedUrl || null;
-    } finally {
-      if (schemes.size) {
-        schemes.forEach(item => {
-          super.remove(item);
-        });
       }
     }
+    let sanitizedUrl;
+    let isVerified = super.verify(url, allowedSchemes);
+    let isRelative = false;
+    if (!isVerified && allowRelative) {
+      try {
+        const { hostname, protocol } = new URL(url, 'http://dummy.local');
+        if (protocol === 'http:' && hostname === 'dummy.local') {
+          isVerified = true;
+          isRelative = true;
+        }
+      } catch (e) {
+        logDebug(ctx.debug, 'Failed to parse relative URL.', e);
+      }
+    }
+    if (isVerified) {
+      let hash, href, pathname, protocol, search;
+      let scheme = '';
+      let schemeParts = [];
+      let bool = false;
+      if (isRelative) {
+        bool = true;
+      } else {
+        const urlObj = new URL(url);
+        ({ hash, href, pathname, protocol, search } = urlObj);
+        scheme = protocol.replace(/:$/, '');
+        schemeParts = scheme.split('+');
+        if (restrictScheme) {
+          bool = schemeParts.every(s => ctx.schemeMap.get(s));
+        } else {
+          for (const [key, value] of ctx.schemeMap.entries()) {
+            bool =
+            value || (scheme !== key && schemeParts.every(s => s !== key));
+            if (!bool) {
+              break;
+            }
+          }
+        }
+      }
+      if (bool) {
+        const isDataUrl = isRelative ? false : schemeParts.includes('data');
+        let urlToSanitize = isRelative ? url : href;
+        if (isDataUrl) {
+          const [mediaType, ...dataParts] = pathname.split(',');
+          const data = `${dataParts.join(',')}${search}${hash}`;
+          const mediaTypes = mediaType.split(';');
+          const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+          let parsedData = data;
+          if (isBase64) {
+            parsedData = parseBase64(data);
+          }
+          try {
+            const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
+            const { protocol: dataScheme } = new URL(decodedData);
+            const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
+            if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
+              urlToSanitize = '';
+            }
+          } catch (e) {
+            const msg = 'Failed to parse inner data URL protocol.';
+            logDebug(ctx.debug, msg, e);
+          }
+          const containsDataUrl = REG_DATA_URL.test(parsedData);
+          if (parsedData !== data || containsDataUrl) {
+            if (containsDataUrl) {
+              parsedData = this.#replace(parsedData, ctx);
+            }
+          }
+          if (!mediaType || REG_MIME_DOM.test(mediaType)) {
+            parsedData = this.#purify(parsedData, ctx);
+          }
+          if (urlToSanitize && parsedData) {
+            if (isBase64 && parsedData !== data) {
+              mediaTypes.pop();
+            }
+            urlToSanitize = `${scheme}:${mediaTypes.join(';')},${parsedData}`;
+          } else {
+            urlToSanitize = '';
+          }
+        }
+        if (!isDataUrl && REG_TAG_QUOT.test(urlToSanitize)) {
+          const item = REG_TAG_QUOT.exec(urlToSanitize);
+          const { index } = item;
+          urlToSanitize =
+          urlToSanitize.substring(0, index).replace(/[?&]$/, '');
+        }
+        if (urlToSanitize) {
+          sanitizedUrl =
+          urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
+        }
+      }
+    }
+    return sanitizedUrl || null;
   }
 
   /**
