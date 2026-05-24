@@ -857,6 +857,28 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:text/html,%25', 'result');
       });
 
+      it('should NOT log debug error when inner data is plain HTML', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const url = 'data:text/html,<div>No URL scheme here</div>';
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize(url, { allow: ['data'], debug: true });
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cdiv%3ENo%20URL%20scheme%20here%3C/div%3E',
+            'result'
+          );
+          const hasParseError = warnStub.args.some(args =>
+            args[0] &&
+            args[0].includes('Failed to parse inner data URL protocol.')
+          );
+          assert.strictEqual(hasParseError, false,
+            'Should not log parse error for plain HTML');
+        } finally {
+          warnStub.restore();
+        }
+      });
+
       it('should log warning and skip when circular Data URL is detected', () => {
         const warnStub = sinon.stub(console, 'warn');
         const originalHas = Set.prototype.has;

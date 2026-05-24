@@ -260,7 +260,8 @@ class URLSanitizer extends URISchemes {
           }
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-            const { protocol: dataScheme } = new URL(decodedData);
+            const { protocol: dataScheme } =
+              new URL(decodedData, 'http://dummy.local');
             const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
             if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = '';
