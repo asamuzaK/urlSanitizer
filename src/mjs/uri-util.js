@@ -187,7 +187,10 @@ export class URISchemes {
   add(scheme) {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
-    } else if (REG_SCRIPT.test(scheme) || !REG_SCHEME.test(scheme)) {
+    }
+    const schemeParts = scheme.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    if (isScript || !REG_SCHEME.test(scheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#schemes.add(scheme);
@@ -206,17 +209,21 @@ export class URISchemes {
   /**
    * Verifies if the given URI is valid and its scheme is allowed.
    * @param {string} uri - The URI string to verify.
+   * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
-  verify(uri) {
+  verify(uri, schemes = this.#schemes) {
     let res;
     if (isString(uri)) {
       try {
         const { protocol } = new URL(uri);
         const scheme = protocol.replace(/:$/, '');
         const schemeParts = scheme.split('+');
-        res = (!REG_SCRIPT.test(scheme) && REG_SCHEME_EXT.test(scheme)) ||
-              schemeParts.every(s => this.#schemes.has(s));
+        const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+        res = !isScript && (
+          REG_SCHEME_EXT.test(scheme) ||
+          schemeParts.every(s => schemes.has(s))
+        );
       } catch (e) {
         res = false;
       }
