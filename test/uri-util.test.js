@@ -326,6 +326,14 @@ describe('uri-util', () => {
         assert.strictEqual(Array.isArray(res), true, 'result');
         assert.strictEqual(res.includes('web+foo'), true, 'added');
       });
+
+      it('should throw if scheme contains script', () => {
+        const schemes = new URISchemes();
+        assert.throws(() => schemes.add('web+javascript'), Error,
+          'Invalid scheme: web+javascript');
+        assert.throws(() => schemes.add('ext+vbscript'), Error,
+          'Invalid scheme: ext+vbscript');
+      });
     });
 
     describe('remove scheme', () => {
@@ -505,6 +513,32 @@ describe('uri-util', () => {
         const schemes = new URISchemes();
         const res = schemes.verify('URN:ISBN:4-8399-0454-5');
         assert.strictEqual(res, true, 'result');
+      });
+
+      it('should get false for scheme containing script', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('web+javascript:alert(1)');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('should get false for scheme containing script', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('ext+vbscript:msgbox(1)');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('should get true for valid ext scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verify('web+foo:bar');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('should verify using custom schemes set', () => {
+        const schemes = new URISchemes();
+        const customSchemes = new Set(['foo', 'bar']);
+        assert.strictEqual(schemes.verify('foo:test'), false, 'default false');
+        assert.strictEqual(schemes.verify('foo:test', customSchemes), true, 'custom true');
+        assert.strictEqual(schemes.verify('baz:test', customSchemes), false, 'custom false');
       });
     });
 
