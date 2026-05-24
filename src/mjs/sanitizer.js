@@ -96,28 +96,34 @@ class URLSanitizer extends URISchemes {
       // fall through
     }
     domPurify.addHook('uponSanitizeAttribute', (node, e) => {
-      if (e.attrValue && URL.canParse(e.attrValue)) {
-        const urlObj = new URL(e.attrValue);
-        if (urlObj.protocol === 'data:') {
-          if (ctx.recurse.has(e.attrValue)) {
-            logDebug(ctx.debug, `Circular Data URL detected and skipped: ${e.attrValue}`);
-            e.attrValue = '';
-            return;
-          }
-          ctx.nest++;
-          ctx.recurse.add(e.attrValue);
-          try {
-            const sanitized = this.#process(e.attrValue, {
-              allow: ['data'],
-              deny: [],
-              only: [],
-              allowRelative: false
-            }, ctx);
-            e.attrValue = sanitized || '';
-          } finally {
-            ctx.nest--;
-            ctx.recurse.delete(e.attrValue);
-          }
+      if (!e.attrValue) {
+        return;
+      }
+      let urlObj;
+      try {
+        urlObj = new URL(e.attrValue);
+      } catch {
+        return;
+      }
+      if (urlObj.protocol === 'data:') {
+        if (ctx.recurse.has(e.attrValue)) {
+          logDebug(ctx.debug, `Circular Data URL detected and skipped: ${e.attrValue}`);
+          e.attrValue = '';
+          return;
+        }
+        ctx.nest++;
+        ctx.recurse.add(e.attrValue);
+        try {
+          const sanitized = this.#process(e.attrValue, {
+            allow: ['data'],
+            deny: [],
+            only: [],
+            allowRelative: false
+          }, ctx);
+          e.attrValue = sanitized || '';
+        } finally {
+          ctx.nest--;
+          ctx.recurse.delete(e.attrValue);
         }
       }
     });
