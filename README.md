@@ -125,13 +125,13 @@ import urlSanitizer, {
 Sanitizes the given URL asynchronously.
 
 * `blob`, `data`, and `file` schemes must be explicitly allowed.
+* <a name="about-file-scheme">**WARNING**</a><br>
+  **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications, as it may expose the host's local file system to attacks like Local File Inclusion (LFI). Only allow it if you fully trust the input or are operating in a strictly isolated local environment.
 * **Blob URLs:** Given a **blob** URL, it converts and returns a sanitized **data** URL.
   * The sanitized data URL will **not** be converted back to a blob URL.
   * It is highly recommended to set the `opt.revokeObjectURL` option to `true` when you allow `blob` URLs.
   * Converting a blob URL to a data URL consumes memory, so be aware of the risk of memory exhaustion when handling huge blobs.
   * You can restrict the allowed blob size using the `opt.maxBlobSize` option (default: 32MB).
-* <a name="about-file-scheme">**WARNING**</a><br>
-  **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications, as it may expose the host's local file system to attacks like Local File Inclusion (LFI). Only allow it if you fully trust the input or are operating in a strictly isolated local environment.
 
 #### Parameters
 
@@ -252,6 +252,7 @@ Synchronous version of `sanitizeURL()`.
 * **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications. [See above](#about-file-scheme)
 * **Blob URLs:** `blob` scheme is **not supported** and will return `null`.
   Use the async version for `blob`.
+  However, to prevent memory leaks, it is highly recommended to set the `opt.revokeObjectURL` option to `true` so that the unsupported blob URL is properly revoked before returning `null`.
 
 ### parseURL(url)
 
