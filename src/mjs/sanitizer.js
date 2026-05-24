@@ -97,7 +97,8 @@ class URLSanitizer extends URISchemes {
           [dataUrl] = REG_DATA_URL_B64.exec(dataUrl);
         }
         if (ctx.recurse.has(dataUrl)) {
-          logDebug(ctx.debug, `Circular Data URL detected and skipped: ${dataUrl}`);
+          const msg = `Circular Data URL detected and skipped: ${dataUrl}`;
+          logDebug(ctx.debug, msg);
           continue;
         }
         ctx.nest++;
