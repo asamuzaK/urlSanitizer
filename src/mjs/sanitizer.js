@@ -102,10 +102,7 @@ class URLSanitizer extends URISchemes {
    * @param {object} ctx - The local context for state management.
    * @returns {string} The string with sanitized data URLs.
    */
-  _replace(data, ctx) {
-    if (!isString(data)) {
-      throw new TypeError(`Expected String but got ${getType(data)}.`);
-    }
+  #replace(data, ctx) {
     let replacedData = data;
     if (REG_DATA_URL.test(replacedData)) {
       const matchedDataUrls = replacedData.matchAll(REG_DATA_URL_G);
@@ -154,10 +151,7 @@ class URLSanitizer extends URISchemes {
    * @param {object} ctx - The local context for state management.
    * @returns {string} The purified DOM string.
    */
-  _purify(dom, ctx) {
-    if (!isString(dom)) {
-      throw new TypeError(`Expected String but got ${getType(dom)}.`);
-    }
+  #purify(dom, ctx) {
     let decodedDom = dom;
     try {
       // prevent URIError caused by malformed percent-encoding
@@ -168,7 +162,7 @@ class URLSanitizer extends URISchemes {
     }
     let purifiedDom = domPurify.sanitize(decodedDom);
     if (purifiedDom && REG_DATA_URL.test(purifiedDom)) {
-      purifiedDom = this._replace(purifiedDom, ctx);
+      purifiedDom = this.#replace(purifiedDom, ctx);
     }
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
@@ -308,11 +302,11 @@ class URLSanitizer extends URISchemes {
           const containsDataUrl = REG_DATA_URL.test(parsedData);
           if (parsedData !== data || containsDataUrl) {
             if (containsDataUrl) {
-              parsedData = this._replace(parsedData, ctx);
+              parsedData = this.#replace(parsedData, ctx);
             }
           }
           if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-            parsedData = this._purify(parsedData, ctx);
+            parsedData = this.#purify(parsedData, ctx);
           }
           if (urlToSanitize && parsedData) {
             if (isBase64 && parsedData !== data) {
