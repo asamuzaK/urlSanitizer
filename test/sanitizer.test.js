@@ -1487,7 +1487,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null', async () => {
+      it('should get null and NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
           type: 'image/svg+xml'
@@ -1496,9 +1496,22 @@ describe('sanitizer', () => {
         const res = func(url, {
           allow: ['blob']
         });
-        const revoked = await fetch(url).catch(e => {
-          return (e instanceof Error);
+        const revoked = await fetch(url).then(() => false).catch(() => true);
+        assert.strictEqual(revoked, false, 'should not be revoked');
+        assert.deepEqual(res, null, 'result');
+      });
+
+      it('should get null AND revoke blob', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
         });
+        const url = URL.createObjectURL(blob);
+        const res = func(url, {
+          allow: ['blob'],
+          revokeObjectURL: true
+        });
+        const revoked = await fetch(url).then(() => false).catch(() => true);
         assert.strictEqual(revoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1512,7 +1525,7 @@ describe('sanitizer', () => {
           assert.strictEqual(warnStub.calledOnce, true,
             'console.warn should be called once');
           const expectedPrefix =
-            `[URLSanitizer Debug] Failed to parse URL: ${invalidUrl}`;
+            `[URLSanitizer Debug] Invalid URL input format: ${invalidUrl}`;
           assert.strictEqual(warnStub.firstCall.args[0], expectedPrefix,
             'should output the correct debug message');
           assert.strictEqual(isString(warnStub.firstCall.args[1]), true,

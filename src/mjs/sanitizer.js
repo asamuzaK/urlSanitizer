@@ -470,9 +470,18 @@ export const sanitizeURL = async (url, opt = {
  * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
+ * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
-export const sanitizeURLSync = (url, opt) => {
+export const sanitizeURLSync = (url, opt = {
+  allow: [],
+  deny: [],
+  only: [],
+  allowRelative: false,
+  debug: false,
+  revokeObjectURL: false
+}) => {
+  const isDebug = !!opt?.debug;
   let res;
   if (url && isString(url)) {
     let scheme;
@@ -480,12 +489,15 @@ export const sanitizeURLSync = (url, opt) => {
       const { protocol } = new URL(url);
       scheme = protocol.replace(/:$/, '');
     } catch (e) {
-      const msg = `Failed to parse URL: ${url}`;
-      logDebug(opt?.debug, msg, e);
+      const msg = `Invalid URL input format: ${url}`;
+      logDebug(isDebug, msg, e);
     }
     if (scheme === 'blob') {
-      URL.revokeObjectURL(url);
-    } else if (scheme || opt?.allowRelative) {
+      if (opt?.revokeObjectURL) {
+        URL.revokeObjectURL(url);
+      }
+      return null;
+    } else if (scheme || opt.allowRelative) {
       res = urlSanitizer.sanitize(url, opt);
     }
   }
