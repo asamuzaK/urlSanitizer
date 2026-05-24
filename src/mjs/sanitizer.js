@@ -461,20 +461,20 @@ export const sanitizeURL = async (url, opt = {
           logDebug(isDebug, msg, e);
         }
         if (data) {
-          if (Array.isArray(only)) {
-            if (!only.includes('data')) {
-              only.push('data');
-            }
-          } else if (Array.isArray(allow)) {
-            if (!allow.includes('data')) {
-              allow.push('data');
-            }
-            if (Array.isArray(deny) && deny.includes('data')) {
-              const i = deny.indexOf('data');
-              deny.splice(i, 1);
+          const options = { ...opt };
+          if (Array.isArray(opt.only)) {
+            options.only = opt.only.includes('data')
+              ? opt.only
+              : [...opt.only, 'data'];
+          } else if (Array.isArray(opt.allow)) {
+            options.allow = opt.allow.includes('data')
+              ? opt.allow
+              : [...opt.allow, 'data'];
+            if (Array.isArray(opt.deny)) {
+              options.deny = opt.deny.filter(scheme => scheme !== 'data');
             }
           }
-          res = await urlSanitizer.sanitize(data, opt);
+          res = await urlSanitizer.sanitize(data, options);
         }
       }
       URL.revokeObjectURL(url);
