@@ -13,6 +13,19 @@ import {
   HEX, MAX_BLOB_SIZE, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB,
   REG_TAG_QUOT
 } from './constant.js';
+const URL_PROPS = [
+  'href',
+  'origin',
+  'protocol',
+  'username',
+  'password',
+  'host',
+  'hostname',
+  'port',
+  'pathname',
+  'search',
+  'hash'
+];
 
 /* typedef */
 /**
@@ -56,12 +69,11 @@ export const logDebug = (isDebug, message, error) => {
 class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
-  static #activeCtx = null;
-  static #activeInstance = null;
+
   static {
-    domPurify.addHook('uponSanitizeAttribute', (node, e) => {
-      const ctx = URLSanitizer.#activeCtx;
-      const instance = URLSanitizer.#activeInstance;
+    domPurify.addHook('uponSanitizeAttribute', (node, e, config) => {
+      const ctx = config?.urlSanitizerCtx;
+      const instance = config?.urlSanitizerInstance;
       if (!ctx || !instance || !e.attrValue) {
         return;
       }
@@ -75,19 +87,20 @@ class URLSanitizer extends URISchemes {
         return;
       }
       if (urlObj.protocol === 'data:') {
+        const originalUrl = e.attrValue;
         if (!ctx.recurse) {
           ctx.recurse = new Set();
         }
-        if (ctx.recurse.has(e.attrValue)) {
-          const msg = `Circular Data URL detected and skipped: ${e.attrValue}`;
+        if (ctx.recurse.has(originalUrl)) {
+          const msg = `Circular Data URL detected and skipped: ${originalUrl}`;
           logDebug(ctx.debug, msg);
           e.attrValue = '';
           return;
         }
         ctx.nest++;
-        ctx.recurse.add(e.attrValue);
+        ctx.recurse.add(originalUrl);
         try {
-          const sanitized = instance.#process(e.attrValue, {
+          const sanitized = instance.#process(originalUrl, {
             allow: ['data'],
             deny: [],
             only: [],
@@ -96,7 +109,7 @@ class URLSanitizer extends URISchemes {
           e.attrValue = sanitized || '';
         } finally {
           ctx.nest--;
-          ctx.recurse.delete(e.attrValue);
+          ctx.recurse.delete(originalUrl);
         }
       }
     });
@@ -112,11 +125,12 @@ class URLSanitizer extends URISchemes {
    * @private
    * @param {string} item - The scheme to register.
    * @param {string} listName - The name of the target option list.
-   * @param {object} ctx - The context for state management.
    * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
+   * @param {Map<string>} schemeMap - The local map of schemes.
+   * @param {object} ctx - The context for state management.
    * @returns {boolean} True if the scheme is successfully registered.
    */
-  #registerScheme(item, listName, ctx, allowedSchemes) {
+  #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
     if (REG_SCRIPT_BLOB.test(item)) {
       return false;
     }
@@ -127,7 +141,7 @@ class URLSanitizer extends URISchemes {
       logDebug(ctx.debug, msg);
       return false;
     }
-    ctx.schemeMap.set(item, true);
+    schemeMap.set(item, true);
     allowedSchemes.add(item);
     return true;
   }
@@ -142,13 +156,14 @@ class URLSanitizer extends URISchemes {
   #purify(dom, ctx) {
     let decodedDom = dom;
     try {
-      // prevent URIError caused by malformed percent-encoding
-      // e.g., a standalone '%'
       decodedDom = decodeURIComponent(dom);
     } catch (e) {
       // fall through
     }
-    let purifiedDom = ctx.domPurify.sanitize(decodedDom);
+    let purifiedDom = ctx.domPurify.sanitize(decodedDom, {
+      urlSanitizerCtx: ctx,
+      urlSanitizerInstance: this
+    });
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
     try {
@@ -173,20 +188,16 @@ class URLSanitizer extends URISchemes {
     const { allow, deny, only, allowRelative } = rules;
     let allowedSchemes = this.#allowedSchemes;
     let restrictScheme = false;
-
+    const schemeMap = new Map(ctx.schemeMap);
     if (only.length) {
-      allowedSchemes = new Set(this.#allowedSchemes);
-      const baseSchemes = this.#allowedSchemes;
-      for (const item of baseSchemes) {
-        ctx.schemeMap.set(item, false);
-      }
+      allowedSchemes = new Set();
       for (let item of only) {
         if (isString(item)) {
           item = item.trim();
           const registered =
-            this.#registerScheme(item, 'only', ctx, allowedSchemes);
-          if (registered && !restrictScheme && ctx.schemeMap.has(item)) {
-            restrictScheme = ctx.schemeMap.get(item);
+            this.#registerScheme(item, 'only', allowedSchemes, schemeMap, ctx);
+          if (registered && !restrictScheme) {
+            restrictScheme = true;
           }
         }
       }
@@ -195,7 +206,13 @@ class URLSanitizer extends URISchemes {
         allowedSchemes = new Set(this.#allowedSchemes);
         for (const item of allow) {
           if (isString(item)) {
-            this.#registerScheme(item.trim(), 'allow', ctx, allowedSchemes);
+            this.#registerScheme(
+              item.trim(),
+              'allow',
+              allowedSchemes,
+              schemeMap,
+              ctx
+            );
           }
         }
       }
@@ -204,7 +221,7 @@ class URLSanitizer extends URISchemes {
           if (isString(item)) {
             item = item.trim();
             if (item) {
-              ctx.schemeMap.set(item, false);
+              schemeMap.set(item, false);
             }
           }
         }
@@ -214,7 +231,8 @@ class URLSanitizer extends URISchemes {
     let isVerified = super.verify(url, allowedSchemes);
     let isRelative = false;
     let relativeParsedPath = '';
-    if (!isVerified && allowRelative) {
+    if (!isVerified && allowRelative &&
+        !/^(?:\/{2,}|\\|[a-z][a-z\d+\-.]*:[^/])/i.test(url)) {
       try {
         const dummyUrl = new URL(url, 'http://dummy.local');
         if (
@@ -243,11 +261,11 @@ class URLSanitizer extends URISchemes {
         scheme = protocol.replace(/:$/, '');
         schemeParts = scheme.split('+');
         if (restrictScheme) {
-          bool = schemeParts.every(s => ctx.schemeMap.get(s));
+          bool = schemeParts.every(s => schemeMap.get(s));
         } else {
-          for (const [key, value] of ctx.schemeMap.entries()) {
+          for (const [key, value] of schemeMap.entries()) {
             bool =
-            value || (scheme !== key && schemeParts.every(s => s !== key));
+              value || (scheme !== key && schemeParts.every(s => s !== key));
             if (!bool) {
               break;
             }
@@ -302,8 +320,7 @@ class URLSanitizer extends URISchemes {
             urlToSanitize.substring(0, index).replace(/[?&]$/, '');
         }
         if (urlToSanitize) {
-          sanitizedUrl =
-            urlToSanitize.replace(/%26/g, escapeURLEncodedHTMLChars);
+          sanitizedUrl = urlToSanitize;
         }
       }
     }
@@ -322,7 +339,6 @@ class URLSanitizer extends URISchemes {
    * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
    * @returns {string|null} The sanitized URL, or null.
    */
-
   sanitize(url, opt) {
     if (!url || !isString(url)) {
       return null;
@@ -339,12 +355,9 @@ class URLSanitizer extends URISchemes {
       !url.includes('data:')
     ) {
       try {
-        const urlObj = new URL(url);
-        let res = urlObj.href;
-        if (res.includes('%26')) {
-          res = res.replace(/%26/g, escapeURLEncodedHTMLChars);
-        }
-        return res;
+        const { href } = new URL(url);
+        const res = href;
+        return res.replace(/%26/g, escapeURLEncodedHTMLChars);
       } catch {
         return null;
       }
@@ -368,16 +381,7 @@ class URLSanitizer extends URISchemes {
         ['vbscript', false]
       ])
     };
-    const prevCtx = URLSanitizer.#activeCtx;
-    const prevInstance = URLSanitizer.#activeInstance;
-    URLSanitizer.#activeCtx = ctx;
-    URLSanitizer.#activeInstance = this;
-    try {
-      return this.#process(url, rules, ctx);
-    } finally {
-      URLSanitizer.#activeCtx = prevCtx;
-      URLSanitizer.#activeInstance = prevInstance;
-    }
+    return this.#process(url, rules, ctx);
   }
 
   /**
@@ -410,7 +414,7 @@ class URLSanitizer extends URISchemes {
       if (isDataUrl) {
         const dataUrl = new Map();
         const [mediaType, ...dataParts] = pathname.split(',');
-        const data = `${dataParts.join(',')}`;
+        const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
         const mediaTypes = mediaType.split(';');
         const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
         if (isBase64) {
@@ -423,7 +427,7 @@ class URLSanitizer extends URISchemes {
       } else {
         parsedUrl.set('data', null);
       }
-      for (const key in urlObj) {
+      for (const key of URL_PROPS) {
         const value = urlObj[key];
         if (isString(value)) {
           parsedUrl.set(key, value);

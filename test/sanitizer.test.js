@@ -409,10 +409,15 @@ describe('sanitizer', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(`http://example.com/?lt=${value}`);
         const url = new URL(res);
-        assert.strictEqual(res, 'http://example.com/?lt=5%26amp;gt%3D4', 'result');
+        assert.strictEqual(res, 'http://example.com/?lt=5%26amp;gt%3D4',
+          'result');
         assert.strictEqual(decodeURIComponent(res),
           'http://example.com/?lt=5&amp;gt=4', 'decode');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5&amp;gt=4']], 'search');
+        assert.deepEqual(
+          Array.from(url.searchParams.entries()),
+          [['lt', '5&amp;gt=4']],
+          'search'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -849,6 +854,41 @@ describe('sanitizer', () => {
           sanitizer.sanitize('//example.com/foo.png', { allowRelative: true }),
           null
         );
+      });
+
+      describe('malicious pseudo-relative payload detection', () => {
+        it('should block protocol-relative URL bypassing', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('//evil.com', { allowRelative: true });
+          assert.strictEqual(res, null,
+            'should reject protocol-relative redirect');
+        });
+
+        it('should block backslash-obfuscated URL bypassing', () => {
+          const sanitizer = new URLSanitizer();
+          const resSingle = sanitizer.sanitize('\\evil.com', {
+            allowRelative: true
+          });
+          assert.strictEqual(resSingle, null,
+            'should reject single backslash bypass');
+          const resDouble = sanitizer.sanitize('\\\\evil.com', {
+            allowRelative: true
+          });
+          assert.strictEqual(resDouble, null,
+            'should reject double backslash bypass');
+        });
+
+        it('should handle scheme-prefixed URLs without slashes safely', () => {
+          const sanitizer = new URLSanitizer();
+          const resDefault = sanitizer.sanitize('http:example.com');
+          assert.strictEqual(resDefault, 'http://example.com/', 'should normalize to absolute URL');
+          const resRestricted = sanitizer.sanitize('http:example.com', {
+            only: ['https'],
+            allowRelative: true
+          });
+          assert.strictEqual(resRestricted, null,
+            'should reject when scheme is not allowed');
+        });
       });
 
       it('should handle URIError in decodeURIComponent gracefully', () => {
