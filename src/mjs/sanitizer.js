@@ -264,7 +264,12 @@ class URLSanitizer extends URISchemes {
           const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
           let parsedData = data;
           if (isBase64) {
-            parsedData = parseBase64(data);
+            try {
+              parsedData = parseBase64(data);
+            } catch (e) {
+              logDebug(ctx.debug, 'Failed to parse base64 data.', e);
+              urlToSanitize = '';
+            }
           }
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData).trim();

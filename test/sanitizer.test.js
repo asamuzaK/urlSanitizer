@@ -1639,6 +1639,20 @@ describe('sanitizer', () => {
         }
       });
 
+      it('should return null when given malformed base64 data', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res1 =
+          sanitizer.sanitize('data:text/html;base64,invalid!base64', {
+            allow: ['data']
+          });
+        assert.deepEqual(res1, null,
+          'result should be null for failing REG_B64');
+        const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
+          allow: ['data']
+        });
+        assert.deepEqual(res2, null, 'result should be null for failing atob');
+      });
+
       describe('DOMPurify hook edge cases', () => {
         it('should return early if active context is missing', async () => {
           const { domPurify } = await import('../src/mjs/dompurify.js');
