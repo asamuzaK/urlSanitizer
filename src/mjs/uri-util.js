@@ -13,6 +13,17 @@ import {
   HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
   REG_URL_ENC
 } from './constant.js';
+const [
+  ENC_AMP,
+  ENC_NUM,
+  ENC_LT,
+  ENC_GT,
+  ENC_QUOT,
+  ENC_APOS
+] = ['&', '#', '<', '>', '"', "'"].map(ch =>
+  `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
+);
+const TEXT_CHAR_CODES = new Set(textChars);
 
 /**
  * URI schemes
@@ -92,19 +103,17 @@ export const escapeURLEncodedHTMLChars = ch => {
   if (isString(ch) && REG_URL_ENC.test(ch)) {
     ch = ch.toUpperCase();
   }
-  const [amp, num, lt, gt, quot, apos] =
-    ['&', '#', '<', '>', '"', "'"].map(getURLEncodedString);
   let escapedChar;
-  if (ch === amp) {
-    escapedChar = `${amp}amp;`;
-  } else if (ch === lt) {
-    escapedChar = `${amp}lt;`;
-  } else if (ch === gt) {
-    escapedChar = `${amp}gt;`;
-  } else if (ch === quot) {
-    escapedChar = `${amp}quot;`;
-  } else if (ch === apos) {
-    escapedChar = `${amp}${num}39;`;
+  if (ch === ENC_AMP) {
+    escapedChar = `${ENC_AMP}amp;`;
+  } else if (ch === ENC_LT) {
+    escapedChar = `${ENC_AMP}lt;`;
+  } else if (ch === ENC_GT) {
+    escapedChar = `${ENC_AMP}gt;`;
+  } else if (ch === ENC_QUOT) {
+    escapedChar = `${ENC_AMP}quot;`;
+  } else if (ch === ENC_APOS) {
+    escapedChar = `${ENC_AMP}${ENC_NUM}39;`;
   } else {
     escapedChar = ch;
   }
@@ -124,9 +133,8 @@ export const parseBase64 = data => {
   }
   const bin = atob(data);
   const uint8arr = Uint8Array.from([...bin].map(c => c.charCodeAt(0)));
-  const textCharCodes = new Set(textChars);
   let parsedData;
-  if (uint8arr.every(c => textCharCodes.has(c))) {
+  if (uint8arr.every(c => TEXT_CHAR_CODES.has(c))) {
     parsedData = bin.replace(/\s/g, getURLEncodedString);
   } else {
     parsedData = data;
@@ -151,7 +159,6 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   let res = decodeURIComponent(str);
   if (/&#/.test(res)) {
-    const textCharCodes = new Set(textChars);
     const items = [...res.matchAll(REG_NUM_REF)].reverse();
     for (const item of items) {
       const [numCharRef, value] = item;
@@ -167,7 +174,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
           res.substring(0, index),
           res.substring(index + numCharRef.length)
         ];
-        if (textCharCodes.has(num)) {
+        if (TEXT_CHAR_CODES.has(num)) {
           res = `${preNum}${String.fromCharCode(num)}${postNum}`;
           if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
             res = parseURLEncodedNumCharRef(res, ++nest);

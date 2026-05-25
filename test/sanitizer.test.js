@@ -946,6 +946,72 @@ describe('sanitizer', () => {
           warnStub.restore();
         }
       });
+
+      describe('fast-path processing', () => {
+        it('should use fast-path for HTTP(S) URLs', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('https://example.com/foo', {
+            allow: ['data']
+          });
+          assert.strictEqual(res, 'https://example.com/foo', 'result');
+        });
+
+        it('should properly escape %26 within the fast-path', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('https://example.com/?foo=1%26bar=2', {
+            allow: ['data']
+          });
+          assert.strictEqual(res, 'https://example.com/?foo=1%26amp;bar=2',
+            'result');
+        });
+
+        it('should bypass fast-path if URL starts with "data:"', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('data:text/plain,test', {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/plain,test',
+            'result'
+          );
+        });
+
+        it('should bypass fast-path if URL contains "data:"', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize(
+            'https://example.com/?redirect=data:text/plain,test',
+            { allow: ['data'] }
+          );
+          assert.strictEqual(
+            res,
+            'https://example.com/?redirect=data:text/plain,test',
+            'result'
+          );
+        });
+
+        it('should bypass fast-path', () => {
+          const sanitizer = new URLSanitizer();
+          const resDeny = sanitizer.sanitize('https://example.com/', {
+            deny: ['file']
+          });
+          assert.strictEqual(resDeny, 'https://example.com/',
+            'result with deny');
+          const resOnly = sanitizer.sanitize('https://example.com/', {
+            only: ['https', 'data']
+          });
+          assert.strictEqual(resOnly, 'https://example.com/',
+            'result with only');
+        });
+
+        it('should catch and return null if new URL() throws', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('http://[::1', {
+            allow: ['data']
+          });
+          assert.deepEqual(res, null, 'result should be null');
+        });
+      });
     });
 
     describe('parse sanitized URL', () => {
