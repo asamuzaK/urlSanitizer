@@ -70,49 +70,61 @@ class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
 
-  static {
-    domPurify.addHook('uponSanitizeAttribute', (node, e, config) => {
-      const ctx = config?.urlSanitizerCtx;
-      const instance = config?.urlSanitizerInstance;
-      if (!ctx || !instance || !e.attrValue) {
+  /**
+   * DOMPurify 'uponSanitizeAttribute' hook callback.
+   * @private
+   * @static
+   * @param {Node} node - The DOM node being sanitized.
+   * @param {object} e - The event object containing attribute details.
+   * @param {object} [config] - The configuration object.
+   */
+  static #uponSanitizeAttribute(node, e, config = {}) {
+    if (!e.attrValue || !/^\s*data:/i.test(e.attrValue)) {
+      return;
+    }
+    const { context: ctx, sanitizer } = config;
+    if (!ctx || !sanitizer) {
+      return;
+    }
+    let urlObj;
+    try {
+      urlObj = new URL(e.attrValue);
+    } catch {
+      return;
+    }
+    if (urlObj.protocol === 'data:') {
+      const originalUrl = e.attrValue;
+      if (!ctx.recurse) {
+        ctx.recurse = new Set();
+      }
+      if (ctx.recurse.has(originalUrl)) {
+        const msg = `Circular Data URL detected and skipped: ${originalUrl}`;
+        logDebug(ctx.debug, msg);
+        e.attrValue = '';
         return;
       }
-      if (!/^\s*data:/i.test(e.attrValue)) {
-        return;
-      }
-      let urlObj;
+      ctx.nest++;
+      ctx.recurse.add(originalUrl);
       try {
-        urlObj = new URL(e.attrValue);
-      } catch {
-        return;
+        const sanitized = sanitizer.#process(originalUrl, {
+          allow: ['data'],
+          deny: [],
+          only: [],
+          allowRelative: false
+        }, ctx);
+        e.attrValue = sanitized || '';
+      } finally {
+        ctx.nest--;
+        ctx.recurse.delete(originalUrl);
       }
-      if (urlObj.protocol === 'data:') {
-        const originalUrl = e.attrValue;
-        if (!ctx.recurse) {
-          ctx.recurse = new Set();
-        }
-        if (ctx.recurse.has(originalUrl)) {
-          const msg = `Circular Data URL detected and skipped: ${originalUrl}`;
-          logDebug(ctx.debug, msg);
-          e.attrValue = '';
-          return;
-        }
-        ctx.nest++;
-        ctx.recurse.add(originalUrl);
-        try {
-          const sanitized = instance.#process(originalUrl, {
-            allow: ['data'],
-            deny: [],
-            only: [],
-            allowRelative: false
-          }, ctx);
-          e.attrValue = sanitized || '';
-        } finally {
-          ctx.nest--;
-          ctx.recurse.delete(originalUrl);
-        }
-      }
-    });
+    }
+  }
+
+  static {
+    domPurify.addHook(
+      'uponSanitizeAttribute',
+      URLSanitizer.#uponSanitizeAttribute
+    );
   }
 
   constructor() {
@@ -161,8 +173,8 @@ class URLSanitizer extends URISchemes {
       // fall through
     }
     let purifiedDom = ctx.domPurify.sanitize(decodedDom, {
-      urlSanitizerCtx: ctx,
-      urlSanitizerInstance: this
+      context: ctx,
+      sanitizer: this
     });
     purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
       .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
@@ -177,8 +189,8 @@ class URLSanitizer extends URISchemes {
    * Internal recursive method for sanitization.
    * @private
    * @param {string} url - The URL string to sanitize.
-   * @param {object} rules - Normalized sanitization rules (Required).
-   * @param {object} ctx - Internal context for state management (Required).
+   * @param {object} rules - Normalized sanitization rules.
+   * @param {object} ctx - Internal context for state management.
    * @returns {string|null} The sanitized URL, or null.
    */
   #process(url, rules, ctx) {
