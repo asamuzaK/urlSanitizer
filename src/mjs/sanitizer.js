@@ -322,13 +322,13 @@ class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
-    const hasRules = opt && (
-      (Array.isArray(opt.allow) && opt.allow.length > 0) ||
+    const hasRestrictiveRules = opt && (
       (Array.isArray(opt.deny) && opt.deny.length > 0) ||
-      (Array.isArray(opt.only) && opt.only.length > 0)
+      (Array.isArray(opt.only) && opt.only.length > 0) ||
+      opt.allowRelative
     );
     if (
-      !hasRules &&
+      !hasRestrictiveRules &&
       (url.startsWith('https://') || url.startsWith('http://')) &&
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
