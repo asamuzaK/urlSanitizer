@@ -13,13 +13,13 @@ const xssUrl = 'javascript:alert("XSS")';
 const complexDataUrl = 'data:text/html;base64,PGRpdj48c2NyaXB0PmFsZXJ0KDEpOzwvc2NyaXB0PjwvZGl2PjxwIG9uY2xpY2s9ImFsZXJ0KDIpIj48L3A+';
 
 group('1. Normal HTTP URL', () => {
-  bench('url-sanitizer', () => sanitizeURLSync(normalUrl));
+  bench('url-sanitizer', () => sanitizeURLSync(normalUrl, { allow: ['data'] }));
   bench('@braintree/sanitize-url', () => braintreeSanitize(normalUrl));
   bench('strict-url-sanitise', () => strictUrlSanitise(normalUrl));
 });
 
 group('2. XSS URL', () => {
-  bench('url-sanitizer', () => sanitizeURLSync(xssUrl));
+  bench('url-sanitizer', () => sanitizeURLSync(xssUrl, { allow: ['data'] }));
   bench('@braintree/sanitize-url', () => braintreeSanitize(xssUrl));
   bench('strict-url-sanitise', () => {
     try { strictUrlSanitise(xssUrl); } catch (e) {}
