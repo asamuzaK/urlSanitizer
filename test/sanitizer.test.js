@@ -1419,7 +1419,7 @@ describe('sanitizer', () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
-        URL.revokeObjectURL(url); // 事前に手動で破棄
+        URL.revokeObjectURL(url);
         const res = await func(url, {
           allow: ['blob']
         });
@@ -1637,6 +1637,29 @@ describe('sanitizer', () => {
         } finally {
           globalThis.URL = OriginalURL;
         }
+      });
+
+      describe('DOMPurify hook edge cases', () => {
+        it('should return early if active context is missing', async () => {
+          const { domPurify } = await import('../src/mjs/dompurify.js');
+          assert.doesNotThrow(() => {
+            domPurify.sanitize('<a href="data:text/html,test">link</a>');
+          }, 'Should not throw when active context is missing');
+        });
+
+        it('should return early in hook if attrValue is empty', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const html = '<img src=""><input disabled>';
+          const base64Data = btoa(html);
+          const url = `data:text/html;base64,${base64Data}`;
+          const res = sanitizer.sanitize(url, { allow: ['data'] });
+          assert.strictEqual(typeof res, 'string', 'result should be a string');
+          assert.strictEqual(
+            decodeURIComponent(res).includes('<img src="">'),
+            true,
+            'empty attribute should be safely processed'
+          );
+        });
       });
     });
 

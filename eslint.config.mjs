@@ -11,7 +11,7 @@ export default [
   jsdoc.configs['flat/recommended'],
   regexp.configs['flat/recommended'],
   {
-    ignores: ['dist/', 'test/file/', 'test/wpt/', 'benchmark/']
+    ignores: ['dist/', 'test/file/', 'test/wpt/', 'benchmark/', 'repl']
   },
   {
     languageOptions: {

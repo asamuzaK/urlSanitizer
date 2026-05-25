@@ -2,17 +2,14 @@
  * dompurify.js
  */
 
-/**
- * Creates a new, isolated DOMPurify instance.
- * @returns {object} The isolated DOMPurify instance.
- */
-export const createDOMPurify = () => {
-  if (globalThis?.DOMPurify) {
-    return globalThis.DOMPurify(globalThis.window || globalThis);
-  }
+const domPurify = globalThis.DOMPurify || globalThis.window?.DOMPurify;
+
+if (!domPurify) {
   const msg = [
-    'DOMPurify is not available.',
-    'Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
-  ];
+    'DOMPurify is not defined.'
+    'Please ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+  ]
   throw new Error(msg.join(' '));
-};
+}
+
+export { domPurify };
