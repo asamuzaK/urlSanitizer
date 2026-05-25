@@ -3,7 +3,7 @@
  */
 
 /* shared */
-import { createDOMPurify } from './dompurify.js';
+import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
   createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
@@ -56,6 +56,51 @@ export const logDebug = (isDebug, message, error) => {
 class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
+  static #activeCtx = null;
+  static #activeInstance = null;
+  static {
+    domPurify.addHook('uponSanitizeAttribute', (node, e) => {
+      const ctx = URLSanitizer.#activeCtx;
+      const instance = URLSanitizer.#activeInstance;
+      if (!ctx || !instance || !e.attrValue) {
+        return;
+      }
+      if (!/^\s*data:/i.test(e.attrValue)) {
+        return;
+      }
+      let urlObj;
+      try {
+        urlObj = new URL(e.attrValue);
+      } catch {
+        return;
+      }
+      if (urlObj.protocol === 'data:') {
+        if (!ctx.recurse) {
+          ctx.recurse = new Set();
+        }
+        if (ctx.recurse.has(e.attrValue)) {
+          const msg = `Circular Data URL detected and skipped: ${e.attrValue}`;
+          logDebug(ctx.debug, msg);
+          e.attrValue = '';
+          return;
+        }
+        ctx.nest++;
+        ctx.recurse.add(e.attrValue);
+        try {
+          const sanitized = instance.#process(e.attrValue, {
+            allow: ['data'],
+            deny: [],
+            only: [],
+            allowRelative: false
+          }, ctx);
+          e.attrValue = sanitized || '';
+        } finally {
+          ctx.nest--;
+          ctx.recurse.delete(e.attrValue);
+        }
+      }
+    });
+  }
 
   constructor() {
     super();
@@ -103,60 +148,13 @@ class URLSanitizer extends URISchemes {
     } catch (e) {
       // fall through
     }
-    if (!ctx.domPurify) {
-      ctx.domPurify = createDOMPurify();
-    }
-    const domPurify = ctx.domPurify;
-    domPurify.addHook('uponSanitizeAttribute', (node, e) => {
-      if (!e.attrValue) {
-        return;
-      }
-      if (!/^\s*data:/i.test(e.attrValue)) {
-        return;
-      }
-      let urlObj;
-      try {
-        urlObj = new URL(e.attrValue);
-      } catch {
-        return;
-      }
-      if (urlObj.protocol === 'data:') {
-        if (!ctx.recurse) {
-          ctx.recurse = new Set();
-        }
-        if (ctx.recurse.has(e.attrValue)) {
-          const msg = `Circular Data URL detected and skipped: ${e.attrValue}`;
-          logDebug(ctx.debug, msg);
-          e.attrValue = '';
-          return;
-        }
-        ctx.nest++;
-        ctx.recurse.add(e.attrValue);
-        try {
-          const sanitized = this.#process(e.attrValue, {
-            allow: ['data'],
-            deny: [],
-            only: [],
-            allowRelative: false
-          }, ctx);
-          e.attrValue = sanitized || '';
-        } finally {
-          ctx.nest--;
-          ctx.recurse.delete(e.attrValue);
-        }
-      }
-    });
+    let purifiedDom = ctx.domPurify.sanitize(decodedDom);
+    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
+      .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
     try {
-      let purifiedDom = domPurify.sanitize(decodedDom);
-      purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
-        .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
-      try {
-        return encodeURI(purifiedDom);
-      } catch (e) {
-        return purifiedDom;
-      }
-    } finally {
-      domPurify.removeHook('uponSanitizeAttribute');
+      return encodeURI(purifiedDom);
+    } catch {
+      return purifiedDom;
     }
   }
 
@@ -175,6 +173,7 @@ class URLSanitizer extends URISchemes {
     const { allow, deny, only, allowRelative } = rules;
     let allowedSchemes = this.#allowedSchemes;
     let restrictScheme = false;
+
     if (only.length) {
       allowedSchemes = new Set(this.#allowedSchemes);
       const baseSchemes = this.#allowedSchemes;
@@ -318,6 +317,7 @@ class URLSanitizer extends URISchemes {
    * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
    * @returns {string|null} The sanitized URL, or null.
    */
+
   sanitize(url, opt) {
     if (!url || !isString(url)) {
       return null;
@@ -352,7 +352,7 @@ class URLSanitizer extends URISchemes {
     };
     const ctx = {
       debug: !!opt?.debug,
-      domPurify: null,
+      domPurify,
       nest: 0,
       recurse: null,
       schemeMap: new Map([
@@ -363,7 +363,16 @@ class URLSanitizer extends URISchemes {
         ['vbscript', false]
       ])
     };
-    return this.#process(url, rules, ctx);
+    const prevCtx = URLSanitizer.#activeCtx;
+    const prevInstance = URLSanitizer.#activeInstance;
+    URLSanitizer.#activeCtx = ctx;
+    URLSanitizer.#activeInstance = this;
+    try {
+      return this.#process(url, rules, ctx);
+    } finally {
+      URLSanitizer.#activeCtx = prevCtx;
+      URLSanitizer.#activeInstance = prevInstance;
+    }
   }
 
   /**
