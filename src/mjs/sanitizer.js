@@ -6,12 +6,12 @@
 import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
-  createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
-  parseURLEncodedNumCharRef, URISchemes
+  URISchemes, createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
+  parseURLEncodedNumCharRef
 } from './uri-util.js';
 import {
-  HEX, MAX_BLOB_SIZE, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB,
-  REG_TAG_QUOT
+  MAX_BLOB_SIZE, MAX_NEST, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT,
+  REG_SCRIPT_BLOB, REG_TAG_QUOT
 } from './constant.js';
 const URL_PROPS = [
   'href',
@@ -194,7 +194,7 @@ class URLSanitizer extends URISchemes {
    * @returns {string|null} The sanitized URL, or null.
    */
   #process(url, rules, ctx) {
-    if (ctx.nest > HEX) {
+    if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
     const { allow, deny, only, allowRelative } = rules;

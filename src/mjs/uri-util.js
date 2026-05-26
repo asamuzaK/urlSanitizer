@@ -10,8 +10,7 @@ import { FileReader } from './file-reader.js';
 
 /* constants */
 import {
-  HEX, MAX_BLOB_SIZE, REG_B64, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
-  REG_URL_ENC
+  HEX, MAX_BLOB_SIZE, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './constant.js';
 const [
   ENC_AMP,
@@ -128,16 +127,26 @@ export const escapeURLEncodedHTMLChars = ch => {
 export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
-  } else if (!REG_B64.test(data)) {
+  }
+  let bin;
+  try {
+    bin = atob(data);
+  } catch (e) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
-  const bin = atob(data);
-  const uint8arr = Uint8Array.from([...bin].map(c => c.charCodeAt(0)));
+  const len = bin.length;
+  let isText = true;
+  for (let i = 0; i < len; i++) {
+    if (!TEXT_CHAR_CODES.has(bin.charCodeAt(i))) {
+      isText = false;
+      break;
+    }
+  }
   let parsedData;
-  if (uint8arr.every(c => TEXT_CHAR_CODES.has(c))) {
+  if (isText) {
     parsedData = bin.replace(/\s/g, getURLEncodedString);
   } else {
-    parsedData = data;
+    parsedData = data.replace(/\s/g, '');
   }
   return parsedData;
 };
@@ -154,36 +163,33 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
-  } else if (nest > HEX) {
-    throw new Error('Character references nested too deeply.');
   }
   let res = decodeURIComponent(str);
-  if (/&#/.test(res)) {
-    const items = [...res.matchAll(REG_NUM_REF)].reverse();
-    for (const item of items) {
-      const [numCharRef, value] = item;
+  while (/&#/.test(res)) {
+    if (nest > HEX) {
+      throw new Error('Character references nested too deeply.');
+    }
+    const previousRes = res;
+    res = res.replace(REG_NUM_REF, (match, value) => {
       let num;
-      if (/^x[\dA-F]+/i.test(value)) {
-        num = parseInt(`0${value}`, HEX);
-      } else if (/^\d+/.test(value)) {
-        num = parseInt(value);
+      if (/x/i.test(value[0])) {
+        num = parseInt(value.substring(1), HEX);
+      } else {
+        num = parseInt(value, 10);
       }
-      if (Number.isInteger(num)) {
-        const { index } = item;
-        const [preNum, postNum] = [
-          res.substring(0, index),
-          res.substring(index + numCharRef.length)
-        ];
+      if (!Number.isNaN(num)) {
         if (TEXT_CHAR_CODES.has(num)) {
-          res = `${preNum}${String.fromCharCode(num)}${postNum}`;
-          if (/#x?$/.test(preNum) || /^#(?:x(?:00)?[2-7]|\d)/.test(postNum)) {
-            res = parseURLEncodedNumCharRef(res, ++nest);
-          }
+          return String.fromCharCode(num);
         } else if (num < HEX * HEX) {
-          res = `${preNum}${postNum}`;
+          return '';
         }
       }
+      return match;
+    });
+    if (res === previousRes) {
+      break;
     }
+    nest++;
   }
   return res;
 };
