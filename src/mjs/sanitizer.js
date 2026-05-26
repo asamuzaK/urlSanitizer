@@ -169,7 +169,7 @@ class URLSanitizer extends URISchemes {
     let decodedDom = dom;
     try {
       decodedDom = decodeURIComponent(dom);
-    } catch (e) {
+    } catch {
       // fall through
     }
     let purifiedDom = ctx.domPurify.sanitize(decodedDom, {

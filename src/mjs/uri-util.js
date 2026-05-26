@@ -10,7 +10,8 @@ import { FileReader } from './file-reader.js';
 
 /* constants */
 import {
-  HEX, MAX_BLOB_SIZE, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  HEX, MAX_BLOB_SIZE, MAX_NEST, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
+  REG_URL_ENC
 } from './constant.js';
 const [
   ENC_AMP,
@@ -23,6 +24,23 @@ const [
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
 const TEXT_CHAR_CODES = new Set(textChars);
+const nonTextHexCodes = [];
+for (let i = 0; i < HEX * HEX; i++) {
+  if (!TEXT_CHAR_CODES.has(i)) {
+    if (i === 0x2D) {
+      nonTextHexCodes.push('\\-');
+    } else if (i === 0x5C) {
+      nonTextHexCodes.push('\\\\');
+    } else if (i === 0x5D) {
+      nonTextHexCodes.push('\\]');
+    } else if (i === 0x5E) {
+      nonTextHexCodes.push('\\^');
+    } else {
+      nonTextHexCodes.push(`\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
+    }
+  }
+}
+const REG_BINARY = new RegExp(`[${nonTextHexCodes.join('')}]`);
 
 /**
  * URI schemes
@@ -130,20 +148,12 @@ export const parseBase64 = data => {
   }
   let bin;
   try {
-    bin = atob(data);
+    bin = atob(data.replace(/\s/g, ''));
   } catch (e) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
-  const len = bin.length;
-  let isText = true;
-  for (let i = 0; i < len; i++) {
-    if (!TEXT_CHAR_CODES.has(bin.charCodeAt(i))) {
-      isText = false;
-      break;
-    }
-  }
   let parsedData;
-  if (isText) {
+  if (!REG_BINARY.test(bin)) {
     parsedData = bin.replace(/\s/g, getURLEncodedString);
   } else {
     parsedData = data.replace(/\s/g, '');
@@ -166,7 +176,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   let res = decodeURIComponent(str);
   while (/&#/.test(res)) {
-    if (nest > HEX) {
+    if (nest > MAX_NEST) {
       throw new Error('Character references nested too deeply.');
     }
     const previousRes = res;
