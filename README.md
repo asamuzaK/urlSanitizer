@@ -7,7 +7,7 @@
 
 A robust URL sanitizer for Node.js, browsers, and websites.
 It sanitizes not only regular URLs but also deeply inspects `data` URLs and `blob` URLs.
-It also provides built-in utilities to parse URLs and verify URI schemes.
+It also provides built-in utilities to inspect URLs and verify URI schemes.
 
 ## Table of Contents
 * [Features](#features)
@@ -18,8 +18,8 @@ It also provides built-in utilities to parse URLs and verify URI schemes.
 * [API Reference](#api-reference)
   * [sanitizeURL(url, opt)](#sanitizeurlurl-opt)
   * [sanitizeURLSync(url, opt)](#sanitizeurlsyncurl-opt)
-  * [parseURL(url)](#parseurlurl)
-  * [parseURLSync(url)](#parseurlsyncurl)
+  * [inspectURL(url)](#inspecturlurl)
+  * [inspectURLSync(url)](#inspecturlsyncurl)
   * [isURI(uri)](#isuriuri)
   * [isURISync(uri)](#isurisyncuri)
   * [urlSanitizer Instance](#urlsanitizer)
@@ -114,7 +114,7 @@ If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPu
 
 ``` javascript
 import urlSanitizer, {
-  isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
+  isURI, isURISync, inspectURL, inspectURLSync, sanitizeURL, sanitizeURLSync
 } from 'url-sanitizer';
 ```
 
@@ -254,9 +254,11 @@ Synchronous version of `sanitizeURL()`.
   Use the async version for `blob`.
   However, to prevent memory leaks, it is highly recommended to set the `opt.revokeObjectURL` option to `true` so that the unsupported blob URL is properly revoked before returning `null`.
 
-### parseURL(url)
+### inspectURL(url)
 
-Parses the given URL asynchronously.
+> **Note:** `parseURL()` is deprecated. Please use `inspectURL()` instead.
+
+Inspects and parses the given URL asynchronously.
 
 * **Data URLs:** Parsed, decoded, and **sanitized** during this process.
   For example, if the payload contains HTML/SVG, malicious attributes are removed and the content is safely re-encoded.
@@ -267,9 +269,9 @@ Parses the given URL asynchronously.
 
 * url **string** URL input.
 
-**Returns** **Promise&lt;ParsedURL&gt;** Result.
+**Returns** **Promise&lt;InspectedURLResult&gt;** Result.
 
-#### ParsedURL
+#### InspectedURLResult
 
 An object with additional properties based on the standard [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API.
 
@@ -277,12 +279,12 @@ An object with additional properties based on the standard [URL](https://develop
 * `valid` **boolean** Is valid URI.
 * `data` **object?** Parsed result of data URL, nullable.
   * `data.mime` **string?** MIME type.
-  * `data.base64` **boolean?** Is base64 encoded.
-  * `data.data` **string?** Data part of the data URL.
+  * `data.base64` **boolean?** Indicates whether the data is base64-encoded.
+  * `data.data` **string?** The actual data part of the data URL.
 * `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **string?** Properties same as the standard URL API.
 
 ``` javascript
-const res1 = await parseURL('javascript:alert(1)');
+const res1 = await inspectURL('javascript:alert(1)');
 /* => {
         input: 'javascript:alert(1)',
         valid: false
@@ -304,7 +306,7 @@ const res2 = await parseURL('https://www.example.com/?foo=bar#baz');
       } */
 
 // base64 encoded SVG '<svg><g onclick="alert(1)"/></svg>'
-const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
+const res3 = await inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
 /* => {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
@@ -321,7 +323,7 @@ const res3 = await parseURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhb
       } */
 
 // base64 encoded PNG
-const res4 = await parseURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
+const res4 = await inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
 /* => {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -342,7 +344,7 @@ const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
 const url5 = URL.createObjectURL(blob5);
-const res5 = await parseURL(url5);
+const res5 = await inspectURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
@@ -355,9 +357,11 @@ const res5 = await parseURL(url5);
       } */
 ```
 
-### parseURLSync(url)
+### inspectURLSync(url)
 
-Synchronous version of `parseURL()`.
+> **Note:** `parseURLSync()` is deprecated. Please use `inspectURLSync()` instead.
+
+Synchronous version of `inspectURL()`.
 
 ### isURI(uri)
 
