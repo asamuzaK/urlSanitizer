@@ -118,6 +118,51 @@ describe('uri-util', () => {
     });
   });
 
+  describe('replace numeric character reference', () => {
+    const func = mjs.replaceNumCharRef;
+
+    it('should replace decimal text char', () => {
+      // 44 is ','
+      const res = func('&#44;', '44');
+      assert.strictEqual(res, ',', 'result');
+    });
+
+    it('should replace hex text char', () => {
+      // 0x2C is ','
+      const res = func('&#x2C;', 'x2C');
+      assert.strictEqual(res, ',', 'result');
+    });
+
+    it('should replace uppercase hex text char', () => {
+      // 0x6F is 'o'
+      const res = func('&#X006F;', 'X006F');
+      assert.strictEqual(res, 'o', 'result');
+    });
+
+    it('should strip decimal non-text char under 256', () => {
+      // 0 is NULL
+      const res = func('&#0;', '0');
+      assert.strictEqual(res, '', 'result');
+    });
+
+    it('should strip hex non-text char under 256', () => {
+      // 0x01 is SOH (Start of Heading), a non-text control character
+      const res = func('&#x01;', 'x01');
+      assert.strictEqual(res, '', 'result');
+    });
+
+    it('should return original match for out-of-range values', () => {
+      // 9829 is out of 0x00-0xFF range and not in text chars
+      const res = func('&#9829;', '9829');
+      assert.strictEqual(res, '&#9829;', 'result');
+    });
+
+    it('should return original match for invalid values', () => {
+      const res = func('&#foo;', 'foo');
+      assert.strictEqual(res, '&#foo;', 'result');
+    });
+  });
+
   describe('parse URL encoded numeric character reference', () => {
     const func = mjs.parseURLEncodedNumCharRef;
 

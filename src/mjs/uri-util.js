@@ -3,7 +3,6 @@
  */
 
 /* shared */
-import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
@@ -13,6 +12,7 @@ import {
   HEX, MAX_BLOB_SIZE, MAX_NEST, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
   REG_URL_ENC
 } from './constant.js';
+import { NON_TEXT_CHAR_CODES, TEXT_CHAR_CODES } from './text-chars.js';
 const [
   ENC_AMP,
   ENC_NUM,
@@ -23,24 +23,7 @@ const [
 ] = ['&', '#', '<', '>', '"', "'"].map(ch =>
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
-const TEXT_CHAR_CODES = new Set(textChars);
-const nonTextHexCodes = [];
-for (let i = 0; i < HEX * HEX; i++) {
-  if (!TEXT_CHAR_CODES.has(i)) {
-    if (i === 0x2D) {
-      nonTextHexCodes.push('\\-');
-    } else if (i === 0x5C) {
-      nonTextHexCodes.push('\\\\');
-    } else if (i === 0x5D) {
-      nonTextHexCodes.push('\\]');
-    } else if (i === 0x5E) {
-      nonTextHexCodes.push('\\^');
-    } else {
-      nonTextHexCodes.push(`\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
-    }
-  }
-}
-const REG_BINARY = new RegExp(`[${nonTextHexCodes.join('')}]`);
+const REG_BINARY = new RegExp(`[${[...NON_TEXT_CHAR_CODES].join('')}]`);
 
 /**
  * URI schemes
@@ -162,6 +145,29 @@ export const parseBase64 = data => {
 };
 
 /**
+ * Replacer function for URL-encoded numeric character references.
+ * @param {string} match - The matched substring.
+ * @param {string} value - The captured numeric value.
+ * @returns {string} The resolved character or the original match.
+ */
+export const replaceNumCharRef = (match, value) => {
+  let num;
+  if (/x/i.test(value[0])) {
+    num = parseInt(value.substring(1), HEX);
+  } else {
+    num = parseInt(value, 10);
+  }
+  if (!Number.isNaN(num)) {
+    if (TEXT_CHAR_CODES.has(num)) {
+      return String.fromCharCode(num);
+    } else if (num < HEX * HEX) {
+      return '';
+    }
+  }
+  return match;
+};
+
+/**
  * Parses URL-encoded numeric character references in the range 0x00 to 0xFF.
  * @param {string} str - The target string to parse.
  * @param {number} [nest] - The current nesting depth for recursive parsing.
@@ -180,22 +186,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
       throw new Error('Character references nested too deeply.');
     }
     const previousRes = res;
-    res = res.replace(REG_NUM_REF, (match, value) => {
-      let num;
-      if (/x/i.test(value[0])) {
-        num = parseInt(value.substring(1), HEX);
-      } else {
-        num = parseInt(value, 10);
-      }
-      if (!Number.isNaN(num)) {
-        if (TEXT_CHAR_CODES.has(num)) {
-          return String.fromCharCode(num);
-        } else if (num < HEX * HEX) {
-          return '';
-        }
-      }
-      return match;
-    });
+    res = res.replace(REG_NUM_REF, replaceNumCharRef);
     if (res === previousRes) {
       break;
     }
