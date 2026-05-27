@@ -397,13 +397,13 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Parses the given URL with sanitization.
+   * Inspects the given URL with sanitization.
    * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
    * @param {object} [opt] - Sanitization options.
    * @returns {InspectedURLResult} The object containing parsed result.
    */
-  parse(url, opt) {
+  inspect(url, opt) {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
@@ -647,7 +647,7 @@ export const sanitizeURLSync = (url, opt = {
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
  */
 export const inspectURL = async url => {
-  const res = await urlSanitizer.parse(url);
+  const res = await urlSanitizer.inspect(url);
   return res;
 };
 
@@ -663,7 +663,7 @@ export const parseURL = url => inspectURL(url);
  * @param {string} url - The URL string to inspect.
  * @returns {InspectedURLResult} The inspected URL object.
  */
-export const inspectURLSync = url => urlSanitizer.parse(url);
+export const inspectURLSync = url => urlSanitizer.inspect(url);
 
 /**
  * @deprecated Use inspectURLSync instead.

@@ -1057,14 +1057,14 @@ describe('sanitizer', () => {
     describe('parse sanitized URL', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.parse(), TypeError,
+        assert.throws(() => sanitizer.inspect(), TypeError,
           'Expected String but got Undefined.');
       });
 
       it('should get result', () => {
         const sanitizer = new URLSanitizer();
         const url = 'javascript:alert(1)';
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, {
           input: 'javascript:alert(1)',
           valid: false
@@ -1085,7 +1085,7 @@ describe('sanitizer', () => {
         items.input = url;
         items.valid = true;
         items.data = null;
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1107,7 +1107,7 @@ describe('sanitizer', () => {
           data: 'Hello,%20World!',
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1131,7 +1131,7 @@ describe('sanitizer', () => {
           data: 'Hello,%20World!',
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1155,7 +1155,7 @@ describe('sanitizer', () => {
           data: encodedData,
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1179,7 +1179,7 @@ describe('sanitizer', () => {
           data: encodedData,
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1203,7 +1203,7 @@ describe('sanitizer', () => {
           data: encodedData,
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1228,7 +1228,7 @@ describe('sanitizer', () => {
           data: encodedData,
           base64: false
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1250,7 +1250,7 @@ describe('sanitizer', () => {
         items.input = url;
         items.valid = true;
         items.data = null;
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
 
@@ -1272,7 +1272,7 @@ describe('sanitizer', () => {
           data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
           base64: true
         };
-        const res = sanitizer.parse(url);
+        const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
     });
