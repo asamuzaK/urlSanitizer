@@ -12,7 +12,7 @@ import {
   HEX, MAX_BLOB_SIZE, MAX_NEST, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
   REG_URL_ENC
 } from './constant.js';
-import { NON_TEXT_CHAR_CODES, TEXT_CHAR_CODES } from './text-chars.js';
+import { CTRL_CHAR_CODES, TEXT_CHAR_CODES } from './text-chars.js';
 const [
   ENC_AMP,
   ENC_NUM,
@@ -23,7 +23,7 @@ const [
 ] = ['&', '#', '<', '>', '"', "'"].map(ch =>
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
-const REG_BINARY = new RegExp(`[${[...NON_TEXT_CHAR_CODES].join('')}]`);
+const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES].join('')}]`);
 
 /**
  * URI schemes
@@ -129,19 +129,27 @@ export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
   }
-  let bin;
+  const cleanData = data.replace(/\s/g, '');
+  let binStr;
   try {
-    bin = atob(data.replace(/\s/g, ''));
+    binStr = atob(cleanData);
   } catch (e) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
-  let parsedData;
-  if (!REG_BINARY.test(bin)) {
-    parsedData = bin.replace(/\s/g, getURLEncodedString);
-  } else {
-    parsedData = data.replace(/\s/g, '');
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) {
+    bytes[i] = binStr.charCodeAt(i);
   }
-  return parsedData;
+  try {
+    const decoder = new TextDecoder('utf-8', { fatal: true });
+    const text = decoder.decode(bytes);
+    if (REG_BINARY.test(text)) {
+      return cleanData;
+    }
+    return text;
+  } catch {
+    return cleanData;
+  }
 };
 
 /**

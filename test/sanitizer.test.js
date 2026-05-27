@@ -1715,6 +1715,84 @@ describe('sanitizer', () => {
           );
         });
       });
+
+describe('Unicode / CJK characters', () => {
+        const encodeBase64UTF8 = str =>
+          btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+
+        it('should handle CJK characters in standard URL', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('https://example.com/テスト?検索=テスト#ハッシュ');
+          assert.strictEqual(
+            res,
+            'https://example.com/%E3%83%86%E3%82%B9%E3%83%88?%E6%A4%9C%E7%B4%A2=%E3%83%86%E3%82%B9%E3%83%88#%E3%83%8F%E3%83%83%E3%82%B7%E3%83%A5',
+            'result'
+          );
+        });
+
+        it('should strip XSS mixed with CJK characters in standard URL', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('https://example.com/テスト?<script>alert("攻撃")</script>');
+          assert.strictEqual(
+            res,
+            'https://example.com/%E3%83%86%E3%82%B9%E3%83%88',
+            'result'
+          );
+        });
+
+        it('should handle CJK characters in plain data URL', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('data:text/html,<div>こんにちは世界</div>', {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cdiv%3E%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E4%B8%96%E7%95%8C%3C/div%3E',
+            'result'
+          );
+          assert.strictEqual(
+            decodeURIComponent(res),
+            'data:text/html,<div>こんにちは世界</div>',
+            'decode'
+          );
+        });
+
+        it('should handle CJK characters in base64 data URL', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const base64Data = encodeBase64UTF8('<div>こんにちは世界</div>');
+          const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cdiv%3E%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E4%B8%96%E7%95%8C%3C/div%3E',
+            'result'
+          );
+          assert.strictEqual(
+            decodeURIComponent(res),
+            'data:text/html,<div>こんにちは世界</div>',
+            'decode'
+          );
+        });
+
+        it('should strip XSS mixed with CJK in base64 data URL', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const base64Data = encodeBase64UTF8('<div>安全<script>alert("危険")</script></div>');
+          const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cdiv%3E%E5%AE%89%E5%85%A8%3C/div%3E',
+            'result'
+          );
+          assert.strictEqual(
+            decodeURIComponent(res),
+            'data:text/html,<div>安全</div>',
+            'decode'
+          );
+        });
+      });
     });
 
     describe('sanitize URL sync', () => {

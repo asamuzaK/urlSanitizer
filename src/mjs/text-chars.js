@@ -9,8 +9,9 @@ import { HEX } from './constant.js';
 export const TEXT_CHAR_CODES = new Set(textChars);
 
 /**
- * Generates non-text char codes in hex.
- * @returns {Set.<string>} Generated non-text char codes in hex.
+ * Generates control character codes in hex (0x00-0x1F, 0x7F)
+ * excluding valid text formatting chars like Tab, LF, and CR.
+ * @returns {Set.<string>} Generated control char codes in hex.
  */
 const generateNonTextHexCodes = () => {
   const hexCodes = new Set();
@@ -22,4 +23,4 @@ const generateNonTextHexCodes = () => {
   return hexCodes;
 };
 
-export const NON_TEXT_CHAR_CODES = generateNonTextHexCodes();
+export const CTRL_CHAR_CODES = generateNonTextHexCodes();
