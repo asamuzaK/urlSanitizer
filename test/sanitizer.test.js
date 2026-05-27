@@ -1362,8 +1362,8 @@ describe('sanitizer', () => {
     it('should get aliases', () => {
       assert.strictEqual(typeof mjs.sanitizeURL, 'function');
       assert.strictEqual(typeof mjs.sanitizeURLSync, 'function');
-      assert.strictEqual(typeof mjs.parseURL, 'function');
-      assert.strictEqual(typeof mjs.parseURLSync, 'function');
+      assert.strictEqual(typeof mjs.inspectURL, 'function');
+      assert.strictEqual(typeof mjs.inspectURLSync, 'function');
       assert.strictEqual(typeof mjs.isURI, 'function');
       assert.strictEqual(typeof mjs.isURISync, 'function');
     });
@@ -1811,7 +1811,7 @@ describe('sanitizer', () => {
     });
 
     describe('parse URL async', () => {
-      const func = mjs.parseURL;
+      const func = mjs.inspectURL;
 
       it('should get result', async () => {
         const url = 'https://example.com';
@@ -1832,7 +1832,7 @@ describe('sanitizer', () => {
     });
 
     describe('parse URL sync', () => {
-      const func = mjs.parseURLSync;
+      const func = mjs.inspectURLSync;
 
       it('should get result', () => {
         const url = 'https://example.com';

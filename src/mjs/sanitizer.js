@@ -29,20 +29,20 @@ const URL_PROPS = [
 
 /* typedef */
 /**
- * A parsed URL object extending the standard URL API.
- * @typedef {object} ParsedURL
+ * The result of an inspected URL, extending the standard URL API.
+ * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URI is valid.
  * @property {object} [data] - The parsed result of a data URL, if applicable.
  * @property {string} [data.mime] - The MIME type of the data.
- * @property {boolean} [data.base64] - True if the data is base64-encoded.
+ * @property {boolean} [data.base64] - Indicates whether the data is base64-encoded.
  * @property {string} [data.data] - The actual data part of the data URL.
  * @property {string} [href] - The sanitized URL input.
- * @property {string} [origin] - The scheme, the domain and the port.
+ * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
  * @property {string} [username] - The specified username.
  * @property {string} [password] - The specified password.
- * @property {string} [host] - The domain and the port.
+ * @property {string} [host] - The domain and port.
  * @property {string} [hostname] - The domain.
  * @property {string} [port] - The port number.
  * @property {string} [pathname] - The path.
@@ -401,7 +401,7 @@ class URLSanitizer extends URISchemes {
    * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
    * @param {object} [opt] - Sanitization options.
-   * @returns {ParsedURL} The object containing parsed result.
+   * @returns {InspectedURLResult} The object containing parsed result.
    */
   parse(url, opt) {
     if (!isString(url)) {
@@ -642,21 +642,35 @@ export const sanitizeURLSync = (url, opt = {
 };
 
 /**
- * Asynchronously parses the given URL.
- * @param {string} url - The URL string to parse.
- * @returns {Promise<ParsedURL>} A promise resolving to the parsed URL object.
+ * Asynchronously inspects the given URL.
+ * @param {string} url - The URL string to inspect.
+ * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
  */
-export const parseURL = async url => {
+export const inspectURL = async url => {
   const res = await urlSanitizer.parse(url);
   return res;
 };
 
 /**
- * Synchronously parses the given URL.
- * @param {string} url - The URL string to parse.
- * @returns {ParsedURL} The parsed URL object.
+ * @deprecated Use inspectURL instead.
+ * @param {string} url - The URL string to inspect.
+ * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
  */
-export const parseURLSync = url => urlSanitizer.parse(url);
+export const parseURL = url => inspectURL(url);
+
+/**
+ * Synchronously inspects the given URL.
+ * @param {string} url - The URL string to inspect.
+ * @returns {InspectedURLResult} The inspected URL object.
+ */
+export const inspectURLSync = url => urlSanitizer.parse(url);
+
+/**
+ * @deprecated Use inspectURLSync instead.
+ * @param {string} url - The URL string to inspect.
+ * @returns {InspectedURLResult} The inspected URL object.
+ */
+export const parseURLSync = url => inspectURLSync(url);
 
 /**
  * Asynchronously checks if the given string is a valid URI and is registered.
