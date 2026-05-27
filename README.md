@@ -256,7 +256,7 @@ Synchronous version of `sanitizeURL()`.
 
 ### inspectURL(url)
 
-> **Note:** `parseURL()` is deprecated. Please use `inspectURL()` instead.
+**Note:** `parseURL()` is deprecated. Please use `inspectURL()` instead.
 
 Inspects and parses the given URL asynchronously.
 
@@ -290,7 +290,7 @@ const res1 = await inspectURL('javascript:alert(1)');
         valid: false
       } */
 
-const res2 = await parseURL('https://www.example.com/?foo=bar#baz');
+const res2 = await inspectURL('https://www.example.com/?foo=bar#baz');
 /* => {
         input: 'https://www.example.com/?foo=bar#baz',
         valid: true,
@@ -359,7 +359,7 @@ const res5 = await inspectURL(url5);
 
 ### inspectURLSync(url)
 
-> **Note:** `parseURLSync()` is deprecated. Please use `inspectURLSync()` instead.
+**Note:** `parseURLSync()` is deprecated. Please use `inspectURLSync()` instead.
 
 Synchronous version of `inspectURL()`.
 
