@@ -116,6 +116,20 @@ describe('uri-util', () => {
       const res = func(base64Data);
       assert.strictEqual(res, data, 'result');
     });
+
+    it('should return original base64 if it contains control characters', () => {
+      const binaryText = 'Hello\x00World';
+      const base64Data = btoa(binaryText); // "SGVsbG8AV29ybGQ="
+      const res = func(base64Data);
+      assert.strictEqual(res, base64Data, 'result');
+    });
+
+    it('should NOT return original base64 if it only contains valid text control characters', () => {
+      const validText = 'Hello\tWorld\n';
+      const base64Data = btoa(validText);
+      const res = func(base64Data);
+      assert.strictEqual(res, validText, 'result');
+    });
   });
 
   describe('replace numeric character reference', () => {

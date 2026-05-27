@@ -6,7 +6,7 @@ import { describe, it } from 'mocha';
 
 /* test */
 import textChars from '../src/lib/file/text-chars.json' with { type: 'json' };
-import { TEXT_CHAR_CODES, NON_TEXT_CHAR_CODES } from '../src/mjs/text-chars.js';
+import { CTRL_CHAR_CODES, TEXT_CHAR_CODES } from '../src/mjs/text-chars.js';
 
 describe('text-util', () => {
   describe('TEXT_CHAR_CODES', () => {
@@ -22,12 +22,12 @@ describe('text-util', () => {
     });
   });
 
-  describe('NON_TEXT_CHAR_CODES', () => {
+  describe('CTRL_CHAR_CODES', () => {
     it('should be a Set containing escaped non-text hex codes', () => {
-      assert.ok(NON_TEXT_CHAR_CODES instanceof Set,
-        'NON_TEXT_CHAR_CODES should be a Set');
+      assert.ok(CTRL_CHAR_CODES instanceof Set,
+        'CTRL_CHAR_CODES should be a Set');
       assert.strictEqual(
-        NON_TEXT_CHAR_CODES.size,
+        CTRL_CHAR_CODES.size,
         256 - textChars.length,
         'Size should be exactly 256 minus the number of valid text chars'
       );
@@ -46,18 +46,18 @@ describe('text-util', () => {
             expected = `\\x${i.toString(16).padStart(2, '0').toUpperCase()}`;
           }
           assert.ok(
-            NON_TEXT_CHAR_CODES.has(expected),
-            `NON_TEXT_CHAR_CODES should contain ${expected} for char code 0x${i.toString(16)}`
+            CTRL_CHAR_CODES.has(expected),
+            `CTRL_CHAR_CODES should contain ${expected} for char code 0x${i.toString(16)}`
           );
         }
       }
     });
 
     it('should successfully build a valid RegExp from the Set', () => {
-      const regexString = `[${[...NON_TEXT_CHAR_CODES].join('')}]`;
+      const regexString = `[${[...CTRL_CHAR_CODES].join('')}]`;
       assert.doesNotThrow(() => {
         RegExp(regexString);
-      }, 'Building RegExp from NON_TEXT_CHAR_CODES should not throw');
+      }, 'Building RegExp from CTRL_CHAR_CODES should not throw');
     });
   });
 });
