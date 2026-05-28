@@ -11,8 +11,6 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
 
 ## Table of Contents
 * [Features](#features)
-* [Threat Model](#threat-model)
-* [AI / LLM Application Security](#ai--llm-application-security)
 * [Install](#install)
 * [Usage](#usage)
 * [API Reference](#api-reference)
@@ -23,6 +21,8 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
   * [isURI(uri)](#isuriuri)
   * [isURISync(uri)](#isurisyncuri)
   * [urlSanitizer Instance](#urlsanitizer)
+* [Threat Model](#threat-model)
+* [AI / LLM Application Security](#ai--llm-application-security)
 * [Performance](#performance)
 * [Acknowledgments](#acknowledgments)
 
@@ -34,42 +34,6 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
 * **Relative & Absolute Path Support**: Safely allows root-relative paths (e.g., `/foo`) and relative paths (e.g., `./foo`) via an opt-in parameter.
 * **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs.
 * **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
-
-## Threat Model
-
-To help you decide if this library fits your security requirements, here is the defined threat model detailing what `url-sanitizer` does and does not protect against.
-
-### In-Scope (What we protect against)
-
-This library is primarily designed to prevent **Cross-Site Scripting (XSS)** and unauthorized protocol execution via malicious URLs.
-
-* **Direct XSS Execution:** Blocks `javascript:` and `vbscript:` schemes outright, even if they are obfuscated with whitespaces or control characters.
-* **Nested XSS in Data/Blob URLs:** Deeply inspects and sanitizes payloads within `data:` and `blob:` URLs. If an attacker tries to hide malicious HTML/SVG within a Base64-encoded data URL, the embedded content is purified using DOMPurify and re-encoded back into a sanitized URL.
-* **Unauthorized Schemes:** Denies unknown or unregistered URI schemes by default, preventing application-specific or OS-level protocol hijacking (unless explicitly allowed).
-
-### Out-of-Scope (What we DO NOT protect against)
-
-This library validates the *syntax and safe construction* of a URL, but it does not validate the *destination or intent* of the server it points to, nor does it secure a compromised host environment.
-
-* **Server-Side Request Forgery (SSRF):** We do not check if a URL points to an internal IP address (e.g., `http://localhost`, `http://169.254.169.254`) or a malicious external server.
-* **Phishing & Open Redirects:** A perfectly valid HTTP URL pointing to a phishing site (e.g., `https://evil-example.com/login`) will be considered safe. You must implement your own domain allow-listing if you need to restrict destinations.
-* **General HTML Sanitization:** While we sanitize HTML/SVG *inside* data URLs, this library is not a general-purpose HTML body sanitizer. Do not use it to sanitize arbitrary user-generated DOM content.
-* **Compromised Host Environment:** We assume the native `URL` API is intact. We do not protect against runtime attacks where the global `URL` object has been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
-
-## AI / LLM Application Security
-
-With the rise of AI agents, RAG (Retrieval-Augmented Generation), and LLM-driven applications, developers increasingly render content generated directly by AI.
-Unpredictable AI outputs introduce unique security risks, and `url-sanitizer` is architected to serve as a reliable defense layer for these modern environments.
-
-### Defending Against Complex & Obfuscated Payloads
-LLMs can generate highly complex, nested, or Base64-encoded `data:` URLs — either through prompt injection, RAG data poisoning, or simply reproducing obfuscated code from their training data.
-Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the payload, purifying the inner HTML/SVG tree via DOMPurify, and re-encoding it — it physically neutralizes hidden XSS vectors, ensuring that AI-generated data URLs are safe to render.
-
-### Neutralizing Hallucinated Schemes
-LLMs generate URLs based on statistical linguistic patterns rather than factual databases.
-As a result, they frequently hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
-By operating on a **Secure by Default** whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
-This strict blocking prevents hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
 
 ## Install
 
@@ -430,6 +394,42 @@ Remove a scheme from the list of registered URI schemes.
 #### urlSanitizer.reset()
 
 Reset registered schemes to the default list.
+
+## Threat Model
+
+To help you decide if this library fits your security requirements, here is the defined threat model detailing what `url-sanitizer` does and does not protect against.
+
+### In-Scope (What we protect against)
+
+This library is primarily designed to prevent **Cross-Site Scripting (XSS)** and unauthorized protocol execution via malicious URLs.
+
+* **Direct XSS Execution:** Blocks `javascript:` and `vbscript:` schemes outright, even if they are obfuscated with whitespaces or control characters.
+* **Nested XSS in Data/Blob URLs:** Deeply inspects and sanitizes payloads within `data:` and `blob:` URLs. If an attacker tries to hide malicious HTML/SVG within a Base64-encoded data URL, the embedded content is purified using DOMPurify and re-encoded back into a sanitized URL.
+* **Unauthorized Schemes:** Denies unknown or unregistered URI schemes by default, preventing application-specific or OS-level protocol hijacking (unless explicitly allowed).
+
+### Out-of-Scope (What we DO NOT protect against)
+
+This library validates the *syntax and safe construction* of a URL, but it does not validate the *destination or intent* of the server it points to, nor does it secure a compromised host environment.
+
+* **Server-Side Request Forgery (SSRF):** We do not check if a URL points to an internal IP address (e.g., `http://localhost`, `http://169.254.169.254`) or a malicious external server.
+* **Phishing & Open Redirects:** A perfectly valid HTTP URL pointing to a phishing site (e.g., `https://evil-example.com/login`) will be considered safe. You must implement your own domain allow-listing if you need to restrict destinations.
+* **General HTML Sanitization:** While we sanitize HTML/SVG *inside* data URLs, this library is not a general-purpose HTML body sanitizer. Do not use it to sanitize arbitrary user-generated DOM content.
+* **Compromised Host Environment:** We assume the native `URL` API is intact. We do not protect against runtime attacks where the global `URL` object has been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
+
+## AI / LLM Application Security
+
+With the rise of AI agents, RAG (Retrieval-Augmented Generation), and LLM-driven applications, developers increasingly render content generated directly by AI.
+Unpredictable AI outputs introduce unique security risks, and `url-sanitizer` is architected to serve as a reliable defense layer for these modern environments.
+
+### Defending Against Complex & Obfuscated Payloads
+LLMs can generate highly complex, nested, or Base64-encoded `data:` URLs — either through prompt injection, RAG data poisoning, or simply reproducing obfuscated code from their training data.
+Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the payload, purifying the inner HTML/SVG tree via DOMPurify, and re-encoding it — it physically neutralizes hidden XSS vectors, ensuring that AI-generated data URLs are safe to render.
+
+### Neutralizing Hallucinated Schemes
+LLMs generate URLs based on statistical linguistic patterns rather than factual databases.
+As a result, they frequently hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
+By operating on a **Secure by Default** whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
+This strict blocking prevents hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
 
 ## Performance
 
