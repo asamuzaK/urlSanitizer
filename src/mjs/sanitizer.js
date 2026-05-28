@@ -9,10 +9,13 @@ import {
   URISchemes, createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
   parseURLEncodedNumCharRef, trimTrailingEmptyQueryAndHash
 } from './uri-util.js';
+
+/* constants */
+import { MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  MAX_BLOB_SIZE, MAX_NEST, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT,
-  REG_SCRIPT_BLOB, REG_TAG_QUOT, REG_VERIFY_RELATIVE
-} from './constant.js';
+  REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB, REG_TAG_QUOT,
+  REG_VERIFY_RELATIVE
+} from './regexp.js';
 const URL_PROPS = [
   'href',
   'origin',
