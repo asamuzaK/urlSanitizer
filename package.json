@@ -25,7 +25,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "dompurify": "^3.4.5",
+    "dompurify": "^3.4.6",
     "jsdom": "^29.1.1"
   },
   "devDependencies": {
