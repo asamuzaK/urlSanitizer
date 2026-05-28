@@ -7,9 +7,8 @@ import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */
-import {
-  CHUNK_SIZE, REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT
-} from './constant.js';
+import { CHUNK_SIZE } from './constant.js';
+import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './regexp.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;

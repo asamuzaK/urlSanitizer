@@ -8,10 +8,10 @@ import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
 
 /* constants */
+import { HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  HEX, MAX_BLOB_SIZE, MAX_NEST, REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT,
-  REG_URL_ENC
-} from './constant.js';
+  REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+} from './regexp.js';
 import { CTRL_CHAR_CODES, TEXT_CHAR_CODES } from './text-chars.js';
 const [
   ENC_AMP,
