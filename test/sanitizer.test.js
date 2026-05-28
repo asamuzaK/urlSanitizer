@@ -1716,7 +1716,7 @@ describe('sanitizer', () => {
         });
       });
 
-describe('Unicode / CJK characters', () => {
+      describe('Unicode / CJK characters', () => {
         const encodeBase64UTF8 = str =>
           btoa(String.fromCharCode(...new TextEncoder().encode(str)));
 
@@ -1791,6 +1791,71 @@ describe('Unicode / CJK characters', () => {
             'data:text/html,<div>安全</div>',
             'decode'
           );
+        });
+      });
+
+      describe('Zero Width Characters', () => {
+        const func = mjs.sanitizeURL;
+
+        it('should block scheme obfuscation using zero-width characters', async () => {
+          const res = await func('jav\u200Bascript:alert(1)');
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('should block URL-encoded zero-width characters in scheme', async () => {
+          const res = await func('jav%E2%80%8Bascript:alert(1)');
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('should allow zero-width characters in path or query of allowed schemes', async () => {
+          const res = await func('https://example.com/path\u200Bname?q=val\u200Bue');
+          assert.strictEqual(
+            res,
+            'https://example.com/path%E2%80%8Bname?q=val%E2%80%8Bue',
+            'result'
+          );
+        });
+
+        it('should preserve zero-width characters in safe data URL payloads', async () => {
+          const res = await func('data:text/html,<div>Hello\u200BWorld</div>', {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cdiv%3EHello%E2%80%8BWorld%3C/div%3E',
+            'result'
+          );
+        });
+
+        it('should safely handle zero-width characters in MIME types (bypassing DOMPurify but neutralizing execution)', async () => {
+          const res = await func('data:text/h\u200Btml,<script>alert(1)</script>', {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            'data:text/h%E2%80%8Btml,<script>alert(1)</script>',
+            'result'
+          );
+        });
+
+        it('should return null when zero-width characters are injected into base64 payloads', async () => {
+          const base64Data = btoa('<div>test</div>'); // "PGRpdj50ZXN0PC9kaXY+"
+          const obfuscatedBase64 = base64Data.slice(0, 5) + '\u200B' + base64Data.slice(5);
+          const res = await func(`data:text/html;base64,${obfuscatedBase64}`, {
+            allow: ['data']
+          });
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('should truncate URL if zero-width obfuscated tags are used in standard URL queries', async () => {
+          const res = await func('https://example.com/?q=<scr\u200Bipt>alert(1)</scr\u200Bipt>');
+          assert.strictEqual(res, 'https://example.com/?q=', 'result');
+        });
+
+        it('should safely process zero-width characters in domain names (domain spoofing is out-of-scope)', async () => {
+          const res = await func('https://exam\u200Bple.com/');
+          assert.ok(res !== null, 'should not be null');
+          assert.strictEqual(res, 'https://example.com/', 'result');
         });
       });
     });

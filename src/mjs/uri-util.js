@@ -136,10 +136,7 @@ export const parseBase64 = data => {
   } catch (e) {
     throw new Error(`Invalid base64 data: ${data}`);
   }
-  const bytes = new Uint8Array(binStr.length);
-  for (let i = 0; i < binStr.length; i++) {
-    bytes[i] = binStr.charCodeAt(i);
-  }
+  const bytes = Uint8Array.from(binStr, c => c.charCodeAt(0));
   try {
     const decoder = new TextDecoder('utf-8', { fatal: true });
     const text = decoder.decode(bytes);

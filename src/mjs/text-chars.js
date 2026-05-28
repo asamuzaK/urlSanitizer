@@ -13,7 +13,7 @@ export const TEXT_CHAR_CODES = new Set(textChars);
  * excluding valid text formatting chars like Tab, LF, and CR.
  * @returns {Set.<string>} Generated control char codes in hex.
  */
-const generateNonTextHexCodes = () => {
+const generateCtrlCharCodes = () => {
   const hexCodes = new Set();
   for (let i = 0; i < HEX * HEX; i++) {
     if (!TEXT_CHAR_CODES.has(i)) {
@@ -23,4 +23,4 @@ const generateNonTextHexCodes = () => {
   return hexCodes;
 };
 
-export const CTRL_CHAR_CODES = generateNonTextHexCodes();
+export const CTRL_CHAR_CODES = generateCtrlCharCodes();
