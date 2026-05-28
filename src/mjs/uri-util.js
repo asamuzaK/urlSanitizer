@@ -222,3 +222,18 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
     reader.addEventListener('load', () => resolve(reader.result));
     reader.readAsDataURL(blob);
   });
+
+/**
+ * Safely removes a trailing empty hash and an empty query string from a URL.
+ * Note: A valid question mark located inside a hash fragment is preserved.
+ * @param {string} url - The target URL string to be cleaned.
+ * @returns {string} The cleaned URL string.
+ */
+export const trimTrailingEmptyQueryAndHash = url => {
+  if (!isString(url)) {
+    return url;
+  }
+  return url
+    .replace(/(?:#|%23)$/, '')
+    .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
+};

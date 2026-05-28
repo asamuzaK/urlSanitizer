@@ -299,6 +299,71 @@ describe('uri-util', () => {
     });
   });
 
+  describe('Trim trailing empty query and hash', () => {
+    const func = mjs.trimTrailingEmptyQueryAndHash;
+
+    it('should remove a trailing empty hash', () => {
+      assert.strictEqual(func('https://example.com#'), 'https://example.com',
+        'result');
+      assert.strictEqual(func('https://example.com%23'), 'https://example.com',
+        'result');
+    });
+
+    it('should remove a trailing empty query', () => {
+      assert.strictEqual(func('https://example.com?'), 'https://example.com',
+        'result');
+      assert.strictEqual(func('https://example.com%3F'), 'https://example.com',
+        'result');
+    });
+
+    it('should remove a trailing empty query followed by an empty hash', () => {
+      assert.strictEqual(func('https://example.com?#'), 'https://example.com',
+        'result');
+      assert.strictEqual(
+        func('https://example.com%3F%23'),
+        'https://example.com',
+        'result'
+      );
+    });
+
+    it('should intentionally preserve a question mark inside a hash fragment', () => {
+      assert.strictEqual(
+        func('https://example.com#section?'),
+        'https://example.com#section?',
+        'result'
+      );
+      assert.strictEqual(
+        func('https://example.com%23section%3F'),
+        'https://example.com%23section%3F',
+        'result'
+      );
+      assert.strictEqual(
+        func('https://example.com#?'),
+        'https://example.com#?',
+        'result'
+      );
+    });
+
+    it('should return the original string if no trailing empty hash or query exists', () => {
+      assert.strictEqual(
+        func('https://example.com'),
+        'https://example.com',
+        'result'
+      );
+      assert.strictEqual(
+        func('data:text/html,<div>'),
+        'data:text/html,<div>',
+        'result'
+      );
+    });
+
+    it('should return the input as is if it is not a string', () => {
+      assert.strictEqual(func(null), null, 'result');
+      assert.strictEqual(func(undefined), undefined, 'result');
+      assert.strictEqual(func(123), 123, 'result');
+    });
+  });
+
   describe('URI schemes', () => {
     const { URISchemes } = mjs;
 

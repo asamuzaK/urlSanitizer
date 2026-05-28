@@ -7,11 +7,11 @@ import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
   URISchemes, createDataURLFromBlob, escapeURLEncodedHTMLChars, parseBase64,
-  parseURLEncodedNumCharRef
+  parseURLEncodedNumCharRef, trimTrailingEmptyQueryAndHash
 } from './uri-util.js';
 import {
   MAX_BLOB_SIZE, MAX_NEST, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT,
-  REG_SCRIPT_BLOB, REG_TAG_QUOT
+  REG_SCRIPT_BLOB, REG_TAG_QUOT, REG_VERIFY_RELATIVE
 } from './constant.js';
 const URL_PROPS = [
   'href',
@@ -176,8 +176,7 @@ class URLSanitizer extends URISchemes {
       context: ctx,
       sanitizer: this
     });
-    purifiedDom = purifiedDom.replace(/(?:#|%23)$/, '')
-      .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
+    purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
     try {
       return encodeURI(purifiedDom);
     } catch {
@@ -243,8 +242,7 @@ class URLSanitizer extends URISchemes {
     let isVerified = super.verify(url, allowedSchemes);
     let isRelative = false;
     let relativeParsedPath = '';
-    if (!isVerified && allowRelative &&
-        !/^(?:\/{2,}|\\|[a-z][a-z\d+\-.]*:[^/])/i.test(url)) {
+    if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
       try {
         const dummyUrl = new URL(url, 'http://dummy.local');
         if (

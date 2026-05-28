@@ -23,3 +23,4 @@ export const REG_SCRIPT_BLOB = /^(?:(?:java|vb)script|blob)$/i;
 export const REG_TAG_QUOT =
   /["'<>]|%(?:22|27|3C|3E)|&(?:apos|lt|gt|quot|#0*(?:34|39|60|62)|#x0*(?:22|27|3C|3E));/i;
 export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
+export const REG_VERIFY_RELATIVE = /^(?:\/{2,}|\\|[a-z][a-z\d+\-.]*:[^/])/i;
