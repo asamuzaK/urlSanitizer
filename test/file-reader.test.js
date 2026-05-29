@@ -5,7 +5,7 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import sinon from 'sinon';
-import { describe, it } from 'mocha';
+import { after, before, describe, it } from 'mocha';
 import { sleep } from '../scripts/common.js';
 
 /* test */
@@ -524,6 +524,51 @@ describe('file-reader', () => {
         assert.deepEqual(reader.error, e, 'error');
         assert.strictEqual(reader.error.message, 'error', 'message');
         assert.deepEqual(reader.result, null, 'result');
+      });
+    });
+
+    describe('readAsDataURL without Buffer (Browser fallback)', () => {
+      let originalBuffer;
+      before(() => {
+        originalBuffer = globalThis.Buffer;
+        globalThis.Buffer = undefined;
+      });
+      after(() => {
+        globalThis.Buffer = originalBuffer;
+      });
+
+      it('should correctly encode to base64 using btoa fallback', async () => {
+        const data = 'Hello, Browser World!';
+        const blob = new Blob([data], { type: 'text/plain' });
+        const reader = new FileReader();
+        const promise = new Promise((resolve, reject) => {
+          reader.addEventListener('load', () => resolve(reader.result));
+          reader.addEventListener('error', () => reject(reader.error));
+        });
+        reader.readAsDataURL(blob);
+        const result = await promise;
+        assert.strictEqual(
+          result,
+          'data:text/plain;base64,SGVsbG8sIEJyb3dzZXIgV29ybGQh',
+          'result'
+        );
+      });
+      it('should handle large blobs correctly with chunking in fallback', async () => {
+        const chunkData = 'a'.repeat(9000);
+        const blob = new Blob([chunkData], { type: 'text/plain' });
+        const reader = new FileReader();
+        const promise = new Promise((resolve, reject) => {
+          reader.addEventListener('load', () => resolve(reader.result));
+          reader.addEventListener('error', () => reject(reader.error));
+        });
+        reader.readAsDataURL(blob);
+        const result = await promise;
+        const expectedBase64 = btoa(chunkData);
+        assert.strictEqual(
+          result,
+           `data:text/plain;base64,${expectedBase64}`,
+           'result'
+        );
       });
     });
 

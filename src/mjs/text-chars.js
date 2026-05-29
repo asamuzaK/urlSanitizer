@@ -39,7 +39,7 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 
 /**
  * Generates control character codes in hex.
- * @returns {Set.<string>} Generated control char codes.
+ * @returns {Map<number, string>} Generated control char codes.
  */
 const generateCtrlCharCodes = () => {
   const ctrlCharCodes = new Map();

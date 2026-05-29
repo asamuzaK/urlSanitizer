@@ -47,7 +47,7 @@ export class URISchemes {
 
   /**
    * Checks if the specified scheme is currently registered.
-   * @param {string} scheme - The target scheme (e.g., 'https').
+   * @param {string} scheme - The target scheme.
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
@@ -56,7 +56,7 @@ export class URISchemes {
 
   /**
    * Verifies if the given URI is valid and its scheme is allowed.
-   * @param {string} uri - The URI string to verify.
+   * @param {unknown} uri - The URI string to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
@@ -72,7 +72,7 @@ export class URISchemes {
           REG_SCHEME_EXT.test(scheme) ||
           schemeParts.every(s => schemes.has(s))
         );
-      } catch (e) {
+      } catch {
         res = false;
       }
     }
@@ -82,49 +82,58 @@ export class URISchemes {
 
 /**
  * Gets the URL-encoded representation of a given string.
- * @param {string} str - The target string.
+ * @param {unknown} str - The target string.
  * @returns {string} The completely URL-encoded string.
  */
 export const getURLEncodedString = str => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
   const chars = [];
-  for (const ch of str) {
-    chars.push(`%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`);
+  for (const byte of bytes) {
+    chars.push(`%${byte.toString(HEX).padStart(2, '0').toUpperCase()}`);
   }
   return chars.join('');
 };
 
 /**
  * Escapes URL-encoded HTML special characters.
- * @param {string} ch - A URL-encoded (percent-encoded) character.
+ * @param {unknown} ch - A URL-encoded (percent-encoded) character.
  * @returns {string} The escaped HTML special character, or the given character.
  */
 export const escapeURLEncodedHTMLChars = ch => {
-  if (isString(ch) && REG_URL_ENC.test(ch)) {
-    ch = ch.toUpperCase();
+  let target = ch;
+  if (isString(target)) {
+    if (REG_URL_ENC.test(target)) {
+      target = target.toUpperCase();
+    }
+    switch (target) {
+      case ENC_AMP: {
+        return `${ENC_AMP}amp;`;
+      }
+      case ENC_LT: {
+        return `${ENC_AMP}lt;`;
+      }
+      case ENC_GT: {
+        return `${ENC_AMP}gt;`;
+      }
+      case ENC_QUOT: {
+        return `${ENC_AMP}quot;`;
+      }
+      case ENC_APOS: {
+        return `${ENC_AMP}${ENC_NUM}39;`;
+      }
+      default:
+    }
   }
-  let escapedChar;
-  if (ch === ENC_AMP) {
-    escapedChar = `${ENC_AMP}amp;`;
-  } else if (ch === ENC_LT) {
-    escapedChar = `${ENC_AMP}lt;`;
-  } else if (ch === ENC_GT) {
-    escapedChar = `${ENC_AMP}gt;`;
-  } else if (ch === ENC_QUOT) {
-    escapedChar = `${ENC_AMP}quot;`;
-  } else if (ch === ENC_APOS) {
-    escapedChar = `${ENC_AMP}${ENC_NUM}39;`;
-  } else {
-    escapedChar = ch;
-  }
-  return escapedChar;
+  return target;
 };
 
 /**
  * Parses base64-encoded data.
- * @param {string} data - The base64-encoded string.
+ * @param {unknown} data - The base64-encoded string.
  * @returns {string} The parsed text, or the original base64 if binary.
  */
 export const parseBase64 = data => {
@@ -135,7 +144,7 @@ export const parseBase64 = data => {
   let binStr;
   try {
     binStr = atob(cleanData);
-  } catch (e) {
+  } catch {
     throw new Error(`Invalid base64 data: ${data}`);
   }
   const bytes = Uint8Array.from(binStr, c => c.charCodeAt(0));
@@ -176,8 +185,8 @@ export const replaceNumCharRef = (match, value) => {
 
 /**
  * Parses URL-encoded numeric character references in the range 0x00 to 0xFF.
- * @param {string} str - The target string to parse.
- * @param {number} [nest] - The current nesting depth for recursive parsing.
+ * @param {unknown} str - The target string to parse.
+ * @param {unknown} [nest] - The current nesting depth for recursive parsing.
  * @returns {string} The decoded and parsed string.
  */
 export const parseURLEncodedNumCharRef = (str, nest = 0) => {
@@ -187,9 +196,10 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
   }
+  let currentNest = nest;
   let res = decodeURIComponent(str);
   while (/&#/.test(res)) {
-    if (nest > MAX_NEST) {
+    if (currentNest > MAX_NEST) {
       throw new Error('Character references nested too deeply.');
     }
     const previousRes = res;
@@ -197,7 +207,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
     if (res === previousRes) {
       break;
     }
-    nest++;
+    currentNest++;
   }
   return res;
 };
@@ -227,9 +237,8 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
 
 /**
  * Safely removes a trailing empty hash and an empty query string from a URL.
- * Note: A valid question mark located inside a hash fragment is preserved.
- * @param {string} url - The target URL string to be cleaned.
- * @returns {string} The cleaned URL string.
+ * @param {unknown} url - The target URL string to be cleaned.
+ * @returns {unknown} The cleaned URL string or the original input.
  */
 export const trimTrailingEmptyQueryAndHash = url => {
   if (!isString(url)) {

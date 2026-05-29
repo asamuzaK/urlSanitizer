@@ -19,8 +19,12 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "browser": "./dist/url-sanitizer-wo-dompurify.min.js",
+      "browser": "./dist/url-sanitizer.min.js",
       "default": "./src/index.js"
+    },
+    "./wo-dompurify": {
+      "types": "./types/index.d.ts",
+      "browser": "./dist/url-sanitizer-wo-dompurify.min.js"
     },
     "./package.json": "./package.json"
   },

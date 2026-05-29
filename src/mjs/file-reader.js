@@ -14,6 +14,19 @@ const EMPTY = 0;
 const LOADING = 1;
 
 /**
+ * Converts a Uint8Array to a binary string in chunks to prevent stack overflow.
+ * @param {Uint8Array} uint8arr - The array to convert.
+ * @returns {string} The resulting binary string.
+ */
+const getBinaryString = uint8arr => {
+  const chunks = [];
+  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
+  }
+  return chunks.join('');
+};
+
+/**
  * Represents a progress event.
  * @see {@link https://xhr.spec.whatwg.org/#interface-progressevent}
  */
@@ -176,29 +189,29 @@ export class FileReader extends EventTarget {
         const mediaTypes = type ? type.split(';') : [];
         const buffer = await blob.arrayBuffer();
         const uint8arr = new Uint8Array(buffer);
-        const chunkSize = CHUNK_SIZE;
-        let binary = '';
-        for (let i = 0; i < uint8arr.length; i += chunkSize) {
-          binary += String.fromCharCode(...uint8arr.subarray(i, i + chunkSize));
-        }
         this._dispatchProgressEvent('loadstart');
         switch (format) {
-          case 'arrayBuffer':
+          case 'arrayBuffer': {
             res = buffer;
             this._dispatchProgressEvent('progress');
             break;
-          case 'binaryString':
-            res = binary;
+          }
+          case 'binaryString': {
+            res = getBinaryString(uint8arr);
             this._dispatchProgressEvent('progress');
             break;
-          case 'dataURL':
-            if (!mediaTypes.length ||
-                mediaTypes[mediaTypes.length - 1] !== 'base64') {
-              mediaTypes.push('base64');
+          }
+          case 'dataURL': {
+            const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
+            const mimeStr = mime ? `${mime};base64` : 'base64';
+            if (typeof globalThis.Buffer !== 'undefined') {
+              res = `data:${mimeStr},${globalThis.Buffer.from(buffer).toString('base64')}`;
+            } else {
+              res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
             }
-            res = `data:${mediaTypes.join(';')},${btoa(binary)}`;
             this._dispatchProgressEvent('progress');
             break;
+          }
           case 'text': {
             const textCharCodes = new Set(textChars);
             if (uint8arr.every(c => textCharCodes.has(c))) {
@@ -227,14 +240,14 @@ export class FileReader extends EventTarget {
               }
               if (REG_MIME_DOM.test(type)) {
                 if (encoding === charset || (encoding === 'utf8' && !charset)) {
-                  res = binary;
+                  res = getBinaryString(uint8arr);
                   this._dispatchProgressEvent('progress');
                 }
               } else if (REG_MIME_TEXT.test(type)) {
                 if (encoding === charset ||
                     (encoding === 'utf8' &&
                      (!charset || charset === 'us-ascii'))) {
-                  res = binary;
+                  res = getBinaryString(uint8arr);
                   this._dispatchProgressEvent('progress');
                 }
               }
