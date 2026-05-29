@@ -175,6 +175,21 @@ describe('uri-util', () => {
       const res = func('&#foo;', 'foo');
       assert.strictEqual(res, '&#foo;', 'result');
     });
+
+    it('should return original match for invalid hex values', () => {
+      const res = func('&#xZZ;', 'xZZ');
+      assert.strictEqual(res, '&#xZZ;', 'result');
+    });
+
+    it('should replace Windows-1252 decimal reference with mapped Unicode char', () => {
+      const res = func('&#128;', '128');
+      assert.strictEqual(res, '\u20AC', 'result');
+    });
+
+    it('should replace Windows-1252 hex reference with mapped Unicode char', () => {
+      const res = func('&#x99;', 'x99');
+      assert.strictEqual(res, '\u2122', 'result');
+    });
   });
 
   describe('parse URL encoded numeric character reference', () => {
