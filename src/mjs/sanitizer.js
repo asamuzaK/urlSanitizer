@@ -29,6 +29,11 @@ const URL_PROPS = [
   'search',
   'hash'
 ];
+const INTERNAL_PURIFY_CONFIG = {
+  RETURN_DOM: false,
+  RETURN_DOM_FRAGMENT: false,
+  RETURN_TRUSTED_TYPE: false
+};
 
 /* typedef */
 /**
@@ -72,6 +77,8 @@ export const logDebug = (isDebug, message, error) => {
 class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
+  static #currentCtx = null;
+  static #currentInstance = null;
 
   /**
    * DOMPurify 'uponSanitizeAttribute' hook callback.
@@ -79,13 +86,13 @@ class URLSanitizer extends URISchemes {
    * @static
    * @param {Node} node - The DOM node being sanitized.
    * @param {object} e - The event object containing attribute details.
-   * @param {object} [config] - The configuration object.
    */
-  static #uponSanitizeAttribute(node, e, config = {}) {
+  static #uponSanitizeAttribute(node, e) {
     if (!e.attrValue || !/^\s*data:/i.test(e.attrValue)) {
       return;
     }
-    const { context: ctx, sanitizer } = config;
+    const ctx = URLSanitizer.#currentCtx;
+    const sanitizer = URLSanitizer.#currentInstance;
     if (!ctx || !sanitizer) {
       return;
     }
@@ -124,6 +131,7 @@ class URLSanitizer extends URISchemes {
   }
 
   static {
+    domPurify.setConfig(INTERNAL_PURIFY_CONFIG);
     domPurify.addHook(
       'uponSanitizeAttribute',
       URLSanitizer.#uponSanitizeAttribute
@@ -175,10 +183,17 @@ class URLSanitizer extends URISchemes {
     } catch {
       // fall through
     }
-    let purifiedDom = ctx.domPurify.sanitize(decodedDom, {
-      context: ctx,
-      sanitizer: this
-    });
+    const prevCtx = URLSanitizer.#currentCtx;
+    const prevInstance = URLSanitizer.#currentInstance;
+    URLSanitizer.#currentCtx = ctx;
+    URLSanitizer.#currentInstance = this;
+    let purifiedDom;
+    try {
+      purifiedDom = ctx.domPurify.sanitize(decodedDom);
+    } finally {
+      URLSanitizer.#currentCtx = prevCtx;
+      URLSanitizer.#currentInstance = prevInstance;
+    }
     purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
     try {
       return encodeURI(purifiedDom);
