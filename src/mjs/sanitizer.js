@@ -77,8 +77,8 @@ export const logDebug = (isDebug, message, error) => {
 class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
-  static #currentCtx = null;
   static #currentInstance = null;
+  static #currentCtx = null;
 
   /**
    * DOMPurify 'uponSanitizeAttribute' hook callback.
@@ -91,8 +91,8 @@ class URLSanitizer extends URISchemes {
     if (!e.attrValue || !/^\s*data:/i.test(e.attrValue)) {
       return;
     }
-    const ctx = URLSanitizer.#currentCtx;
     const sanitizer = URLSanitizer.#currentInstance;
+    const ctx = URLSanitizer.#currentCtx;
     if (!ctx || !sanitizer) {
       return;
     }
@@ -183,16 +183,16 @@ class URLSanitizer extends URISchemes {
     } catch {
       // fall through
     }
-    const prevCtx = URLSanitizer.#currentCtx;
     const prevInstance = URLSanitizer.#currentInstance;
-    URLSanitizer.#currentCtx = ctx;
+    const prevCtx = URLSanitizer.#currentCtx;
     URLSanitizer.#currentInstance = this;
+    URLSanitizer.#currentCtx = ctx;
     let purifiedDom;
     try {
       purifiedDom = ctx.domPurify.sanitize(decodedDom);
     } finally {
-      URLSanitizer.#currentCtx = prevCtx;
       URLSanitizer.#currentInstance = prevInstance;
+      URLSanitizer.#currentCtx = prevCtx;
     }
     purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
     try {
