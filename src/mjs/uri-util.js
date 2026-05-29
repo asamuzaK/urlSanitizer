@@ -12,7 +12,9 @@ import { HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
   REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './regexp.js';
-import { CTRL_CHAR_CODES, TEXT_CHAR_CODES } from './text-chars.js';
+import {
+  CTRL_CHAR_CODES, TEXT_CHAR_CODES, WINDOWS1252_TO_UNICODE
+} from './text-chars.js';
 const [
   ENC_AMP,
   ENC_NUM,
@@ -23,7 +25,7 @@ const [
 ] = ['&', '#', '<', '>', '"', "'"].map(ch =>
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
-const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES].join('')}]`);
+const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`);
 
 /**
  * URI schemes
@@ -156,14 +158,14 @@ export const parseBase64 = data => {
  * @returns {string} The resolved character or the original match.
  */
 export const replaceNumCharRef = (match, value) => {
-  let num;
-  if (/x/i.test(value[0])) {
-    num = parseInt(value.substring(1), HEX);
-  } else {
-    num = parseInt(value, 10);
-  }
+  const num = /x/i.test(value[0])
+    ? parseInt(value.substring(1), HEX)
+    : parseInt(value, 10);
   if (!Number.isNaN(num)) {
-    if (TEXT_CHAR_CODES.has(num)) {
+    if (WINDOWS1252_TO_UNICODE.has(num)) {
+      const codePoint = WINDOWS1252_TO_UNICODE.get(num);
+      return String.fromCodePoint(codePoint);
+    } else if (TEXT_CHAR_CODES.has(num)) {
       return String.fromCharCode(num);
     } else if (num < HEX * HEX) {
       return '';

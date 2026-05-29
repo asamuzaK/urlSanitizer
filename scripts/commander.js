@@ -69,7 +69,7 @@ export const storeTextChars = async (cmdOpts = {}) => {
   for (let i = 0x20; i < 0x7f; i++) {
     textChars.add(i);
   }
-  for (let i = 0x80; i <= 0xff; i++) {
+  for (let i = 0xa0; i <= 0xff; i++) {
     textChars.add(i);
   }
   const content = JSON.stringify([...textChars], null, null);
