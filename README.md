@@ -439,9 +439,9 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :---: | :---: | :---: |
-| **Normal HTTP URL** | ~0.98 µs/iter | ~4.28 µs/iter | ~4.09 µs/iter |
-| **XSS URL** | ~5.39 µs/iter | ~1.61 µs/iter | ~9.50 µs/iter |
-| **Complex Data URL** | ~460.98 µs/iter | ~2.79 µs/iter | ~9.59 µs/iter |
+| **Normal HTTP URL** | ~1.03 µs/iter | ~4.33 µs/iter | ~4.23 µs/iter |
+| **XSS URL** | ~5.68 µs/iter | ~1.61 µs/iter | ~9.51 µs/iter |
+| **Complex Data URL** | ~175.71 µs/iter | ~2.77 µs/iter | ~10.01 µs/iter |
 
 ### Characteristics & Trade-offs
 
