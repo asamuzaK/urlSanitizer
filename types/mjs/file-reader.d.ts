@@ -8,23 +8,23 @@ export class ProgressEvent extends Event {
         total?: number | undefined;
     });
     get lengthComputable(): boolean;
-    get loaded(): number | undefined;
-    get total(): number | undefined;
+    get loaded(): number;
+    get total(): number;
     #private;
 }
 export class FileReader extends EventTarget {
     EMPTY: number;
     LOADING: number;
     DONE: number;
-    get error(): null;
+    get error(): Error | DOMException | null;
     get readyState(): number;
-    get result(): null;
-    _dispatchProgressEvent(type: string): boolean;
+    get result(): string | ArrayBuffer | null;
+    private _dispatchProgressEvent;
     abort(): void;
-    _read(blob: object, format: string, encoding?: string): Promise<void>;
-    readAsArrayBuffer(blob: object): Promise<void>;
-    readAsBinaryString(blob: object): Promise<void>;
-    readAsDataURL(blob: object): Promise<void>;
-    readAsText(blob: object, encoding?: string): Promise<void>;
+    private _read;
+    readAsArrayBuffer(blob: Blob): Promise<void>;
+    readAsBinaryString(blob: Blob): Promise<void>;
+    readAsDataURL(blob: Blob): Promise<void>;
+    readAsText(blob: Blob, encoding?: string): Promise<void>;
     #private;
 }

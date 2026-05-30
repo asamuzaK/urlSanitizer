@@ -34,7 +34,7 @@
     "@types/node": "^25.9.1",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "copyfiles-ng": "^2.4.7",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
@@ -84,7 +84,7 @@
     "tsc": "node scripts/index clean --dir=types -i && npx tsc"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
-  "version": "3.0.0"
+  "version": "4.0.0"
 }

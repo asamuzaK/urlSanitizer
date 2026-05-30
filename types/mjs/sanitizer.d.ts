@@ -3,25 +3,35 @@ export function sanitizeURL(url: string, opt?: {
     allow?: string[] | undefined;
     deny?: string[] | undefined;
     only?: string[] | undefined;
+    allowRelative?: boolean | undefined;
+    debug?: boolean | undefined;
+    revokeObjectURL?: boolean | undefined;
+    maxBlobSize?: number | undefined;
 }): Promise<string | null>;
 export function sanitizeURLSync(url: string, opt?: {
     allow?: string[] | undefined;
     deny?: string[] | undefined;
     only?: string[] | undefined;
+    allowRelative?: boolean | undefined;
+    debug?: boolean | undefined;
+    revokeObjectURL?: boolean | undefined;
 }): string | null;
-export function parseURL(url: string): Promise<ParsedURL>;
-export function parseURLSync(url: string): ParsedURL;
+export function inspectURL(url: string): Promise<InspectedURLResult>;
+export function parseURL(url: string): Promise<InspectedURLResult>;
+export function inspectURLSync(url: string): InspectedURLResult;
+export function parseURLSync(url: string): InspectedURLResult;
 export function isURI(uri: string): Promise<boolean>;
 export function isURISync(uri: string): boolean;
 export default urlSanitizer;
-export type ParsedURL = {
+export type InspectedDataURL = {
+    mime: string;
+    base64: boolean;
+    data: string;
+};
+export type InspectedURLResult = {
     input: string;
     valid: boolean;
-    data?: {
-        mime?: string | undefined;
-        base64?: boolean | undefined;
-        data?: string | undefined;
-    } | undefined;
+    data?: InspectedDataURL | null | undefined;
     href?: string | undefined;
     origin?: string | undefined;
     protocol?: string | undefined;
@@ -35,20 +45,21 @@ export type ParsedURL = {
     hash?: string | undefined;
 };
 export class URLSanitizer extends URISchemes {
-    replace(data: string): string;
-    purify(dom: string): string;
+    static #currentCtx: null;
+    static #currentInstance: URLSanitizer | null;
+    private static #uponSanitizeAttribute;
     sanitize(url: string, opt?: {
         allow?: string[] | undefined;
         deny?: string[] | undefined;
         only?: string[] | undefined;
         allowRelative?: boolean | undefined;
         debug?: boolean | undefined;
+        maxBlobSize?: number | undefined;
     }): string | null;
-    parse(url: string, opt?: {
-        allow?: string[] | undefined;
-        deny?: string[] | undefined;
-        only?: string[] | undefined;
-    }): ParsedURL;
+    inspect(url: string, opt?: object): InspectedURLResult;
+    add(scheme: string): string[];
+    remove(scheme: string): boolean;
+    reset(): void;
     #private;
 }
 declare const urlSanitizer: URLSanitizer;
