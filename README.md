@@ -222,10 +222,9 @@ Synchronous version of `sanitizeURL()`.
 
 **Note:** `parseURL()` is deprecated. Please use `inspectURL()` instead.
 
-Inspects and parses the given URL asynchronously.
+Inspects, parses, and sanitizes the given URL asynchronously.
 
-* **Data URLs:** Parsed, decoded, and **sanitized** during this process.
-  For example, if the payload contains HTML/SVG, malicious attributes are removed and the content is safely re-encoded.
+* **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
 * **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
   To process and sanitize the content of a blob URL, use [sanitizeURL()](#sanitizeurlurl-opt).
 
@@ -237,15 +236,16 @@ Inspects and parses the given URL asynchronously.
 
 #### InspectedURLResult
 
-An object with additional properties based on the standard [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API.
+An object extending the standard [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API with additional properties.
+The properties except for `input` and `valid` are omitted from the object for invalid URLs.
 
-* `input` **string** URL input.
-* `valid` **boolean** Is valid URI.
-* `data` **object?** Parsed result of data URL, nullable.
-  * `data.mime` **string?** MIME type.
-  * `data.base64` **boolean?** Indicates whether the data is base64-encoded.
-  * `data.data` **string?** The actual data part of the data URL.
-* `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **string?** Properties same as the standard URL API.
+* `input` — **string** The original URL input.
+* `valid` — **boolean** Indicates whether the URI is valid.
+* `data` — **[object?]** The parsed result of a data URL, if applicable. Null if not a data URL.
+  * `data.mime` — **string** The MIME type of the data.
+  * `data.base64` — **boolean** Indicates whether the data is base64-encoded.
+  * `data.data` — **string** The actual data part of the data URL.
+* `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string]** Properties identical to the standard URL API (omitted if the URL is invalid).
 
 ``` javascript
 const res1 = await inspectURL('javascript:alert(1)');
@@ -439,9 +439,9 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :---: | :---: | :---: |
-| **Normal HTTP URL** | ~0.99 µs/iter | ~4.78 µs/iter | ~4.27 µs/iter |
-| **XSS URL** | ~5.49 µs/iter | ~1.63 µs/iter | ~9.65 µs/iter |
-| **Complex Data URL** | ~174.37 µs/iter | ~2.91 µs/iter | ~9.30 µs/iter |
+| **Normal HTTP URL** | ~0.94 µs/iter | ~4.32 µs/iter | ~4.02 µs/iter |
+| **XSS URL** | ~5.28 µs/iter | ~1.52 µs/iter | ~9.44 µs/iter |
+| **Complex Data URL** | ~169.41 µs/iter | ~2.65 µs/iter | ~9.46 µs/iter |
 
 ### Characteristics & Trade-offs
 

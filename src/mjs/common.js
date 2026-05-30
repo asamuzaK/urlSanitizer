@@ -6,7 +6,8 @@
 import { TYPE_FROM, TYPE_TO } from './constant.js';
 
 /**
- * Gets the exact type of the given object.
+ * Gets the type of the given object.
+ * Returns the object class name (e.g., "String", "Array", "Null", "Undefined").
  * @param {unknown} o - The object to check.
  * @returns {string} The specific type of the object.
  */

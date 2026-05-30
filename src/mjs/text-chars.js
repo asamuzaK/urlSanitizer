@@ -6,7 +6,16 @@
 import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { HEX } from './constant.js';
 
+/**
+ * A set of valid text character codes.
+ * @type {Set<number>}
+ */
 export const TEXT_CHAR_CODES = new Set(textChars);
+
+/**
+ * A mapping of Windows-1252 specific character codes to their corresponding Unicode code points.
+ * @type {Map<number, number>}
+ */
 export const WINDOWS1252_TO_UNICODE = new Map([
   [128, 0x20AC],
   [130, 0x201A],
@@ -39,16 +48,21 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 
 /**
  * Generates control character codes in hex.
+ * @private
  * @returns {Map<number, string>} Generated control char codes.
  */
 const generateCtrlCharCodes = () => {
-  const ctrlCharCodes = new Map();
+  const charCodes = new Map();
   for (let i = 0; i < HEX * HEX; i++) {
     if (!TEXT_CHAR_CODES.has(i) && !WINDOWS1252_TO_UNICODE.has(i)) {
-      ctrlCharCodes.set(i, `\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
+      charCodes.set(i, `\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
     }
   }
-  return ctrlCharCodes;
+  return charCodes;
 };
 
+/**
+ * A mapping of control character codes to their hexadecimal escape strings.
+ * @type {Map<number, string>}
+ */
 export const CTRL_CHAR_CODES = generateCtrlCharCodes();

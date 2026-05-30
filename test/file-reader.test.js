@@ -525,6 +525,22 @@ describe('file-reader', () => {
         assert.strictEqual(reader.error.message, 'error', 'message');
         assert.deepEqual(reader.result, null, 'result');
       });
+
+      it('should return null when reading binary data as text', async () => {
+        const binaryData =
+          // "Hello\0World"
+          new Uint8Array([72, 101, 108, 108, 111, 0, 87, 111, 114, 108, 100]);
+        const blob = new Blob([binaryData], {
+          type: 'text/plain'
+        });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        await reader._read(blob, 'text');
+        assert.strictEqual(reader.readyState, 2, 'state');
+        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.deepEqual(reader.result, null, 'result');
+      });
     });
 
     describe('readAsDataURL without Buffer (Browser fallback)', () => {

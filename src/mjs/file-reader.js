@@ -3,18 +3,19 @@
  */
 
 /* shared */
-import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */
 import { CHUNK_SIZE } from './constant.js';
 import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './regexp.js';
+import { TEXT_CHAR_CODES } from './text-chars.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
 
 /**
  * Converts a Uint8Array to a binary string in chunks to prevent stack overflow.
+ * @private
  * @param {Uint8Array} uint8arr - The array to convert.
  * @returns {string} The resulting binary string.
  */
@@ -61,15 +62,26 @@ export class ProgressEvent extends Event {
     this.#total = Number.isInteger(total) && total > 0 ? total : 0;
   }
 
-  /* getters */
+  /**
+   * Indicates whether the total size of the transfer is computable.
+   * @type {boolean}
+   */
   get lengthComputable() {
     return this.#lengthComputable;
   }
 
+  /**
+   * The number of bytes already loaded.
+   * @type {number}
+   */
   get loaded() {
     return this.#loaded;
   }
 
+  /**
+   * The total number of bytes to be loaded.
+   * @type {number}
+   */
   get total() {
     return this.#total;
   }
@@ -78,6 +90,9 @@ export class ProgressEvent extends Event {
 /**
  * Asynchronously reads the contents of files (or raw data buffers).
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
+ * @property {number} EMPTY - The read operation has not started yet.
+ * @property {number} LOADING - The data is currently being read.
+ * @property {number} DONE - The read operation has completed successfully or failed.
  */
 export class FileReader extends EventTarget {
   /* private fields */
@@ -96,15 +111,26 @@ export class FileReader extends EventTarget {
     this.DONE = DONE;
   }
 
-  /* getters */
+  /**
+   * The error that occurred while reading the file.
+   * @type {Error|DOMException|null}
+   */
   get error() {
     return this.#error;
   }
 
+  /**
+   * The current state of the FileReader operation.
+   * @type {number}
+   */
   get readyState() {
     return this.#state;
   }
 
+  /**
+   * The file's contents. Only valid after the read operation is complete.
+   * @type {string|ArrayBuffer|null}
+   */
   get result() {
     return this.#result;
   }
@@ -205,7 +231,8 @@ export class FileReader extends EventTarget {
             const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
             const mimeStr = mime ? `${mime};base64` : 'base64';
             if (typeof globalThis.Buffer !== 'undefined') {
-              res = `data:${mimeStr},${globalThis.Buffer.from(buffer).toString('base64')}`;
+              const base64 = globalThis.Buffer.from(buffer).toString('base64');
+              res = `data:${mimeStr},${base64}`;
             } else {
               res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
             }
@@ -213,8 +240,14 @@ export class FileReader extends EventTarget {
             break;
           }
           case 'text': {
-            const textCharCodes = new Set(textChars);
-            if (uint8arr.every(c => textCharCodes.has(c))) {
+            let isSafeText = true;
+            for (const i of uint8arr) {
+              if (!TEXT_CHAR_CODES.has(i)) {
+                isSafeText = false;
+                break;
+              }
+            }
+            if (isSafeText) {
               let charset;
               for (const media of mediaTypes) {
                 if (REG_CHARSET.test(media)) {

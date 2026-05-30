@@ -16,7 +16,7 @@ import {
   REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB, REG_TAG_QUOT,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
-const URL_PROPS = [
+const URL_PROPS = Object.freeze([
   'href',
   'origin',
   'protocol',
@@ -28,23 +28,24 @@ const URL_PROPS = [
   'pathname',
   'search',
   'hash'
-];
-const INTERNAL_PURIFY_CONFIG = {
+]);
+const INTERNAL_PURIFY_CONFIG = Object.freeze({
   RETURN_DOM: false,
   RETURN_DOM_FRAGMENT: false,
   RETURN_TRUSTED_TYPE: false
-};
+});
 
 /* typedef */
 /**
  * The result of an inspected URL, extending the standard URL API.
+ * The properties except for input and valid are omitted from the object for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URI is valid.
- * @property {object} [data] - The parsed result of a data URL, if applicable.
- * @property {string} [data.mime] - The MIME type of the data.
- * @property {boolean} [data.base64] - Indicates whether the data is base64-encoded.
- * @property {string} [data.data] - The actual data part of the data URL.
+ * @property {object|null} [data] - The parsed result of a data URL, if applicable. Null if not a data URL.
+ * @property {string} data.mime - The MIME type of the data.
+ * @property {boolean} data.base64 - Indicates whether the data is base64-encoded.
+ * @property {string} data.data - The actual data part of the data URL.
  * @property {string} [href] - The sanitized URL input.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
@@ -149,7 +150,7 @@ class URLSanitizer extends URISchemes {
    * @param {string} item - The scheme to register.
    * @param {string} listName - The name of the target option list.
    * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
-   * @param {Map<string>} schemeMap - The local map of schemes.
+   * @param {Map<string, boolean>} schemeMap - The local map of schemes.
    * @param {object} ctx - The context for state management.
    * @returns {boolean} True if the scheme is successfully registered.
    */
@@ -413,7 +414,7 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Inspects the given URL with sanitization.
+   * Inspects, parses, and sanitizes the given URL.
    * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
    * @param {object} [opt] - Sanitization options.
@@ -540,9 +541,9 @@ const urlSanitizer = new URLSanitizer();
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
  * @param {string} url - URL
  * @param {object} [opt] - options
- * @param {Array.<string>} [opt.allow] - The array of schemes to allow.
- * @param {Array.<string>} [opt.deny] - The array of schemes to deny.
- * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
+ * @param {string[]} [opt.allow] - The array of schemes to allow.
+ * @param {string[]} [opt.deny] - The array of schemes to deny.
+ * @param {string[]} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
  * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL after sanitization.
@@ -599,14 +600,14 @@ export const sanitizeURL = async (url, opt = {
               options.deny = opt.deny.filter(scheme => scheme !== 'data');
             }
           }
-          res = await urlSanitizer.sanitize(data, options);
+          res = urlSanitizer.sanitize(data, options);
         }
       }
       if (opt?.revokeObjectURL) {
         URL.revokeObjectURL(url);
       }
     } else if (scheme || opt.allowRelative) {
-      res = await urlSanitizer.sanitize(url, opt);
+      res = urlSanitizer.sanitize(url, opt);
     }
   }
   return res || null;
@@ -618,9 +619,9 @@ export const sanitizeURL = async (url, opt = {
  * The `blob` scheme is not supported and will return `null`.
  * @param {string} url - URL
  * @param {object} [opt] - options
- * @param {Array.<string>} [opt.allow] - The array of schemes to allow.
- * @param {Array.<string>} [opt.deny] - The array of schemes to deny.
- * @param {Array.<string>} [opt.only] - The array of specific schemes to allow.
+ * @param {string[]} [opt.allow] - The array of schemes to allow.
+ * @param {string[]} [opt.deny] - The array of schemes to deny.
+ * @param {string[]} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
  * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL.
@@ -658,12 +659,12 @@ export const sanitizeURLSync = (url, opt = {
 };
 
 /**
- * Asynchronously inspects the given URL.
+ * Inspects, parses, and sanitizes the given URL asynchronously.
  * @param {string} url - The URL string to inspect.
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
  */
 export const inspectURL = async url => {
-  const res = await urlSanitizer.inspect(url);
+  const res = urlSanitizer.inspect(url);
   return res;
 };
 
@@ -675,7 +676,7 @@ export const inspectURL = async url => {
 export const parseURL = url => inspectURL(url);
 
 /**
- * Synchronously inspects the given URL.
+ * Inspects, parses, and sanitizes the given URL synchronously.
  * @param {string} url - The URL string to inspect.
  * @returns {InspectedURLResult} The inspected URL object.
  */
@@ -694,7 +695,7 @@ export const parseURLSync = url => inspectURLSync(url);
  * @returns {Promise<boolean>} True if valid and registered, false otherwise.
  */
 export const isURI = async uri => {
-  const res = await urlSanitizer.verify(uri);
+  const res = urlSanitizer.verify(uri);
   return res;
 };
 

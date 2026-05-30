@@ -10,7 +10,7 @@ import { FileReader } from './file-reader.js';
 /* constants */
 import { HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_NUM_REF, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  REG_HASH, REG_NUM_REF, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './regexp.js';
 import {
   CTRL_CHAR_CODES, TEXT_CHAR_CODES, WINDOWS1252_TO_UNICODE
@@ -56,33 +56,32 @@ export class URISchemes {
 
   /**
    * Verifies if the given URI is valid and its scheme is allowed.
-   * @param {unknown} uri - The URI string to verify.
+   * @param {string} uri - The URI string to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
   verify(uri, schemes = this.#schemes) {
-    let res;
-    if (isString(uri)) {
-      try {
-        const { protocol } = new URL(uri);
-        const scheme = protocol.replace(/:$/, '');
-        const schemeParts = scheme.split('+');
-        const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-        res = !isScript && (
-          REG_SCHEME_EXT.test(scheme) ||
-          schemeParts.every(s => schemes.has(s))
-        );
-      } catch {
-        res = false;
-      }
+    if (!isString(uri)) {
+      return false;
     }
-    return !!res;
+    try {
+      const { protocol } = new URL(uri);
+      const scheme = protocol.replace(/:$/, '');
+      const parts = scheme.split('+');
+      const isScript = parts.some(s => REG_SCRIPT.test(s));
+      if (isScript) {
+        return false;
+      }
+      return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
+    } catch {
+      return false;
+    }
   }
 }
 
 /**
  * Gets the URL-encoded representation of a given string.
- * @param {unknown} str - The target string.
+ * @param {string} str - The target string.
  * @returns {string} The completely URL-encoded string.
  */
 export const getURLEncodedString = str => {
@@ -100,7 +99,7 @@ export const getURLEncodedString = str => {
 
 /**
  * Escapes URL-encoded HTML special characters.
- * @param {unknown} ch - A URL-encoded (percent-encoded) character.
+ * @param {string} ch - A URL-encoded (percent-encoded) character.
  * @returns {string} The escaped HTML special character, or the given character.
  */
 export const escapeURLEncodedHTMLChars = ch => {
@@ -133,7 +132,7 @@ export const escapeURLEncodedHTMLChars = ch => {
 
 /**
  * Parses base64-encoded data.
- * @param {unknown} data - The base64-encoded string.
+ * @param {string} data - The base64-encoded string.
  * @returns {string} The parsed text, or the original base64 if binary.
  */
 export const parseBase64 = data => {
@@ -185,8 +184,8 @@ export const replaceNumCharRef = (match, value) => {
 
 /**
  * Parses URL-encoded numeric character references in the range 0x00 to 0xFF.
- * @param {unknown} str - The target string to parse.
- * @param {unknown} [nest] - The current nesting depth for recursive parsing.
+ * @param {string} str - The target string to parse.
+ * @param {number} [nest] - The current nesting depth for recursive parsing.
  * @returns {string} The decoded and parsed string.
  */
 export const parseURLEncodedNumCharRef = (str, nest = 0) => {
@@ -196,10 +195,9 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
   }
-  let currentNest = nest;
   let res = decodeURIComponent(str);
   while (/&#/.test(res)) {
-    if (currentNest > MAX_NEST) {
+    if (nest > MAX_NEST) {
       throw new Error('Character references nested too deeply.');
     }
     const previousRes = res;
@@ -207,7 +205,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
     if (res === previousRes) {
       break;
     }
-    currentNest++;
+    nest++;
   }
   return res;
 };
@@ -223,10 +221,8 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
     if (!Number.isInteger(blob?.size)) {
       return resolve(null);
     } else if (Number.isInteger(maxBlobSize) && blob.size > maxBlobSize) {
-      return reject(new DOMException(
-        `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`,
-        'NotReadableError'
-      ));
+      const msg = `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`;
+      return reject(new DOMException(msg, 'NotReadableError'));
     }
     const reader = new FileReader();
     reader.addEventListener('error', () => reject(reader.error));
@@ -237,14 +233,12 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
 
 /**
  * Safely removes a trailing empty hash and an empty query string from a URL.
- * @param {unknown} url - The target URL string to be cleaned.
- * @returns {unknown} The cleaned URL string or the original input.
+ * @param {string} url - The target URL string to be cleaned.
+ * @returns {string} The cleaned URL string or the original input.
  */
 export const trimTrailingEmptyQueryAndHash = url => {
   if (!isString(url)) {
     return url;
   }
-  return url
-    .replace(/(?:#|%23)$/, '')
-    .replace(/(?<!(?:#|%23).*)(?:\?|%3F)$/, '');
+  return url.replace(REG_HASH, '').replace(REG_QUERY, '');
 };
