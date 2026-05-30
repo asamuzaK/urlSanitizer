@@ -72,35 +72,4 @@ describe('regexp', () => {
       assert.strictEqual(REG_TAG_QUOT.test('&'), false, 'ampersand');
     });
   });
-
-  describe('REG_NUM_REF', () => {
-    const { REG_NUM_REF } = reg;
-
-    it('should match various valid numeric character references', () => {
-      const validCases = [
-        '&#x6A;',
-        '&#106;',
-        '&#x006A;',
-        '&#0106;',
-        '&#x6A',
-        '&#106',
-        '&#X6A;'
-      ];
-      for (const item of validCases) {
-        const matches = item.match(REG_NUM_REF);
-        assert.strictEqual(matches !== null, true, `should match ${item}`);
-        assert.strictEqual(matches[0], item,
-          `should extract exact match for ${item}`);
-      }
-    });
-
-    it('should match multiple instances inside a string', () => {
-      const str = 'javasc&#x6A;ript:alert(&#49;)';
-      const matches = str.match(REG_NUM_REF);
-      assert.strictEqual(matches !== null, true, 'should find matches');
-      assert.strictEqual(matches.length, 2, 'should find exactly 2 matches');
-      assert.strictEqual(matches[0], '&#x6A;', 'first match');
-      assert.strictEqual(matches[1], '&#49;', 'second match');
-    });
-  });
 });

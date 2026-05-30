@@ -305,7 +305,7 @@ describe('uri-util', () => {
           assert.strictEqual(err.name, 'NotReadableError', 'error name');
           assert.strictEqual(
             err.message,
-            `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`,
+            `Blob size (${blob.size} bytes) exceeds max (${maxBlobSize} bytes).`,
             'error message'
           );
           return true;

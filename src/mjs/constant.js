@@ -9,6 +9,12 @@
 export const CHUNK_SIZE = 8 * 1024;
 
 /**
+ * The radix used for decimal string conversions and calculations.
+ * @type {number}
+ */
+export const DECI = 10;
+
+/**
  * The radix used for hexadecimal string conversions and calculations.
  * @type {number}
  */

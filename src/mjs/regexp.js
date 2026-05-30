@@ -15,12 +15,6 @@ export const REG_CHARSET = /^charset=([\w#&.;-]+)$/;
 export const REG_HASH = /(?:#|%23)$/;
 
 /**
- * Matches URL-encoded or raw numeric character references (hexadecimal or decimal).
- * @type {RegExp}
- */
-export const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
-
-/**
  * Matches MIME types that contain DOM-parsable content (HTML, XML, SVG).
  * @type {RegExp}
  */
@@ -40,16 +34,18 @@ export const REG_MIME_TEXT = /^text\/[\w#&.;-]+/;
 export const REG_QUERY = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
 
 /**
- * Validates whether a string complies with the standard IANA URI scheme syntax rules.
+ * Validates a string against standard IANA URI scheme syntax.
  * @type {RegExp}
  */
 export const REG_SCHEME = /^[a-z][\da-z+.-]*$/;
 
 /**
- * Matches application-specific custom extensions or web custom schemes (ext+ or web+).
+ * Matches web custom schemes (`web+`) or application-specific schemes (`ext+`).
+ * - `web+` schemes comply with the HTML Standard.
+ * - `ext+` schemes comply with RFC 3986 but disallow `+` in the suffix.
  * @type {RegExp}
  */
-export const REG_SCHEME_EXT = /^(?:ext|web)\+[a-z]+$/;
+export const REG_SCHEME_EXT = /^(?:web\+[a-z]+|ext\+[a-z][\da-z.-]*)$/;
 
 /**
  * Matches executable script schemes (javascript or vbscript), case-insensitive.
@@ -58,13 +54,13 @@ export const REG_SCHEME_EXT = /^(?:ext|web)\+[a-z]+$/;
 export const REG_SCRIPT = /^(?:java|vb)script$/i;
 
 /**
- * Matches script-executing or data-fetching schemes (javascript, vbscript, or blob).
+ * Matches script-executing or data-fetching schemes.
  * @type {RegExp}
  */
 export const REG_SCRIPT_BLOB = /^(?:(?:java|vb)script|blob)$/i;
 
 /**
- * Matches HTML tags, quotes, or their percent-encoded and character reference variants.
+ * Matches HTML tags, quotes, and their encoded or character reference variants.
  * @type {RegExp}
  */
 export const REG_TAG_QUOT =
@@ -77,7 +73,7 @@ export const REG_TAG_QUOT =
 export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 
 /**
- * Validates relative URLs and flags invalid patterns (e.g., duplicate slashes, backslashes, or incomplete schemes).
+ * Validates relative URLs and flags invalid patterns.
  * @type {RegExp}
  */
 export const REG_VERIFY_RELATIVE = /^(?:\/{2,}|\\|[a-z][a-z\d+\-.]*:[^/])/i;

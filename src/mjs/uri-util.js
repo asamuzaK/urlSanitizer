@@ -8,9 +8,9 @@ import { getType, isString } from './common.js';
 import { FileReader } from './file-reader.js';
 
 /* constants */
-import { HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
+import { DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_HASH, REG_NUM_REF, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  REG_HASH, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './regexp.js';
 import {
   CTRL_CHAR_CODES, TEXT_CHAR_CODES, WINDOWS1252_TO_UNICODE
@@ -26,6 +26,7 @@ const [
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
 const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`);
+const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
 
 /**
  * URI schemes
@@ -168,14 +169,14 @@ export const parseBase64 = data => {
 export const replaceNumCharRef = (match, value) => {
   const num = /x/i.test(value[0])
     ? parseInt(value.substring(1), HEX)
-    : parseInt(value, 10);
-  if (!Number.isNaN(num)) {
-    if (WINDOWS1252_TO_UNICODE.has(num)) {
+    : parseInt(value, DECI);
+  if (Number.isInteger(num)) {
+    if (TEXT_CHAR_CODES.has(num)) {
+      return String.fromCharCode(num);
+    } else if (WINDOWS1252_TO_UNICODE.has(num)) {
       const codePoint = WINDOWS1252_TO_UNICODE.get(num);
       return String.fromCodePoint(codePoint);
-    } else if (TEXT_CHAR_CODES.has(num)) {
-      return String.fromCharCode(num);
-    } else if (num < HEX * HEX) {
+    } else if (CTRL_CHAR_CODES.has(num)) {
       return '';
     }
   }
@@ -221,7 +222,8 @@ export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
     if (!Number.isInteger(blob?.size)) {
       return resolve(null);
     } else if (Number.isInteger(maxBlobSize) && blob.size > maxBlobSize) {
-      const msg = `Blob size (${blob.size} bytes) exceeds the maximum allowed size of ${maxBlobSize} bytes.`;
+      const msg =
+        `Blob size (${blob.size} bytes) exceeds max (${maxBlobSize} bytes).`;
       return reject(new DOMException(msg, 'NotReadableError'));
     }
     const reader = new FileReader();
