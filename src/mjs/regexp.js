@@ -48,7 +48,7 @@ export const REG_SCHEME = /^[a-z][\da-z+.-]*$/;
 export const REG_SCHEME_EXT = /^(?:web\+[a-z]+|ext\+[a-z][\da-z.-]*)$/;
 
 /**
- * Matches executable script schemes (javascript or vbscript), case-insensitive.
+ * Matches executable script schemes (javascript or vbscript).
  * @type {RegExp}
  */
 export const REG_SCRIPT = /^(?:java|vb)script$/i;
