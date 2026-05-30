@@ -88,11 +88,12 @@ export class ProgressEvent extends Event {
 }
 
 /**
- * Asynchronously reads the contents of files (or raw data buffers).
+ * A simplified Node.js implementation of the FileReader API.
+ * It is not fully compatible with the standard API.
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
  * @property {number} EMPTY - The read operation has not started yet.
  * @property {number} LOADING - The data is currently being read.
- * @property {number} DONE - The read operation has completed successfully or failed.
+ * @property {number} DONE - The read operation has completed.
  */
 export class FileReader extends EventTarget {
   /* private fields */
@@ -200,112 +201,110 @@ export class FileReader extends EventTarget {
     if (!isString(encoding)) {
       throw new TypeError(`Expected String but got ${getType(encoding)}.`);
     }
-    if (!this.#terminate) {
-      if (this.#state === this.LOADING) {
-        this.#error = new DOMException('Invalid state.', 'InvalidStateError');
-        this._dispatchProgressEvent('error');
-        throw this.#error;
-      }
-      this.#state = this.LOADING;
-      this.#result = null;
-      this.#error = null;
-      let res;
-      try {
-        const { type } = blob;
-        const mediaTypes = type ? type.split(';') : [];
-        const buffer = await blob.arrayBuffer();
-        const uint8arr = new Uint8Array(buffer);
-        this._dispatchProgressEvent('loadstart');
-        switch (format) {
-          case 'arrayBuffer': {
-            res = buffer;
-            this._dispatchProgressEvent('progress');
-            break;
+    this.#terminate = false;
+    if (this.#state === this.LOADING) {
+      this.#error = new DOMException('Invalid state.', 'InvalidStateError');
+      this._dispatchProgressEvent('error');
+      throw this.#error;
+    }
+    this.#state = this.LOADING;
+    this.#result = null;
+    this.#error = null;
+    let res;
+    try {
+      const { type } = blob;
+      const mediaTypes = type ? type.split(';') : [];
+      const buffer = await blob.arrayBuffer();
+      const uint8arr = new Uint8Array(buffer);
+      this._dispatchProgressEvent('loadstart');
+      switch (format) {
+        case 'arrayBuffer': {
+          res = buffer;
+          this._dispatchProgressEvent('progress');
+          break;
+        }
+        case 'binaryString': {
+          res = getBinaryString(uint8arr);
+          this._dispatchProgressEvent('progress');
+          break;
+        }
+        case 'dataURL': {
+          const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
+          const mimeStr = mime ? `${mime};base64` : 'base64';
+          if (typeof globalThis.Buffer !== 'undefined') {
+            const base64 = globalThis.Buffer.from(buffer).toString('base64');
+            res = `data:${mimeStr},${base64}`;
+          } else {
+            res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
           }
-          case 'binaryString': {
-            res = getBinaryString(uint8arr);
-            this._dispatchProgressEvent('progress');
-            break;
-          }
-          case 'dataURL': {
-            const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
-            const mimeStr = mime ? `${mime};base64` : 'base64';
-            if (typeof globalThis.Buffer !== 'undefined') {
-              const base64 = globalThis.Buffer.from(buffer).toString('base64');
-              res = `data:${mimeStr},${base64}`;
-            } else {
-              res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
+          this._dispatchProgressEvent('progress');
+          break;
+        }
+        case 'text': {
+          let isSafeText = true;
+          for (const i of uint8arr) {
+            if (CTRL_CHAR_CODES.has(i)) {
+              isSafeText = false;
+              break;
             }
-            this._dispatchProgressEvent('progress');
-            break;
           }
-          case 'text': {
-            let isSafeText = true;
-            for (const i of uint8arr) {
-              if (CTRL_CHAR_CODES.has(i)) {
-                isSafeText = false;
-                break;
-              }
-            }
-            if (isSafeText) {
-              let charset;
-              for (const media of mediaTypes) {
-                if (REG_CHARSET.test(media)) {
-                  [, charset] = REG_CHARSET.exec(media);
-                  if (charset) {
-                    if (/utf-?8/i.test(charset)) {
-                      charset = 'utf8';
-                    } else {
-                      charset = charset.toLowerCase();
-                    }
-                    break;
+          if (isSafeText) {
+            let charset;
+            for (const media of mediaTypes) {
+              if (REG_CHARSET.test(media)) {
+                [, charset] = REG_CHARSET.exec(media);
+                if (charset) {
+                  if (/utf-?8/i.test(charset)) {
+                    charset = 'utf8';
+                  } else {
+                    charset = charset.toLowerCase();
                   }
-                }
-              }
-              if (encoding) {
-                if (/utf-?8/i.test(encoding)) {
-                  encoding = 'utf8';
-                } else {
-                  encoding = encoding.toLowerCase();
-                }
-              } else {
-                encoding = 'utf8';
-              }
-              if (REG_MIME_DOM.test(type)) {
-                if (encoding === charset || (encoding === 'utf8' && !charset)) {
-                  res = getBinaryString(uint8arr);
-                  this._dispatchProgressEvent('progress');
-                }
-              } else if (REG_MIME_TEXT.test(type)) {
-                if (encoding === charset ||
-                    (encoding === 'utf8' &&
-                     (!charset || charset === 'us-ascii'))) {
-                  res = getBinaryString(uint8arr);
-                  this._dispatchProgressEvent('progress');
+                  break;
                 }
               }
             }
-            break;
+            if (encoding) {
+              if (/utf-?8/i.test(encoding)) {
+                encoding = 'utf8';
+              } else {
+                encoding = encoding.toLowerCase();
+              }
+            } else {
+              encoding = 'utf8';
+            }
+            const decoder = new TextDecoder(encoding, { fatal: true });
+            if (REG_MIME_DOM.test(type)) {
+              if (encoding === charset || (encoding === 'utf8' && !charset)) {
+                res = decoder.decode(uint8arr);
+                this._dispatchProgressEvent('progress');
+              }
+            } else if (REG_MIME_TEXT.test(type)) {
+              if (encoding === charset ||
+                  (encoding === 'utf8' &&
+                   (!charset || charset === 'us-ascii'))) {
+                res = decoder.decode(uint8arr);
+                this._dispatchProgressEvent('progress');
+              }
+            }
           }
-          default:
+          break;
         }
-      } catch (e) {
-        if (!this.#terminate) {
-          this.#error = e;
-          this.#state = this.DONE;
-          this._dispatchProgressEvent('error');
-          this._dispatchProgressEvent('loadend');
-        }
+        default:
       }
-      if (!(this.#terminate || this.#error)) {
-        if (res) {
-          this.#result = res;
-          this.#state = this.DONE;
-          this._dispatchProgressEvent('load');
-          this._dispatchProgressEvent('loadend');
-        } else {
-          this.abort();
-        }
+    } catch (e) {
+      this.#error = e;
+      this.#state = this.DONE;
+      this._dispatchProgressEvent('error');
+      this._dispatchProgressEvent('loadend');
+    }
+    if (!this.#error) {
+      if (res !== undefined) {
+        this.#result = res;
+        this.#state = this.DONE;
+        this._dispatchProgressEvent('load');
+        this._dispatchProgressEvent('loadend');
+      } else {
+        this.abort();
       }
     }
   }

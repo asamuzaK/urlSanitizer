@@ -18,8 +18,7 @@ export const REG_HASH = /(?:#|%23)$/;
  * Matches MIME types that contain DOM-parsable content (HTML, XML, SVG).
  * @type {RegExp}
  */
-export const REG_MIME_DOM =
-  /^(?:application\/(?:[\w#&.;-]+\+)?x|image\/svg\+x|text\/(?:ht|x))ml;?/;
+export const REG_MIME_DOM = /^(?:application\/(?:[\w.-]+\+)?xml|image\/svg\+xml|text\/(?:html|xml))(?:\s*;\s*|$)/i;
 
 /**
  * Matches general text MIME types.
