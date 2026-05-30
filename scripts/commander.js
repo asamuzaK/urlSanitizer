@@ -65,7 +65,7 @@ export const includeLibraries = cmdOpts =>
 export const storeTextChars = async (cmdOpts = {}) => {
   const { info } = cmdOpts;
   const libPath = path.resolve(DIR_CWD, PATH_LIB, 'file');
-  const textChars = new Set([0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d]);
+  const textChars = new Set([0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d]);
   for (let i = 0x20; i < 0x7f; i++) {
     textChars.add(i);
   }
