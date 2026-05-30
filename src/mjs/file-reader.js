@@ -8,7 +8,7 @@ import { getType, isString } from './common.js';
 /* constants */
 import { CHUNK_SIZE } from './constant.js';
 import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './regexp.js';
-import { TEXT_CHAR_CODES } from './text-chars.js';
+import { CTRL_CHAR_CODES } from './text-chars.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
@@ -242,7 +242,7 @@ export class FileReader extends EventTarget {
           case 'text': {
             let isSafeText = true;
             for (const i of uint8arr) {
-              if (!TEXT_CHAR_CODES.has(i)) {
+              if (CTRL_CHAR_CODES.has(i)) {
                 isSafeText = false;
                 break;
               }
