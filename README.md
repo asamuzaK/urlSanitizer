@@ -113,6 +113,7 @@ Sanitizes the given URL asynchronously.
   * opt.debug **\[boolean\]** If `true`, outputs internal error/warning logs to the console. Default is `false`.
   * opt.revokeObjectURL **\[boolean\]** Revokes the blob URL after sanitization. Default is `false`. However, to prevent memory leaks, it is highly recommended to set this option to `true`.
   * opt.maxBlobSize **\[number\]** Maximum allowed blob size in bytes. Default is `16_777_216` (16MB).
+  * opt.maxLength **\[number\]** Maximum allowed URL length. Default is no limit.
 
 **Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
 
@@ -245,6 +246,7 @@ The properties except for `input` and `valid` are omitted from the object for in
 
 * `input` — **string** The original URL input.
 * `valid` — **boolean** Indicates whether the URI is valid.
+* `reason` — **[string]** The reason why the URL is invalid. Omitted if `valid` is `true`.
 * `data` — **[{ mime: string; base64: boolean; data: string; } | null | undefined]** The parsed result of a data URL. Returns `null` if the URL is valid but not a data URL, and is omitted if the URL is invalid.
   * `data.mime` — **string** The MIME type of the data.
   * `data.base64` — **boolean** Indicates whether the data is base64-encoded.
