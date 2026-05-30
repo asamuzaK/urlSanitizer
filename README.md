@@ -45,11 +45,12 @@ npm i url-sanitizer
 
 ### Deno
 
-You can import directly in your code without installing.
-
-``` javascript
+```javascript
 import urlSanitizer from 'npm:url-sanitizer';
 ```
+
+**Note:** This library assumes a Node.js/npm-compatible dependency resolution environment, so we recommend using the `npm:` specifier.
+CDN-based ESM imports (e.g., `esm.sh`, `jsdelivr`, or `unpkg`) may work, but are not tested or guaranteed.
 
 ### Browsers and Websites
 
