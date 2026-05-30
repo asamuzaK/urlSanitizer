@@ -85,10 +85,20 @@ class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
 
-  static #currentCtx = null;
-
+  /**
+   * NOTE: Global Context Pattern for DOMPurify Hooks
+   * - DOMPurify hooks (e.g., 'uponSanitizeAttribute') are registered globally
+   * and do not accept custom arguments (like `this` or `ctx`).
+   * To pass the current sanitization context into the hook, we temporarily
+   * store it in static fields (#currentInstance and #currentCtx).
+   * - This is entirely safe and immune to race conditions because JavaScript
+   * runs on a single thread and DOMPurify's sanitize() is synchronous.
+   * The context is safely restored via try/finally block in #purify() even
+   * during recursive calls.
+   */
   /** @type {URLSanitizer | null} */
   static #currentInstance = null;
+  static #currentCtx = null;
 
   /**
    * DOMPurify 'uponSanitizeAttribute' hook callback.
@@ -104,7 +114,7 @@ class URLSanitizer extends URISchemes {
     /** @type {URLSanitizer | null} */
     const sanitizer = URLSanitizer.#currentInstance;
     const ctx = URLSanitizer.#currentCtx;
-    if (!ctx || !sanitizer) {
+    if (!sanitizer || !ctx) {
       return;
     }
     let urlObj;
