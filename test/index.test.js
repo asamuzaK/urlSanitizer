@@ -275,7 +275,8 @@ describe('URL Sanitizer', () => {
       const res = await parseURL('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
-        valid: false
+        valid: false,
+        reason: 'Invalid URI syntax or scheme is not registered.'
       }, 'result');
     });
 
@@ -376,7 +377,8 @@ describe('URL Sanitizer', () => {
       const res = parseURLSync('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
-        valid: false
+        valid: false,
+        reason: 'Invalid URI syntax or scheme is not registered.'
       }, 'result');
     });
 

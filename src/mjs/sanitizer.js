@@ -50,6 +50,7 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URI is valid.
+ * @property {string} [reason] - The reason why the URL is invalid.
  * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
  * @property {string} [href] - The sanitized URL input.
  * @property {string} [origin] - The scheme, domain, and port.
@@ -375,11 +376,19 @@ class URLSanitizer extends URISchemes {
    * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
    * @param {boolean} [opt.debug] - Flag to enable debug mode.
    * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+   * @param {number} [opt.maxLength] - The maximum allowed URL length.
    * @returns {string|null} The sanitized URL, or null.
    */
   sanitize(url, opt) {
     if (!url || !isString(url)) {
       return null;
+    }
+    const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
+      ? opt.maxLength
+      : 0;
+    if (maxLength && url.length > maxLength) {
+      const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
+      throw new RangeError(msg);
     }
     const hasRestrictiveRules = opt && (
       (Array.isArray(opt.deny) && opt.deny.length > 0) ||
@@ -435,13 +444,30 @@ class URLSanitizer extends URISchemes {
     }
     const parsedUrl = new Map([['input', url]]);
     let sanitizedUrl;
-    if (this.verify(url)) {
+    let invalidReason = null;
+    const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
+      ? opt.maxLength
+      : 0;
+    if (maxLength && url.length > maxLength) {
+      invalidReason =
+        `URL length ${url.length} exceeds maxLength ${maxLength}.`;
+    } else if (this.verify(url)) {
       const { protocol } = new URL(url);
       if (protocol === 'blob:') {
         sanitizedUrl = url;
       } else {
-        sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data', 'file'] });
+        try {
+          sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data', 'file'] });
+          if (!sanitizedUrl) {
+            invalidReason =
+              'Sanitization failed (blocked by allowed schemes or rules).';
+          }
+        } catch (e) {
+          invalidReason = e.message;
+        }
       }
+    } else {
+      invalidReason = 'Invalid URI syntax or scheme is not registered.';
     }
     if (sanitizedUrl) {
       const urlObj = new URL(sanitizedUrl);
@@ -473,6 +499,9 @@ class URLSanitizer extends URISchemes {
       }
     } else {
       parsedUrl.set('valid', false);
+      if (invalidReason) {
+        parsedUrl.set('reason', invalidReason);
+      }
     }
     return Object.fromEntries(parsedUrl);
   }
@@ -557,6 +586,7 @@ const urlSanitizer = new URLSanitizer();
  * @param {boolean} [opt.debug] - Enable debug mode.
  * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL after sanitization.
  * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+ * @param {number} [opt.maxLength] - The maximum allowed URL length
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
 export const sanitizeURL = async (url, opt = {
@@ -634,6 +664,7 @@ export const sanitizeURL = async (url, opt = {
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
  * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL.
+ * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
 export const sanitizeURLSync = (url, opt = {

@@ -1054,7 +1054,7 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('parse sanitized URL', () => {
+    describe('inspect sanitized URL', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
         assert.throws(() => sanitizer.inspect(), TypeError,
@@ -1067,7 +1067,8 @@ describe('sanitizer', () => {
         const res = sanitizer.inspect(url);
         assert.deepEqual(res, {
           input: 'javascript:alert(1)',
-          valid: false
+          valid: false,
+          reason: 'Invalid URI syntax or scheme is not registered.'
         }, 'result');
       });
 
@@ -1274,6 +1275,85 @@ describe('sanitizer', () => {
         };
         const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
+      });
+    });
+
+    describe('maxLength and reason property', () => {
+      const baseString = 'a'.repeat(30);
+      const testUrl = `https://example.com/${baseString}`;
+
+      it('should throw RangeError when URL exceeds maxLength', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        assert.throws(
+          () => sanitizer.sanitize(testUrl, { maxLength: 49 }),
+          RangeError,
+          'URL length 50 exceeds maxLength 49.'
+        );
+      });
+
+      it('should pass when URL is within maxLength', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.sanitize(testUrl, { maxLength: 50 });
+        assert.strictEqual(res, testUrl, 'result');
+      });
+
+      it('should return with reason when exceeding maxLength', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.inspect(testUrl, { maxLength: 49 });
+        assert.strictEqual(res.valid, false, 'should be invalid');
+        assert.strictEqual(res.reason, 'URL length 50 exceeds maxLength 49.', 'reason should match');
+      });
+
+      it('should return with reason for unregistered scheme', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.inspect('foo://bar');
+        assert.strictEqual(res.valid, false, 'should be invalid');
+        assert.strictEqual(res.reason, 'Invalid URI syntax or scheme is not registered.', 'reason should match');
+      });
+
+      it('should return with reason when restricted by options', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.inspect('https://example.com', { only: ['http'] });
+        assert.strictEqual(res.valid, false, 'should be invalid');
+        assert.strictEqual(res.reason, 'Sanitization failed (blocked by allowed schemes or rules).', 'reason should match');
+      });
+
+      it('should NOT include reason when URL is valid', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.inspect('https://example.com');
+        assert.strictEqual(res.valid, true, 'should be valid');
+        assert.strictEqual('reason' in res, false, 'reason property should not exist');
+      });
+    });
+
+    describe('inspect URL - sanitization failure and exception', () => {
+      it('should return with reason when sanitization fails', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.inspect('http://example.com', {
+          only: ['data']
+        });
+        assert.strictEqual(res.valid, false, 'should be valid: false');
+        assert.strictEqual(
+          res.reason,
+          'Sanitization failed (blocked by allowed schemes or rules).',
+          'reason should indicate sanitization failure'
+        );
+      });
+
+      it('should return with reason when sanitize() throws an error', () => {
+        const sanitizer = new URLSanitizer();
+        let url = 'data:text/html,test';
+        for (let i = 0; i < 18; i++) {
+          const htmlBase64 = btoa(`<img src="${url}">`);
+          url = `data:text/html;base64,${htmlBase64}`;
+        }
+        const res = sanitizer.inspect(url, { allow: ['data'] });
+        assert.strictEqual(res.valid, false, 'should be valid: false');
+        assert.strictEqual(
+          res.reason,
+          'Data URLs nested too deeply.',
+          'reason should contain the error message from the caught exception'
+        );
       });
     });
 
