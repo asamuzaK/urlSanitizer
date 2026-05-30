@@ -37,15 +37,20 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
 
 /* typedef */
 /**
+ * The parsed result of a data URL.
+ * @typedef {object} InspectedDataURL
+ * @property {string} mime - The MIME type of the data.
+ * @property {boolean} base64 - Indicates whether the data is base64-encoded.
+ * @property {string} data - The actual data part of the data URL.
+ */
+
+/**
  * The result of an inspected URL, extending the standard URL API.
  * The properties except for input and valid are omitted from the object for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URI is valid.
- * @property {object|null} [data] - The parsed result of a data URL, if applicable. Null if not a data URL.
- * @property {string} data.mime - The MIME type of the data.
- * @property {boolean} data.base64 - Indicates whether the data is base64-encoded.
- * @property {string} data.data - The actual data part of the data URL.
+ * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
  * @property {string} [href] - The sanitized URL input.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
@@ -78,8 +83,11 @@ export const logDebug = (isDebug, message, error) => {
 class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
-  static #currentInstance = null;
+
   static #currentCtx = null;
+
+  /** @type {URLSanitizer | null} */
+  static #currentInstance = null;
 
   /**
    * DOMPurify 'uponSanitizeAttribute' hook callback.
@@ -92,6 +100,7 @@ class URLSanitizer extends URISchemes {
     if (!e.attrValue || !/^\s*data:/i.test(e.attrValue)) {
       return;
     }
+    /** @type {URLSanitizer | null} */
     const sanitizer = URLSanitizer.#currentInstance;
     const ctx = URLSanitizer.#currentCtx;
     if (!ctx || !sanitizer) {

@@ -245,11 +245,11 @@ The properties except for `input` and `valid` are omitted from the object for in
 
 * `input` — **string** The original URL input.
 * `valid` — **boolean** Indicates whether the URI is valid.
-* `data` — **[object?]** The parsed result of a data URL, if applicable. Null if not a data URL.
+* `data` — **[{ mime: string; base64: boolean; data: string; } | null | undefined]** The parsed result of a data URL. Returns `null` if the URL is valid but not a data URL, and is omitted if the URL is invalid.
   * `data.mime` — **string** The MIME type of the data.
   * `data.base64` — **boolean** Indicates whether the data is base64-encoded.
   * `data.data` — **string** The actual data part of the data URL.
-* `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string]** Properties identical to the standard URL API (omitted if the URL is invalid).
+* `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string | undefined]** Properties identical to the standard URL API (omitted if the URL is invalid).
 
 ``` javascript
 const res1 = await inspectURL('javascript:alert(1)');
