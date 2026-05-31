@@ -5,7 +5,7 @@ import { isString } from '../scripts/common.js';
 
 /* test */
 import urlSanitizer, {
-  isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
+  inspectURL, inspectURLSync, isURI, isURISync, sanitizeURL, sanitizeURLSync
 } from '../src/index.js';
 
 describe('URL Sanitizer', () => {
@@ -270,9 +270,9 @@ describe('URL Sanitizer', () => {
     });
   });
 
-  describe('parse URL', () => {
+  describe('inspect URL', () => {
     it('should get result', async () => {
-      const res = await parseURL('javascript:alert(1)');
+      const res = await inspectURL('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
         valid: false,
@@ -281,7 +281,7 @@ describe('URL Sanitizer', () => {
     });
 
     it('should get result', async () => {
-      const res = await parseURL('https://example.com/?foo=bar#baz');
+      const res = await inspectURL('https://example.com/?foo=bar#baz');
       assert.deepEqual(res, {
         input: 'https://example.com/?foo=bar#baz',
         valid: true,
@@ -302,7 +302,7 @@ describe('URL Sanitizer', () => {
 
     it('should get result', async () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = await parseURL(`data:image/svg+xml;base64,${btoa(data)}`);
+      const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
       assert.deepEqual(res, {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
@@ -327,7 +327,7 @@ describe('URL Sanitizer', () => {
 
     it('should get result', async () => {
       const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = await parseURL(`data:image/png;base64,${data}`);
+      const res = await inspectURL(`data:image/png;base64,${data}`);
       assert.deepEqual(res, {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -366,7 +366,7 @@ describe('URL Sanitizer', () => {
       items.input = url;
       items.valid = true;
       items.data = null;
-      const res = await parseURL(url);
+      const res = await inspectURL(url);
       URL.revokeObjectURL(url);
       assert.deepEqual(res, items, 'result');
     });
@@ -374,7 +374,7 @@ describe('URL Sanitizer', () => {
 
   describe('parse URL sync', () => {
     it('should get result', () => {
-      const res = parseURLSync('javascript:alert(1)');
+      const res = inspectURLSync('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
         valid: false,
@@ -383,7 +383,7 @@ describe('URL Sanitizer', () => {
     });
 
     it('should get result', () => {
-      const res = parseURLSync('https://example.com/?foo=bar#baz');
+      const res = inspectURLSync('https://example.com/?foo=bar#baz');
       assert.deepEqual(res, {
         input: 'https://example.com/?foo=bar#baz',
         valid: true,
@@ -404,7 +404,7 @@ describe('URL Sanitizer', () => {
 
     it('should get result', () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = parseURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
+      const res = inspectURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
       assert.deepEqual(res, {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
@@ -429,7 +429,7 @@ describe('URL Sanitizer', () => {
 
     it('should get result', () => {
       const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = parseURLSync(`data:image/png;base64,${data}`);
+      const res = inspectURLSync(`data:image/png;base64,${data}`);
       assert.deepEqual(res, {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -468,7 +468,7 @@ describe('URL Sanitizer', () => {
       items.input = url;
       items.valid = true;
       items.data = null;
-      const res = parseURLSync(url);
+      const res = inspectURLSync(url);
       URL.revokeObjectURL(url);
       assert.deepEqual(res, items, 'result');
     });

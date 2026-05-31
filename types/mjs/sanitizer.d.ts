@@ -7,6 +7,7 @@ export function sanitizeURL(url: string, opt?: {
     debug?: boolean | undefined;
     revokeObjectURL?: boolean | undefined;
     maxBlobSize?: number | undefined;
+    maxLength?: number | undefined;
 }): Promise<string | null>;
 export function sanitizeURLSync(url: string, opt?: {
     allow?: string[] | undefined;
@@ -15,6 +16,7 @@ export function sanitizeURLSync(url: string, opt?: {
     allowRelative?: boolean | undefined;
     debug?: boolean | undefined;
     revokeObjectURL?: boolean | undefined;
+    maxLength?: number | undefined;
 }): string | null;
 export function inspectURL(url: string): Promise<InspectedURLResult>;
 export function parseURL(url: string): Promise<InspectedURLResult>;
@@ -31,6 +33,7 @@ export type InspectedDataURL = {
 export type InspectedURLResult = {
     input: string;
     valid: boolean;
+    reason?: string | undefined;
     data?: InspectedDataURL | null | undefined;
     href?: string | undefined;
     origin?: string | undefined;
@@ -45,8 +48,8 @@ export type InspectedURLResult = {
     hash?: string | undefined;
 };
 export class URLSanitizer extends URISchemes {
-    static #currentCtx: null;
     static #currentInstance: URLSanitizer | null;
+    static #currentCtx: null;
     private static #uponSanitizeAttribute;
     sanitize(url: string, opt?: {
         allow?: string[] | undefined;
@@ -55,6 +58,7 @@ export class URLSanitizer extends URISchemes {
         allowRelative?: boolean | undefined;
         debug?: boolean | undefined;
         maxBlobSize?: number | undefined;
+        maxLength?: number | undefined;
     }): string | null;
     inspect(url: string, opt?: object): InspectedURLResult;
     add(scheme: string): string[];

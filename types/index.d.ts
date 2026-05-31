@@ -1,1 +1,1 @@
-export { default, isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync } from "./mjs/sanitizer.js";
+export { default, inspectURL, inspectURLSync, isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync } from "./mjs/sanitizer.js";
