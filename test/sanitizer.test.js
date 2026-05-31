@@ -254,6 +254,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['blob']
         });
+        URL.revokeObjectURL(url);
         assert.deepEqual(res, null, 'result');
       });
 
@@ -266,6 +267,7 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           only: ['blob']
         });
+        URL.revokeObjectURL(url);
         assert.deepEqual(res, null, 'result');
       });
 
@@ -1498,6 +1500,7 @@ describe('sanitizer', () => {
           deny: ['blob']
         });
         const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1522,6 +1525,7 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
           res,
@@ -1544,6 +1548,7 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1557,6 +1562,7 @@ describe('sanitizer', () => {
           deny: ['data']
         });
         const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
           res,
@@ -1578,6 +1584,7 @@ describe('sanitizer', () => {
           only: ['blob', 'https']
         });
         const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
           res,
@@ -1658,6 +1665,7 @@ describe('sanitizer', () => {
         const url = URL.createObjectURL(blob);
         const opt = { only: ['blob', 'https'] };
         const res = await func(url, opt);
+        URL.revokeObjectURL(url);
         assert.strictEqual(
           res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
@@ -1676,6 +1684,7 @@ describe('sanitizer', () => {
         const url = URL.createObjectURL(blob);
         const opt = { only: ['blob', 'data', 'https'] };
         const res = await func(url, opt);
+        URL.revokeObjectURL(url);
         assert.strictEqual(
           res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
@@ -1697,6 +1706,7 @@ describe('sanitizer', () => {
           deny: ['data', 'ftp']
         };
         const res = await func(url, opt);
+        URL.revokeObjectURL(url);
         assert.strictEqual(
           res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
@@ -1720,6 +1730,7 @@ describe('sanitizer', () => {
         const url = URL.createObjectURL(blob);
         const opt = { allow: ['blob', 'data'] };
         const res = await func(url, opt);
+        URL.revokeObjectURL(url);
         assert.strictEqual(
           res,
           'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
@@ -1981,6 +1992,7 @@ describe('sanitizer', () => {
           allow: ['blob']
         });
         const revoked = await fetch(url).then(() => false).catch(() => true);
+        URL.revokeObjectURL(url);
         assert.strictEqual(revoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
