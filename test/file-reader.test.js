@@ -200,6 +200,35 @@ describe('file-reader', () => {
         assert.strictEqual(reader.readyState, 2, 'state');
         assert.strictEqual(spyFunc.callCount, i, 'called');
       });
+
+      it('should swallow error if aborted during read', async () => {
+        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
+        const mockError = new Error('Simulated read error');
+        const stubFunc = sinon.stub(blob, 'arrayBuffer').callsFake(async () => {
+          await sleep(50);
+          throw mockError;
+        });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        const p = reader._read(blob, 'text');
+        reader.abort();
+        await p;
+        stubFunc.restore();
+        assert.strictEqual(reader.readyState, 2,
+          'state after abort and internal error');
+        assert.strictEqual(reader.error.name, 'AbortError', 'error name');
+        assert.notDeepEqual(reader.error, mockError,
+          'error should not be overwritten');
+        assert.strictEqual(spyFunc.callCount, i + 3,
+          'called (loadstart, abort, loadend)');
+        assert.strictEqual(spyFunc.getCall(i).args[0], 'loadstart',
+          '1st event');
+        assert.strictEqual(spyFunc.getCall(i + 1).args[0], 'abort',
+          '2nd event');
+        assert.strictEqual(spyFunc.getCall(i + 2).args[0], 'loadend',
+          '3rd event');
+      });
     });
 
     describe('read blob', () => {
@@ -269,7 +298,7 @@ describe('file-reader', () => {
         });
         assert.strictEqual(stubFunc.callCount, 1, 'called');
         assert.strictEqual(reader.readyState, 1, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 1, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
         assert.strictEqual(reader.error instanceof DOMException, true, 'error');
         assert.strictEqual(reader.error.message, 'Invalid state.');
       });
@@ -559,7 +588,7 @@ describe('file-reader', () => {
         await reader._read(blob, 'text', 'utf8');
         stubFunc.restore();
         assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
+        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
         assert.deepEqual(reader.error, e, 'error');
         assert.strictEqual(reader.error.message, 'error', 'message');
         assert.deepEqual(reader.result, null, 'result');
