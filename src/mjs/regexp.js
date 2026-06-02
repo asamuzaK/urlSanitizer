@@ -6,7 +6,7 @@
  * Matches and captures the charset parameter in a media type string.
  * @type {RegExp}
  */
-export const REG_CHARSET = /^charset=([\w#&.;-]+)$/;
+export const REG_CHARSET = /^charset=([\w:-]+)$/;
 
 /**
  * Matches a trailing empty fragment identifier (#).
