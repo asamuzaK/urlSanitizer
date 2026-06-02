@@ -251,12 +251,12 @@ export class FileReader extends EventTarget {
           if (isSafeText) {
             let charset;
             for (const media of mediaTypes) {
-              if (REG_CHARSET.test(media)) {
-                [, charset] = REG_CHARSET.exec(media);
-                if (charset) {
-                  charset = new TextDecoder(charset, { fatal: true }).encoding;
-                  break;
-                }
+              const match = media.match(REG_CHARSET);
+              if (match) {
+                const charsetName = match.groups.name;
+                charset =
+                  new TextDecoder(charsetName, { fatal: true }).encoding;
+                break;
               }
             }
             const decoder = new TextDecoder(encoding, { fatal: true });
