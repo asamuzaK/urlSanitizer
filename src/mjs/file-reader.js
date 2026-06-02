@@ -214,9 +214,12 @@ export class FileReader extends EventTarget {
     try {
       const { type } = blob;
       const mediaTypes = type ? type.split(';') : [];
-      const buffer = await blob.arrayBuffer();
-      const uint8arr = new Uint8Array(buffer);
       this._dispatchProgressEvent('loadstart');
+      const buffer = await blob.arrayBuffer();
+      if (this.#terminate) {
+        return;
+      }
+      const uint8arr = new Uint8Array(buffer);
       switch (format) {
         case 'arrayBuffer': {
           res = buffer;
@@ -280,12 +283,15 @@ export class FileReader extends EventTarget {
         default:
       }
     } catch (e) {
+      if (this.#terminate) {
+        return;
+      }
       this.#error = e;
       this.#state = this.DONE;
       this._dispatchProgressEvent('error');
       this._dispatchProgressEvent('loadend');
     }
-    if (!this.#error) {
+    if (!this.#error && !this.#terminate) {
       if (res !== undefined) {
         this.#result = res;
         this.#state = this.DONE;
