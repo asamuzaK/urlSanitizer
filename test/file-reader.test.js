@@ -415,6 +415,45 @@ describe('file-reader', () => {
 
       it('should get null', async () => {
         const blob = new Blob(['Hello, world!'], {
+          type: 'text/plain;charset=foo'
+        });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        await reader._read(blob, 'text', 'UTF-8');
+        assert.strictEqual(reader.readyState, 2, 'state');
+        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(reader.result, null, 'result');
+      });
+
+      it('should get null', async () => {
+        const blob = new Blob(['Hello, world!'], {
+          type: 'text/plain;charset=utf-8'
+        });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        await reader._read(blob, 'text', 'foo');
+        assert.strictEqual(reader.readyState, 2, 'state');
+        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
+        assert.strictEqual(reader.result, null, 'result');
+      });
+
+      it('should get result', async () => {
+        const blob = new Blob(['Hello, world!'], {
+          type: 'text/plain;charset=US-ASCII'
+        });
+        const reader = new FileReader();
+        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
+        const i = spyFunc.callCount;
+        await reader._read(blob, 'text', 'windows-1252');
+        assert.strictEqual(reader.readyState, 2, 'state');
+        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
+        assert.strictEqual(reader.result, 'Hello, world!', 'result');
+      });
+
+      it('should get null', async () => {
+        const blob = new Blob(['Hello, world!'], {
           type: 'text/plain'
         });
         const reader = new FileReader();

@@ -191,7 +191,7 @@ export class FileReader extends EventTarget {
    * @param {string} [encoding] - The character encoding for text formats.
    * @returns {Promise<void>}
    */
-  async _read(blob, format, encoding = '') {
+  async _read(blob, format, encoding = 'utf-8') {
     if (!(blob instanceof Blob)) {
       throw new TypeError(`Expected Blob but got ${getType(blob)}.`);
     }
@@ -251,37 +251,25 @@ export class FileReader extends EventTarget {
           if (isSafeText) {
             let charset;
             for (const media of mediaTypes) {
-              if (REG_CHARSET.test(media)) {
-                [, charset] = REG_CHARSET.exec(media);
-                if (charset) {
-                  if (/utf-?8/i.test(charset)) {
-                    charset = 'utf8';
-                  } else {
-                    charset = charset.toLowerCase();
-                  }
-                  break;
-                }
+              const match = media.match(REG_CHARSET);
+              if (match) {
+                const charsetName = match.groups.name;
+                charset =
+                  new TextDecoder(charsetName, { fatal: true }).encoding;
+                break;
               }
-            }
-            if (encoding) {
-              if (/utf-?8/i.test(encoding)) {
-                encoding = 'utf8';
-              } else {
-                encoding = encoding.toLowerCase();
-              }
-            } else {
-              encoding = 'utf8';
             }
             const decoder = new TextDecoder(encoding, { fatal: true });
+            encoding = decoder.encoding;
             if (REG_MIME_DOM.test(type)) {
-              if (encoding === charset || (encoding === 'utf8' && !charset)) {
+              if (encoding === charset || (encoding === 'utf-8' && !charset)) {
                 res = decoder.decode(uint8arr);
                 this._dispatchProgressEvent('progress');
               }
             } else if (REG_MIME_TEXT.test(type)) {
               if (encoding === charset ||
-                  (encoding === 'utf8' &&
-                   (!charset || charset === 'us-ascii'))) {
+                  (encoding === 'utf-8' &&
+                   (!charset || charset === 'windows-1252'))) {
                 res = decoder.decode(uint8arr);
                 this._dispatchProgressEvent('progress');
               }
