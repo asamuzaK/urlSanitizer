@@ -7,9 +7,6 @@ import { getType } from './common.js';
 
 /* constants */
 import { CHUNK_SIZE } from './constant.js';
-const DONE = 2;
-const EMPTY = 0;
-const LOADING = 1;
 
 /**
  * Converts a Uint8Array to a binary string in chunks to prevent stack overflow.
@@ -56,8 +53,12 @@ export class ProgressEvent extends Event {
       composed: !!composed
     });
     this.#lengthComputable = !!lengthComputable;
-    this.#loaded = Number.isInteger(loaded) && loaded > 0 ? loaded : 0;
-    this.#total = Number.isInteger(total) && total > 0 ? total : 0;
+    this.#loaded = Number.isFinite(loaded) && loaded >= 0
+      ? Math.floor(loaded)
+      : 0;
+    this.#total = Number.isFinite(total) && total >= 0
+      ? Math.floor(total)
+      : 0;
   }
 
   /**
@@ -93,25 +94,15 @@ export class ProgressEvent extends Event {
  */
 export class FileReader extends EventTarget {
   /* static fields */
-  static EMPTY = EMPTY;
-  static LOADING = LOADING;
-  static DONE = DONE;
+  static EMPTY = 0;
+  static LOADING = 1;
+  static DONE = 2;
 
   /* private fields */
   #error = null;
   #state = FileReader.EMPTY;
   #result = null;
   #terminate = false;
-
-  /**
-   * Creates a new FileReader instance.
-   */
-  constructor() {
-    super();
-    this.EMPTY = FileReader.EMPTY;
-    this.LOADING = FileReader.LOADING;
-    this.DONE = FileReader.DONE;
-  }
 
   /**
    * Dispatches a progress event.
@@ -123,7 +114,7 @@ export class FileReader extends EventTarget {
    * @throws {TypeError|DOMException} Throws if the event type is invalid.
    */
   #dispatchProgressEvent(type, loaded = 0, total = 0) {
-    const evt = new ProgressEvent(type.trim(), {
+    const evt = new ProgressEvent(type, {
       loaded,
       total,
       bubbles: false,
@@ -144,7 +135,7 @@ export class FileReader extends EventTarget {
     if (!(blob instanceof Blob)) {
       throw new TypeError(`Expected Blob but got ${getType(blob)}.`);
     }
-    if (this.#state === this.LOADING) {
+    if (this.#state === FileReader.LOADING) {
       throw new DOMException('Invalid state.', 'InvalidStateError');
     }
   }
@@ -160,13 +151,11 @@ export class FileReader extends EventTarget {
   async #read(blob, format, encoding = 'utf-8') {
     const size = blob.size;
     this.#terminate = false;
-    this.#state = this.LOADING;
+    this.#state = FileReader.LOADING;
     this.#result = null;
     this.#error = null;
     let res;
     try {
-      const { type } = blob;
-      const mediaTypes = type ? type.split(';') : [];
       this.#dispatchProgressEvent('loadstart', 0, size);
       const buffer = await blob.arrayBuffer();
       if (this.#terminate) {
@@ -185,8 +174,8 @@ export class FileReader extends EventTarget {
           break;
         }
         case 'dataURL': {
-          const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
-          const mimeStr = mime ? `${mime};base64` : 'base64';
+          const { type } = blob;
+          const mimeStr = type ? `${type};base64` : 'base64';
           if (typeof globalThis.Buffer !== 'undefined') {
             const base64 = globalThis.Buffer.from(buffer).toString('base64');
             res = `data:${mimeStr},${base64}`;
@@ -209,13 +198,14 @@ export class FileReader extends EventTarget {
         return;
       }
       this.#error = e;
-      this.#state = this.DONE;
+      this.#state = FileReader.DONE;
       this.#dispatchProgressEvent('error');
       this.#dispatchProgressEvent('loadend');
+      return;
     }
     if (!this.#error && !this.#terminate) {
       this.#result = res;
-      this.#state = this.DONE;
+      this.#state = FileReader.DONE;
       this.#dispatchProgressEvent('load');
       this.#dispatchProgressEvent('loadend');
     }
@@ -251,11 +241,11 @@ export class FileReader extends EventTarget {
    * @returns {void}
    */
   abort() {
-    if (this.#state === this.EMPTY || this.#state === this.DONE) {
+    if (this.#state === FileReader.EMPTY || this.#state === FileReader.DONE) {
       this.#result = null;
       return;
     }
-    this.#state = this.DONE;
+    this.#state = FileReader.DONE;
     this.#result = null;
     this.#terminate = true;
     this.#error =
@@ -276,6 +266,7 @@ export class FileReader extends EventTarget {
 
   /**
    * Reads the contents of the specified Blob as a binary string.
+   * @deprecated
    * @param {Blob} blob - The target Blob object.
    * @returns {void}
    */
