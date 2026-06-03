@@ -3,12 +3,10 @@
  */
 
 /* shared */
-import { getType, isString } from './common.js';
+import { getType } from './common.js';
 
 /* constants */
 import { CHUNK_SIZE } from './constant.js';
-import { REG_CHARSET, REG_MIME_DOM, REG_MIME_TEXT } from './regexp.js';
-import { CTRL_CHAR_CODES } from './text-chars.js';
 const DONE = 2;
 const EMPTY = 0;
 const LOADING = 1;
@@ -89,16 +87,19 @@ export class ProgressEvent extends Event {
 
 /**
  * A simplified Node.js implementation of the FileReader API.
- * It is not fully compatible with the standard API.
+ * This class provides a way to read files (or raw data) from a Blob object
+ * as an ArrayBuffer, a binary string, a data URL, or a text string.
  * @see {@link https://w3c.github.io/FileAPI/#APIASynch}
- * @property {number} EMPTY - The read operation has not started yet.
- * @property {number} LOADING - The data is currently being read.
- * @property {number} DONE - The read operation has completed.
  */
 export class FileReader extends EventTarget {
+  /* static fields */
+  static EMPTY = EMPTY;
+  static LOADING = LOADING;
+  static DONE = DONE;
+
   /* private fields */
   #error = null;
-  #state = EMPTY;
+  #state = FileReader.EMPTY;
   #result = null;
   #terminate = false;
 
@@ -107,9 +108,117 @@ export class FileReader extends EventTarget {
    */
   constructor() {
     super();
-    this.EMPTY = EMPTY;
-    this.LOADING = LOADING;
-    this.DONE = DONE;
+    this.EMPTY = FileReader.EMPTY;
+    this.LOADING = FileReader.LOADING;
+    this.DONE = FileReader.DONE;
+  }
+
+  /**
+   * Dispatches a progress event.
+   * @private
+   * @param {string} type - The type of the event.
+   * @param {number} [loaded] - The number of bytes already loaded.
+   * @param {number} [total] - The total number of bytes to be loaded.
+   * @returns {boolean} True if the event was dispatched and not canceled.
+   * @throws {TypeError|DOMException} Throws if the event type is invalid.
+   */
+  #dispatchProgressEvent(type, loaded = 0, total = 0) {
+    const evt = new ProgressEvent(type.trim(), {
+      loaded,
+      total,
+      bubbles: false,
+      cancelable: false,
+      lengthComputable: total > 0
+    });
+    return super.dispatchEvent(evt);
+  }
+
+  /**
+   * Validates that the input is a valid Blob and that the reader is not busy.
+   * @private
+   * @param {Blob} blob - The Blob object to be checked.
+   * @throws {TypeError} Throws if the input is not an instance of Blob.
+   * @throws {DOMException} Throws if the reader's state is LOADING.
+   */
+  #checkReady(blob) {
+    if (!(blob instanceof Blob)) {
+      throw new TypeError(`Expected Blob but got ${getType(blob)}.`);
+    }
+    if (this.#state === this.LOADING) {
+      throw new DOMException('Invalid state.', 'InvalidStateError');
+    }
+  }
+
+  /**
+   * Internal method to process the reading of the blob.
+   * @private
+   * @param {Blob} blob - The target Blob object.
+   * @param {string} format - The reading format.
+   * @param {string} [encoding] - The character encoding for text.
+   * @returns {Promise<void>} Resolves when the read process completes.
+   */
+  async #read(blob, format, encoding = 'utf-8') {
+    const size = blob.size;
+    this.#terminate = false;
+    this.#state = this.LOADING;
+    this.#result = null;
+    this.#error = null;
+    let res;
+    try {
+      const { type } = blob;
+      const mediaTypes = type ? type.split(';') : [];
+      this.#dispatchProgressEvent('loadstart', 0, size);
+      const buffer = await blob.arrayBuffer();
+      if (this.#terminate) {
+        return;
+      }
+      const uint8arr = new Uint8Array(buffer);
+      switch (format) {
+        case 'arrayBuffer': {
+          res = buffer;
+          this.#dispatchProgressEvent('progress', size, size);
+          break;
+        }
+        case 'binaryString': {
+          res = getBinaryString(uint8arr);
+          this.#dispatchProgressEvent('progress', size, size);
+          break;
+        }
+        case 'dataURL': {
+          const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
+          const mimeStr = mime ? `${mime};base64` : 'base64';
+          if (typeof globalThis.Buffer !== 'undefined') {
+            const base64 = globalThis.Buffer.from(buffer).toString('base64');
+            res = `data:${mimeStr},${base64}`;
+          } else {
+            res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
+          }
+          this.#dispatchProgressEvent('progress', size, size);
+          break;
+        }
+        case 'text':
+        default: {
+          const decoder = new TextDecoder(encoding || 'utf-8');
+          res = decoder.decode(uint8arr);
+          this.#dispatchProgressEvent('progress', size, size);
+          break;
+        }
+      }
+    } catch (e) {
+      if (this.#terminate) {
+        return;
+      }
+      this.#error = e;
+      this.#state = this.DONE;
+      this.#dispatchProgressEvent('error');
+      this.#dispatchProgressEvent('loadend');
+    }
+    if (!this.#error && !this.#terminate) {
+      this.#result = res;
+      this.#state = this.DONE;
+      this.#dispatchProgressEvent('load');
+      this.#dispatchProgressEvent('loadend');
+    }
   }
 
   /**
@@ -137,36 +246,8 @@ export class FileReader extends EventTarget {
   }
 
   /**
-   * Dispatches a progress event.
-   * @private
-   * @param {string} type - The type of the event to dispatch.
-   * @returns {boolean} True if dispatched and not canceled, false otherwise.
-   */
-  _dispatchProgressEvent(type) {
-    if (!isString(type)) {
-      this.#error = new TypeError(`Expected String but got ${getType(type)}.`);
-      this._dispatchProgressEvent('error');
-      throw this.#error;
-    }
-    type = type.trim();
-    if (!/abort|error|load(?:end|start)?|progress/.test(type)) {
-      this.#error = new DOMException('Invalid state.', 'InvalidStateError');
-      this._dispatchProgressEvent('error');
-      throw this.#error;
-    } else if (type === 'error' && !this.#error) {
-      this.#error = new Error('Unknown error.');
-    }
-    const evt = new ProgressEvent(type, {
-      bubbles: false,
-      cancelable: false,
-      lengthComputable: false
-    });
-    const res = super.dispatchEvent(evt);
-    return res;
-  }
-
-  /**
    * Aborts the ongoing read operation.
+   * If the reader is not in a LOADING state, this method does nothing.
    * @returns {void}
    */
   abort() {
@@ -179,164 +260,48 @@ export class FileReader extends EventTarget {
     this.#terminate = true;
     this.#error =
       new DOMException('The read operation was aborted.', 'AbortError');
-    this._dispatchProgressEvent('abort');
-    this._dispatchProgressEvent('loadend');
-  }
-
-  /**
-   * Reads the given blob based on the specified format.
-   * @private
-   * @param {Blob} blob - The target Blob object.
-   * @param {string} format - The format in which to read the blob data.
-   * @param {string} [encoding] - The character encoding for text formats.
-   * @returns {Promise<void>}
-   */
-  async _read(blob, format, encoding = 'utf-8') {
-    if (!(blob instanceof Blob)) {
-      throw new TypeError(`Expected Blob but got ${getType(blob)}.`);
-    }
-    if (!isString(format)) {
-      throw new TypeError(`Expected String but got ${getType(format)}.`);
-    }
-    if (!isString(encoding)) {
-      throw new TypeError(`Expected String but got ${getType(encoding)}.`);
-    }
-    this.#terminate = false;
-    if (this.#state === this.LOADING) {
-      this.#error = new DOMException('Invalid state.', 'InvalidStateError');
-      this._dispatchProgressEvent('error');
-      throw this.#error;
-    }
-    this.#state = this.LOADING;
-    this.#result = null;
-    this.#error = null;
-    let res;
-    try {
-      const { type } = blob;
-      const mediaTypes = type ? type.split(';') : [];
-      this._dispatchProgressEvent('loadstart');
-      const buffer = await blob.arrayBuffer();
-      if (this.#terminate) {
-        return;
-      }
-      const uint8arr = new Uint8Array(buffer);
-      switch (format) {
-        case 'arrayBuffer': {
-          res = buffer;
-          this._dispatchProgressEvent('progress');
-          break;
-        }
-        case 'binaryString': {
-          res = getBinaryString(uint8arr);
-          this._dispatchProgressEvent('progress');
-          break;
-        }
-        case 'dataURL': {
-          const mime = mediaTypes.length > 0 ? mediaTypes.join(';') : '';
-          const mimeStr = mime ? `${mime};base64` : 'base64';
-          if (typeof globalThis.Buffer !== 'undefined') {
-            const base64 = globalThis.Buffer.from(buffer).toString('base64');
-            res = `data:${mimeStr},${base64}`;
-          } else {
-            res = `data:${mimeStr},${btoa(getBinaryString(uint8arr))}`;
-          }
-          this._dispatchProgressEvent('progress');
-          break;
-        }
-        case 'text': {
-          let isSafeText = true;
-          for (const i of uint8arr) {
-            if (CTRL_CHAR_CODES.has(i)) {
-              isSafeText = false;
-              break;
-            }
-          }
-          if (isSafeText) {
-            let charset;
-            for (const media of mediaTypes) {
-              const match = media.match(REG_CHARSET);
-              if (match) {
-                const charsetName = match.groups.name;
-                charset =
-                  new TextDecoder(charsetName, { fatal: true }).encoding;
-                break;
-              }
-            }
-            const decoder = new TextDecoder(encoding, { fatal: true });
-            encoding = decoder.encoding;
-            if (REG_MIME_DOM.test(type)) {
-              if (encoding === charset || (encoding === 'utf-8' && !charset)) {
-                res = decoder.decode(uint8arr);
-                this._dispatchProgressEvent('progress');
-              }
-            } else if (REG_MIME_TEXT.test(type)) {
-              if (encoding === charset ||
-                  (encoding === 'utf-8' &&
-                   (!charset || charset === 'windows-1252'))) {
-                res = decoder.decode(uint8arr);
-                this._dispatchProgressEvent('progress');
-              }
-            }
-          }
-          break;
-        }
-        default:
-      }
-    } catch (e) {
-      if (this.#terminate) {
-        return;
-      }
-      this.#error = e;
-      this.#state = this.DONE;
-      this._dispatchProgressEvent('error');
-      this._dispatchProgressEvent('loadend');
-    }
-    if (!this.#error && !this.#terminate) {
-      if (res !== undefined) {
-        this.#result = res;
-        this.#state = this.DONE;
-        this._dispatchProgressEvent('load');
-        this._dispatchProgressEvent('loadend');
-      } else {
-        this.abort();
-      }
-    }
+    this.#dispatchProgressEvent('abort');
+    this.#dispatchProgressEvent('loadend');
   }
 
   /**
    * Reads the contents of the specified Blob as an ArrayBuffer.
    * @param {Blob} blob - The target Blob object.
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async readAsArrayBuffer(blob) {
-    await this._read(blob, 'arrayBuffer');
+  readAsArrayBuffer(blob) {
+    this.#checkReady(blob);
+    this.#read(blob, 'arrayBuffer').catch(() => {});
   }
 
   /**
    * Reads the contents of the specified Blob as a binary string.
    * @param {Blob} blob - The target Blob object.
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async readAsBinaryString(blob) {
-    await this._read(blob, 'binaryString');
+  readAsBinaryString(blob) {
+    this.#checkReady(blob);
+    this.#read(blob, 'binaryString').catch(() => {});
   }
 
   /**
    * Reads the contents of the specified Blob as a base64-encoded data URL.
    * @param {Blob} blob - The target Blob object.
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async readAsDataURL(blob) {
-    await this._read(blob, 'dataURL');
+  readAsDataURL(blob) {
+    this.#checkReady(blob);
+    this.#read(blob, 'dataURL').catch(() => {});
   }
 
   /**
    * Reads the contents of the specified Blob as text.
    * @param {Blob} blob - The target Blob object.
    * @param {string} [encoding] - The character encoding to use.
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async readAsText(blob, encoding) {
-    await this._read(blob, 'text', encoding);
+  readAsText(blob, encoding = 'utf-8') {
+    this.#checkReady(blob);
+    this.#read(blob, 'text', encoding).catch(() => {});
   }
 }
