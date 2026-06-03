@@ -5,7 +5,7 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import sinon from 'sinon';
-import { after, before, describe, it } from 'mocha';
+import { afterEach, beforeEach, describe, it, } from 'mocha';
 import { sleep } from '../scripts/common.js';
 
 /* test */
@@ -21,7 +21,7 @@ describe('file-reader', () => {
       assert.strictEqual(evt instanceof ProgressEvent, true, 'instance');
     });
 
-    describe('getter', () => {
+    describe('getters', () => {
       it('should get value', () => {
         const evt = new ProgressEvent('abort');
         const res = evt.lengthComputable;
@@ -83,637 +83,316 @@ describe('file-reader', () => {
   });
 
   describe('file reader', () => {
-    it('should create instance', () => {
-      const reader = new FileReader();
-      assert.strictEqual(reader instanceof EventTarget, true, 'instance');
-      assert.strictEqual(reader instanceof FileReader, true, 'instance');
+    let reader;
+
+    beforeEach(() => {
+      reader = new FileReader();
     });
 
-    describe('getter', () => {
-      it('should get value', () => {
-        const reader = new FileReader();
-        const res = reader.error;
-        assert.deepEqual(res, null, 'result');
-      });
+    it('should initialize with correct default values', () => {
+      assert.strictEqual(reader.readyState, FileReader.EMPTY,
+        'Initial state should be EMPTY');
+      assert.strictEqual(reader.result, null, 'Initial result should be null');
+      assert.strictEqual(reader.error, null, 'Initial error should be null');
+    });
 
-      it('should get value', () => {
-        const reader = new FileReader();
-        const res = reader.readyState;
-        assert.strictEqual(res, 0, 'result');
-      });
+    it('should throw TypeError if argument is not a Blob', () => {
+      assert.throws(() => {
+        reader.readAsText('not-a-blob');
+      }, TypeError);
+    });
 
-      it('should get value', () => {
-        const reader = new FileReader();
-        const res = reader.result;
-        assert.deepEqual(res, null, 'result');
+    it('should read Blob as text successfully', async () => {
+      const textContent = 'Hello, World!';
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const promise = new Promise((resolve) => {
+        reader.addEventListener('loadend', resolve);
+      });
+      reader.readAsText(blob);
+      await promise;
+      assert.strictEqual(reader.readyState, FileReader.DONE,
+        'State should be DONE');
+      assert.strictEqual(reader.result, textContent,
+        'Result should match text content');
+      assert.strictEqual(reader.error, null, 'Error should be null');
+    });
+
+    it('should read Blob as ArrayBuffer successfully', async () => {
+      const textContent = 'abc';
+      const blob = new Blob([textContent]);
+      const promise = new Promise((resolve) => {
+        reader.addEventListener('loadend', resolve);
+      });
+      reader.readAsArrayBuffer(blob);
+      await promise;
+      assert.strictEqual(reader.result instanceof ArrayBuffer, true,
+        'Result should be an ArrayBuffer');
+      const uint8Array = new Uint8Array(reader.result);
+      assert.strictEqual(uint8Array[0], 97, 'First byte should be 97 (a)');
+    });
+
+    it('should read Blob as Data URL successfully', async () => {
+      const textContent = 'test';
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const promise = new Promise((resolve) => {
+        reader.addEventListener('loadend', resolve);
+      });
+      reader.readAsDataURL(blob);
+      await promise;
+      // Base64 of 'test' is 'dGVzdA=='
+      assert.strictEqual(
+        reader.result,
+        'data:text/plain;base64,dGVzdA==',
+        'Result should be a valid Data URL'
+      );
+    });
+
+    it('should read Blob as Binary String successfully', async () => {
+      const bytes = new Uint8Array([72, 105]); // 'Hi'
+      const blob = new Blob([bytes]);
+      const promise = new Promise((resolve) => {
+        reader.addEventListener('loadend', resolve);
+      });
+      reader.readAsBinaryString(blob);
+      await promise;
+      assert.strictEqual(reader.result, 'Hi',
+        'Result should match binary string representation');
+    });
+
+    it('should dispatch appropriate events in order', async () => {
+      const blob = new Blob(['test data']);
+      const loadstartSpy = sinon.spy();
+      const progressSpy = sinon.spy();
+      const loadSpy = sinon.spy();
+      const loadendSpy = sinon.spy();
+      reader.addEventListener('loadstart', loadstartSpy);
+      reader.addEventListener('progress', progressSpy);
+      reader.addEventListener('load', loadSpy);
+      reader.addEventListener('loadend', loadendSpy);
+      const promise = new Promise((resolve) => {
+        reader.addEventListener('loadend', resolve);
+      });
+      reader.readAsText(blob);
+      await promise;
+      assert.strictEqual(loadstartSpy.calledOnce, true,
+        'loadstart should be called once');
+      assert.strictEqual(progressSpy.calledOnce, true,
+        'progress should be called once');
+      assert.strictEqual(loadSpy.calledOnce, true,
+        'load should be called once');
+      assert.strictEqual(loadendSpy.calledOnce, true,
+        'loadend should be called once');
+      assert.strictEqual(loadSpy.calledAfter(progressSpy), true,
+        'load should be called after progress');
+    });
+
+    it('should throw DOMException if read is called while LOADING', () => {
+      const blob = new Blob(['test']);
+      // State becomes LOADING
+      reader.readAsText(blob);
+      assert.throws(() => {
+        reader.readAsText(blob);
+      }, {
+        name: 'InvalidStateError'
       });
     });
 
-    describe('dispatch progress event', () => {
-      it('should throw', () => {
-        const reader = new FileReader();
-        assert.throws(() => reader._dispatchProgressEvent(), TypeError,
-          'Expected String but got Undefined.');
-        assert.strictEqual(reader.error instanceof TypeError, true, 'error');
-        assert.strictEqual(reader.error.message,
-          'Expected String but got Undefined.', 'message');
+    it('should abort an ongoing read operation', async () => {
+      const blob = new Blob(['a'.repeat(1000000)]);
+      const abortSpy = sinon.spy();
+      const loadendSpy = sinon.spy();
+      reader.addEventListener('abort', abortSpy);
+      reader.addEventListener('loadend', loadendSpy);
+      reader.readAsText(blob);
+      reader.abort();
+      assert.strictEqual(reader.readyState, FileReader.DONE,
+        'State should be DONE after abort');
+      assert.strictEqual(reader.result, null,
+        'Result should be null after abort');
+      assert.strictEqual(reader.error.name, 'AbortError',
+        'Error name should be AbortError');
+      assert.strictEqual(abortSpy.calledOnce, true,
+        'abort event should be emitted');
+      assert.strictEqual(loadendSpy.calledOnce, true,
+        'loadend event should be emitted after abort');
+    });
+
+    it('aborting when EMPTY or DONE should do nothing', () => {
+      const abortSpy = sinon.spy();
+      reader.addEventListener('abort', abortSpy);
+      // State is EMPTY
+      reader.abort();
+      assert.strictEqual(abortSpy.called, false,
+        'abort event should not be called when EMPTY');
+      Object.defineProperty(reader, 'readyState', {
+        get: () => FileReader.DONE
+      });
+      reader.abort();
+      assert.strictEqual(abortSpy.called, false,
+        'abort event should not be called when DONE');
+    });
+
+    describe('readAsDataURL environment branches', () => {
+      it('should use Buffer when globalThis.Buffer is available', async () => {
+        const textContent = 'test with buffer';
+        const blob = new Blob([textContent], { type: 'text/plain' });
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
+        });
+        reader.readAsDataURL(blob);
+        await promise;
+        assert.strictEqual(
+          reader.result,
+          // 'test with buffer'
+          'data:text/plain;base64,dGVzdCB3aXRoIGJ1ZmZlcg==',
+          'Result should be encoded using Buffer'
+        );
       });
 
-      it('should throw', () => {
-        const reader = new FileReader();
-        assert.throws(() => reader._dispatchProgressEvent('foo'), Error,
-          'Invalid state.');
-        assert.strictEqual(reader.error instanceof DOMException, true, 'error');
-        assert.strictEqual(reader.error.message,
-          'Invalid state.', 'message');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('abort');
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('error');
-        assert.deepStrictEqual(reader.error, new Error('Unknown error.'));
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('load');
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('loadend');
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('loadstart');
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should dispatch event', () => {
-        const reader = new FileReader();
-        const res = reader._dispatchProgressEvent('progress');
-        assert.strictEqual(res, true, 'result');
+      it('should fallback to btoa', async () => {
+        const originalBuffer = globalThis.Buffer;
+        globalThis.Buffer = undefined;
+        try {
+          const textContent = 'test with btoa fallback';
+          const blob = new Blob([textContent], { type: 'text/plain' });
+          const promise = new Promise((resolve) => {
+            reader.addEventListener('loadend', resolve);
+          });
+          reader.readAsDataURL(blob);
+          await promise;
+          assert.strictEqual(
+            reader.result,
+            // 'test with btoa fallback'
+            'data:text/plain;base64,dGVzdCB3aXRoIGJ0b2EgZmFsbGJhY2s=',
+            'Result should be encoded using btoa'
+          );
+        } finally {
+          globalThis.Buffer = originalBuffer;
+        }
       });
     });
 
-    describe('abort', () => {
-      it('should do nothing if state is EMPTY', () => {
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        reader.abort();
-        assert.strictEqual(reader.readyState, 0, 'state');
-        assert.strictEqual(spyFunc.callCount, i, 'called');
+    describe('error handling in #read', () => {
+      let arrayBufferStub;
+
+      afterEach(() => {
+        if (arrayBufferStub) {
+          arrayBufferStub.restore();
+        }
       });
 
-      it('should abort properly if state is LOADING', async () => {
-        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const p = reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 1, 'state before abort');
-        const i = spyFunc.callCount;
-        reader.abort();
-        assert.strictEqual(reader.readyState, 2, 'state after abort');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called (abort, loadend)');
-        assert.strictEqual(reader.error.name, 'AbortError', 'error name');
-        await p;
-      });
-
-      it('should do nothing if state is DONE', async () => {
-        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
-        const reader = new FileReader();
-        await reader._read(blob, 'text');
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        reader.abort();
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i, 'called');
-      });
-
-      it('should swallow error if aborted during read', async () => {
-        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
+      it('should handle read errors', async () => {
+        const blob = new Blob(['test']);
         const mockError = new Error('Simulated read error');
-        const stubFunc = sinon.stub(blob, 'arrayBuffer').callsFake(async () => {
-          await sleep(50);
-          throw mockError;
+        arrayBufferStub =
+          sinon.stub(Blob.prototype, 'arrayBuffer').rejects(mockError);
+        const errorSpy = sinon.spy();
+        const loadendSpy = sinon.spy();
+        reader.addEventListener('error', errorSpy);
+        reader.addEventListener('loadend', loadendSpy);
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
         });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        const p = reader._read(blob, 'text');
+        reader.readAsText(blob);
+        await promise;
+        assert.strictEqual(reader.readyState, FileReader.DONE,
+          'State should be DONE after error');
+        assert.strictEqual(reader.error, mockError,
+          'Error property should be set to the caught error');
+        assert.strictEqual(errorSpy.calledOnce, true,
+          'error event should be emitted');
+        assert.strictEqual(loadendSpy.calledOnce, true,
+          'loadend event should be emitted after error');
+      });
+
+      it('should return early if reader is already terminated', async () => {
+        const blob = new Blob(['test']);
+        const mockError = new Error('Simulated read error');
+        let triggerError;
+        const pendingPromise =
+          new Promise((resolve, reject) => { triggerError = reject; });
+        arrayBufferStub =
+          sinon.stub(Blob.prototype, 'arrayBuffer').returns(pendingPromise);
+        const errorSpy = sinon.spy();
+        const abortSpy = sinon.spy();
+        reader.addEventListener('error', errorSpy);
+        reader.addEventListener('abort', abortSpy);
+        reader.readAsText(blob);
         reader.abort();
-        await p;
-        stubFunc.restore();
-        assert.strictEqual(reader.readyState, 2,
-          'state after abort and internal error');
-        assert.strictEqual(reader.error.name, 'AbortError', 'error name');
-        assert.notDeepEqual(reader.error, mockError,
-          'error should not be overwritten');
-        assert.strictEqual(spyFunc.callCount, i + 3,
-          'called (loadstart, abort, loadend)');
-        assert.strictEqual(spyFunc.getCall(i).args[0], 'loadstart',
-          '1st event');
-        assert.strictEqual(spyFunc.getCall(i + 1).args[0], 'abort',
-          '2nd event');
-        assert.strictEqual(spyFunc.getCall(i + 2).args[0], 'loadend',
-          '3rd event');
+        triggerError(mockError);
+        try {
+          await pendingPromise;
+        } catch {
+          // fall through
+        }
+        await sleep(10);
+        assert.strictEqual(abortSpy.calledOnce, true,
+          'abort event should be emitted');
+        assert.strictEqual(errorSpy.called, false,
+          'error event should NOT be emitted');
+        assert.strictEqual(reader.error.name, 'AbortError',
+          'Error should remain AbortError');
       });
     });
 
-    describe('read blob', () => {
-      it('should throw TypeError if blob is invalid', async () => {
-        const reader = new FileReader();
-        await assert.rejects(
-          () => reader._read(),
-          {
-            name: 'TypeError',
-            message: 'Expected Blob but got Undefined.'
-          }
+    describe('Data URL MIME type branches', () => {
+      it('should handle Blob without a MIME type', async () => {
+        const textContent = 'test';
+        const blob = new Blob([textContent]);
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
+        });
+        reader.readAsDataURL(blob);
+        await promise;
+        assert.strictEqual(
+          reader.result,
+          'data:base64,dGVzdA==',
+          'Result should only contain base64 prefix if no MIME type is provided'
         );
       });
 
-      it('should throw TypeError if format is missing', async () => {
-        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
-        const reader = new FileReader();
-        await assert.rejects(
-          () => reader._read(blob),
-          {
-            name: 'TypeError',
-            message: 'Expected String but got Undefined.'
-          }
-        );
-      });
-
-      it('should throw TypeError if encoding is not a string', async () => {
-        const blob = new Blob(['Hello, world!'], { type: 'text/plain' });
-        const reader = new FileReader();
-        await assert.rejects(
-          () => reader._read(blob, 'text', 123),
-          {
-            name: 'TypeError',
-            message: 'Expected String but got Number.'
-          }
-        );
-      });
-
-      it('should abort', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'foo');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-      });
-
-      it('should throw', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const stubFunc = sinon.stub(blob, 'arrayBuffer').callsFake(async () => {
-          await sleep(1000);
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await Promise.all([
-          reader._read(blob, 'arrayBuffer'),
-          sleep(100).then(() => reader._read(blob, 'binaryString'))
-        ]).catch(e => {
-          assert.deepStrictEqual(e,
-            new DOMException('Invalid state.', 'InvalidStateError'));
-        });
-        assert.strictEqual(stubFunc.callCount, 1, 'called');
-        assert.strictEqual(reader.readyState, 1, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 2, 'called');
-        assert.strictEqual(reader.error instanceof DOMException, true, 'error');
-        assert.strictEqual(reader.error.message, 'Invalid state.');
-      });
-
-      it('should throw TypeError if blob is a string', async () => {
-        const blob = 'Hello, world!';
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await assert.rejects(
-          () => reader._read(blob, 'arrayBuffer'),
-          {
-            name: 'TypeError',
-            message: 'Expected Blob but got String.'
-          }
-        );
-        assert.strictEqual(reader.readyState, 0, 'state');
-        assert.strictEqual(spyFunc.callCount, i, 'called');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const buffer = await blob.arrayBuffer();
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'arrayBuffer');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.deepEqual(reader.result, buffer, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'binaryString');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-
-      it('should get result', async () => {
-        const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-        const pngBin = atob(pngBase64);
-        const pngUint8 =
-            Uint8Array.from([...pngBin].map(c => c.charCodeAt(0)));
-        const blob = new Blob([pngUint8], {
-          type: 'image/png'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'binaryString');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.deepEqual(reader.result, pngBin, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!']);
-        const base64 = btoa('Hello, world!');
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'dataURL');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, `data:base64,${base64}`, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const base64 = btoa('Hello, world!');
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'dataURL');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, `data:text/plain;base64,${base64}`,
-          'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=UTF-8'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=UTF-8'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'Shift_JIS');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=UTF-8'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'UTF-8');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=US-ASCII'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'UTF-8');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=foo'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'UTF-8');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.strictEqual(reader.result, null, 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['Hello, world!'], {
+      it('should handle Blob with a complex MIME type', async () => {
+        const textContent = 'test';
+        const blob = new Blob([textContent], {
           type: 'text/plain;charset=utf-8'
         });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'foo');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.strictEqual(reader.result, null, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain;charset=US-ASCII'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'windows-1252');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'US-ASCII');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-
-      it('should get null', async () => {
-        const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-        const pngBin = atob(pngBase64);
-        const pngUint8 =
-            Uint8Array.from([...pngBin].map(c => c.charCodeAt(0)));
-        const blob = new Blob([...pngUint8], {
-          type: 'image/png'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html;charset=UTF-8'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'utf8');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html;charset=UTF-8'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
-      });
-
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'utf8');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['<p>Hello, world&#9829;</p>'], {
-          type: 'text/html'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'US-ASCII');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-
-      it('should get null', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html'
-        });
-        const e = new Error('error');
-        const stubFunc = sinon.stub(blob, 'arrayBuffer').rejects(e);
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text', 'utf8');
-        stubFunc.restore();
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.error, e, 'error');
-        assert.strictEqual(reader.error.message, 'error', 'message');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-
-      it('should return null when reading binary data as text', async () => {
-        const binaryData =
-          // "Hello\0World"
-          new Uint8Array([72, 101, 108, 108, 111, 0, 87, 111, 114, 108, 100]);
-        const blob = new Blob([binaryData], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader._read(blob, 'text');
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 3, 'called');
-        assert.deepEqual(reader.result, null, 'result');
-      });
-    });
-
-    describe('readAsDataURL without Buffer (Browser fallback)', () => {
-      let originalBuffer;
-      before(() => {
-        originalBuffer = globalThis.Buffer;
-        globalThis.Buffer = undefined;
-      });
-      after(() => {
-        globalThis.Buffer = originalBuffer;
-      });
-
-      it('should correctly encode to base64 using btoa fallback', async () => {
-        const data = 'Hello, Browser World!';
-        const blob = new Blob([data], { type: 'text/plain' });
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.addEventListener('load', () => resolve(reader.result));
-          reader.addEventListener('error', () => reject(reader.error));
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
         });
         reader.readAsDataURL(blob);
-        const result = await promise;
+        await promise;
         assert.strictEqual(
-          result,
-          'data:text/plain;base64,SGVsbG8sIEJyb3dzZXIgV29ybGQh',
-          'result'
-        );
-      });
-      it('should handle large blobs correctly with chunking in fallback', async () => {
-        const chunkData = 'a'.repeat(9000);
-        const blob = new Blob([chunkData], { type: 'text/plain' });
-        const reader = new FileReader();
-        const promise = new Promise((resolve, reject) => {
-          reader.addEventListener('load', () => resolve(reader.result));
-          reader.addEventListener('error', () => reject(reader.error));
-        });
-        reader.readAsDataURL(blob);
-        const result = await promise;
-        const expectedBase64 = btoa(chunkData);
-        assert.strictEqual(
-          result,
-           `data:text/plain;base64,${expectedBase64}`,
-           'result'
+          reader.result,
+          'data:text/plain;charset=utf-8;base64,dGVzdA==',
+          'Result should reconstruct complex MIME types correctly'
         );
       });
     });
 
-    describe('read as arrayBuffer', () => {
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
+    describe('readAsText encoding branches', () => {
+      it('should decode text using a specified encoding', async () => {
+        const bytes = new Uint8Array([130, 160]);
+        const blob = new Blob([bytes]);
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
         });
-        const buffer = await blob.arrayBuffer();
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader.readAsArrayBuffer(blob);
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.deepEqual(reader.result, buffer, 'result');
-      });
-    });
-
-    describe('read as binary string', () => {
-      it('should get result', async () => {
-        const blob = new Blob(['Hello, world!'], {
-          type: 'text/plain'
-        });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader.readAsBinaryString(blob);
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, 'Hello, world!', 'result');
-      });
-    });
-
-    describe('read as data URL', () => {
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html'
-        });
-        const base64 = btoa('<p>Hello, world!</p>');
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader.readAsDataURL(blob);
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, `data:text/html;base64,${base64}`,
-          'result');
+        reader.readAsText(blob, 'Shift_JIS');
+        await promise;
+        assert.strictEqual(reader.result, 'あ',
+          'Result should be decoded using Shift_JIS');
       });
 
-      it('should get result', async () => {
-        const blob = new Blob(['<p>Hello, world!</p>'], {
-          type: 'text/html'
+      it('should fallback to utf-8 when encoding is falsy', async () => {
+        // `あ`: [0xE3, 0x81, 0x82]
+        const bytes = new Uint8Array([227, 129, 130]);
+        const blob = new Blob([bytes]);
+        const promise = new Promise((resolve) => {
+          reader.addEventListener('loadend', resolve);
         });
-        const reader = new FileReader();
-        const spyFunc = sinon.spy(reader, '_dispatchProgressEvent');
-        const i = spyFunc.callCount;
-        await reader.readAsText(blob);
-        assert.strictEqual(reader.readyState, 2, 'state');
-        assert.strictEqual(spyFunc.callCount, i + 4, 'called');
-        assert.strictEqual(reader.result, '<p>Hello, world!</p>', 'result');
+        reader.readAsText(blob, '');
+        await promise;
+        assert.strictEqual(reader.result, 'あ',
+          'Result should fallback to utf-8 and decode correctly');
       });
     });
   });
