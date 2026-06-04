@@ -5,7 +5,7 @@
 /* test */
 import { assert } from '../../node_modules/chai/index.js';
 import urlSanitizer, {
-  isURI, isURISync, parseURL, parseURLSync, sanitizeURL, sanitizeURLSync
+  inspectURL, inspectURLSync, isURI, isURISync, sanitizeURL, sanitizeURLSync
 } from '../../dist/url-sanitizer-wo-dompurify.min.js';
 
 const { describe, it } = globalThis;
@@ -14,45 +14,73 @@ const isString = o => typeof o === 'string';
 describe('dist URL Sanitizer', () => {
   describe('urlSanitizer', () => {
     it('should have methods', () => {
-      assert.isFunction(urlSanitizer.get, 'get');
-      assert.isFunction(urlSanitizer.has, 'has');
-      assert.isFunction(urlSanitizer.add, 'add');
-      assert.isFunction(urlSanitizer.remove, 'remove');
-      assert.isFunction(urlSanitizer.reset, 'reset');
+      assert.strictEqual(typeof urlSanitizer.get, 'function', 'get');
+      assert.strictEqual(typeof urlSanitizer.has, 'function', 'has');
+      assert.strictEqual(typeof urlSanitizer.add, 'function', 'add');
+      assert.strictEqual(typeof urlSanitizer.remove, 'function', 'remove');
     });
 
-    it('should get value', () => {
-      const schemes = urlSanitizer.get();
-      assert.isArray(schemes, 'result');
+    describe('get', () => {
+      it('should get value', () => {
+        const schemes = urlSanitizer.get();
+        assert.strictEqual(Array.isArray(schemes), true, 'result');
+      });
     });
 
-    it('should get result', () => {
-      const res1 = urlSanitizer.has('https');
-      const res2 = urlSanitizer.has('foo');
-      assert.isTrue(res1, 'result');
-      assert.isFalse(res2, 'result');
+    describe('has', () => {
+      it('should get result', () => {
+        const res = urlSanitizer.has('https');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('should get result', () => {
+        const res = urlSanitizer.has('foo');
+        assert.strictEqual(res, false, 'result');
+      });
     });
 
-    it('should get value', () => {
-      assert.isFalse(urlSanitizer.has('foo'));
-      const res = urlSanitizer.add('foo');
-      assert.isTrue(urlSanitizer.has('foo'));
-      assert.isArray(res, 'result');
-      urlSanitizer.remove('foo');
+    describe('add', () => {
+      it('should get value', () => {
+        assert.strictEqual(urlSanitizer.has('foo'), false);
+        const res = urlSanitizer.add('foo');
+        assert.strictEqual(urlSanitizer.has('foo'), true);
+        assert.strictEqual(Array.isArray(res), true, 'result');
+        urlSanitizer.remove('foo');
+      });
     });
 
-    it('should get result', () => {
-      assert.isTrue(urlSanitizer.has('aaa'));
-      const res1 = urlSanitizer.remove('aaa');
-      assert.isFalse(urlSanitizer.has('aaa'));
-      assert.isTrue(res1, 'result');
-      urlSanitizer.add('aaa');
-      const res2 = urlSanitizer.remove('foo');
-      assert.isFalse(res2, 'result');
+    describe('remove', () => {
+      it('should get result', () => {
+        assert.strictEqual(urlSanitizer.has('aaa'), true);
+        const res = urlSanitizer.remove('aaa');
+        assert.strictEqual(urlSanitizer.has('aaa'), false);
+        assert.strictEqual(res, true, 'result');
+        urlSanitizer.add('aaa');
+      });
+
+      it('should get result', () => {
+        assert.strictEqual(urlSanitizer.has('foo'), false);
+        const res = urlSanitizer.remove('foo');
+        assert.strictEqual(res, false, 'result');
+      });
     });
   });
 
   describe('sanitize URL', () => {
+    it('should get null for javascript: scheme', async () => {
+      const url = 'javascript:alert(1)';
+      const res = await sanitizeURL(url);
+      assert.strictEqual(res, null, 'result');
+    });
+
+    it('should get null for javascript: scheme even if inculed in allow list', async () => {
+      const url = 'javascript:alert(1)';
+      const res = await sanitizeURL(url, {
+        allow: ['javascript']
+      });
+      assert.strictEqual(res, null, 'result');
+    });
+
     it('should get result', async () => {
       const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = await sanitizeURL(url);
@@ -63,35 +91,41 @@ describe('dist URL Sanitizer', () => {
       const data =
         '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
       const url = `data:text/html,${encodeURIComponent(data)}`;
-      await sanitizeURL(url, {
+      let err;
+      const res = await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, Error, 'error');
-        assert.include(e.message, 'DOMPurify is not available');
+        err = e;
       });
+      assert.strictEqual(err instanceof Error, true);
+      assert.strictEqual(res, undefined);
     });
 
     it('should throw', async () => {
       const base64data = btoa('<div><script>alert(1);</script></div>');
       const url = `data:text/html;base64,${base64data}`;
-      await sanitizeURL(url, {
+      let err;
+      const res = await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, Error, 'error');
-        assert.include(e.message, 'DOMPurify is not available');
+        err = e;
       });
+      assert.strictEqual(err instanceof Error, true);
+      assert.strictEqual(res, undefined);
     });
 
     it('should throw', async () => {
       const base64data =
         btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
-      await sanitizeURL(url, {
+      let err;
+      const res = await sanitizeURL(url, {
         allow: ['data']
       }).catch(e => {
-        assert.instanceOf(e, Error, 'error');
-        assert.include(e.message, 'DOMPurify is not available');
+        err = e;
       });
+      assert.strictEqual(err instanceof Error, true);
+      assert.strictEqual(res, undefined);
     });
 
     it('should throw', async () => {
@@ -100,27 +134,29 @@ describe('dist URL Sanitizer', () => {
         type: 'image/svg+xml'
       });
       const url = URL.createObjectURL(blob);
-      await sanitizeURL(url, {
+      let err;
+      const res = await sanitizeURL(url, {
         allow: ['blob']
       }).catch(e => {
-        assert.instanceOf(e, Error, 'error');
-        assert.include(e.message, 'DOMPurify is not available');
+        err = e;
       });
       URL.revokeObjectURL(url);
+      assert.strictEqual(err instanceof Error, true);
+      assert.strictEqual(res, undefined);
     });
 
     it('should get null', async () => {
       const res = await sanitizeURL('web+foo://example.com', {
         deny: ['web+foo']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', async () => {
       const res = await sanitizeURL('http://example.com', {
         only: ['data', 'git', 'https']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get result', async () => {
@@ -139,13 +175,16 @@ describe('dist URL Sanitizer', () => {
       assert.strictEqual(res, 'git+https://example.com/foo.git', 'result');
     });
 
-    it('should get sanitized value', async () => {
-      const url = 'https://example.com/"onclick="alert(1)"';
-      const res = await sanitizeURL(url, {
-        allow: ['data', 'file'],
-        remove: true
-      });
-      assert.strictEqual(res, 'https://example.com/', 'result');
+    it('should get null', async () => {
+      const url = 'javascript&colon;alert(1)';
+      const res = await sanitizeURL(url);
+      assert.deepEqual(res, null, 'result');
+    });
+
+    it('should get null', async () => {
+      const url = 'javasc&Tab;ript:alert(1);';
+      const res = await sanitizeURL(url);
+      assert.deepEqual(res, null, 'result');
     });
   });
 
@@ -192,21 +231,21 @@ describe('dist URL Sanitizer', () => {
         allow: ['blob']
       });
       URL.revokeObjectURL(url);
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', () => {
       const res = sanitizeURLSync('web+foo://example.com', {
         deny: ['web+foo']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get null', () => {
       const res = sanitizeURLSync('http://example.com', {
         only: ['data', 'git', 'https']
       });
-      assert.isNull(res, 'result');
+      assert.deepEqual(res, null, 'result');
     });
 
     it('should get result', () => {
@@ -226,17 +265,18 @@ describe('dist URL Sanitizer', () => {
     });
   });
 
-  describe('parse URL', () => {
+  describe('inspect URL', () => {
     it('should get result', async () => {
-      const res = await parseURL('javascript:alert(1)');
+      const res = await inspectURL('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
-        valid: false
+        valid: false,
+        reason: 'Invalid URI syntax or scheme is not registered.'
       }, 'result');
     });
 
     it('should get result', async () => {
-      const res = await parseURL('https://example.com/?foo=bar#baz');
+      const res = await inspectURL('https://example.com/?foo=bar#baz');
       assert.deepEqual(res, {
         input: 'https://example.com/?foo=bar#baz',
         valid: true,
@@ -255,17 +295,19 @@ describe('dist URL Sanitizer', () => {
       }, 'result');
     });
 
-    it('should throw', async () => {
+    it('should get result', async () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      await parseURL(`data:image/svg+xml;base64,${btoa(data)}`).catch(e => {
-        assert.instanceOf(e, Error, 'error');
-        assert.include(e.message, 'DOMPurify is not available');
-      });
+      const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
+      assert.deepEqual(res, {
+        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+        valid: false,
+        reason: 'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+      }, 'result');
     });
 
     it('should get result', async () => {
       const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = await parseURL(`data:image/png;base64,${data}`);
+      const res = await inspectURL(`data:image/png;base64,${data}`);
       assert.deepEqual(res, {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -304,23 +346,24 @@ describe('dist URL Sanitizer', () => {
       items.input = url;
       items.valid = true;
       items.data = null;
-      const res = await parseURL(url);
+      const res = await inspectURL(url);
       URL.revokeObjectURL(url);
       assert.deepEqual(res, items, 'result');
     });
   });
 
-  describe('parse URL sync', () => {
+  describe('inspect URL sync', () => {
     it('should get result', () => {
-      const res = parseURLSync('javascript:alert(1)');
+      const res = inspectURLSync('javascript:alert(1)');
       assert.deepEqual(res, {
         input: 'javascript:alert(1)',
-        valid: false
+        valid: false,
+        reason: 'Invalid URI syntax or scheme is not registered.'
       }, 'result');
     });
 
     it('should get result', () => {
-      const res = parseURLSync('https://example.com/?foo=bar#baz');
+      const res = inspectURLSync('https://example.com/?foo=bar#baz');
       assert.deepEqual(res, {
         input: 'https://example.com/?foo=bar#baz',
         valid: true,
@@ -339,15 +382,19 @@ describe('dist URL Sanitizer', () => {
       }, 'result');
     });
 
-    it('should throw', () => {
+    it('should get result', () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      assert.throws(() =>
-        parseURLSync(`data:image/svg+xml;base64,${btoa(data)}`));
+      const res = inspectURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
+      assert.deepEqual(res, {
+        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+        valid: false,
+        reason: 'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+      }, 'result');
     });
 
     it('should get result', () => {
       const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = parseURLSync(`data:image/png;base64,${data}`);
+      const res = inspectURLSync(`data:image/png;base64,${data}`);
       assert.deepEqual(res, {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -386,7 +433,7 @@ describe('dist URL Sanitizer', () => {
       items.input = url;
       items.valid = true;
       items.data = null;
-      const res = parseURLSync(url);
+      const res = inspectURLSync(url);
       URL.revokeObjectURL(url);
       assert.deepEqual(res, items, 'result');
     });
@@ -395,64 +442,64 @@ describe('dist URL Sanitizer', () => {
   describe('is URI', () => {
     it('should get result', async () => {
       const res = await isURI('https://example.com/foo');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('mailto:foo@example.com');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('foo:bar');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('web+foo:bar');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', async () => {
       const res = await isURI('web+javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
   });
 
   describe('is URI sync', () => {
     it('should get result', () => {
       const res = isURISync('https://example.com/foo');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('mailto:foo@example.com');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('foo:bar');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('web+foo:bar');
-      assert.isTrue(res, 'result');
+      assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
       const res = isURISync('web+javascript:alert(1)');
-      assert.isFalse(res, 'result');
+      assert.strictEqual(res, false, 'result');
     });
   });
 });

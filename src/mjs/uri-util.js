@@ -5,10 +5,9 @@
 /* shared */
 import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
-import { FileReader } from './file-reader.js';
 
 /* constants */
-import { DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
+import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
   REG_HASH, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './regexp.js';
@@ -161,7 +160,7 @@ export const parseBase64 = data => {
 };
 
 /**
- * Replacer function for URL-encoded numeric character references.
+ * Replaces URL-encoded numeric character references.
  * @param {string} match - The matched substring.
  * @param {string} value - The captured numeric value.
  * @returns {string} The resolved character or the original match.
@@ -181,6 +180,18 @@ export const replaceNumCharRef = (match, value) => {
     }
   }
   return match;
+};
+
+/**
+ * Removes a trailing empty hash and an empty query string from a URL.
+ * @param {string} url - The target URL string to be cleaned.
+ * @returns {string} The cleaned URL string or the original input.
+ */
+export const trimTrailingEmptyQueryAndHash = url => {
+  if (!isString(url)) {
+    return url;
+  }
+  return url.replace(REG_HASH, '').replace(REG_QUERY, '');
 };
 
 /**
@@ -212,35 +223,68 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
 };
 
 /**
- * Creates a base64 data URL asynchronously from a given Blob.
+ * Converts Blob to data URL from Buffer.
+ * @private
  * @param {Blob} blob - The target Blob object.
- * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
  * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
  */
-export const createDataURLFromBlob = (blob, maxBlobSize = MAX_BLOB_SIZE) =>
-  new Promise((resolve, reject) => {
-    if (!Number.isInteger(blob?.size)) {
-      return resolve(null);
-    } else if (Number.isInteger(maxBlobSize) && blob.size > maxBlobSize) {
-      const msg =
-        `Blob size (${blob.size} bytes) exceeds max (${maxBlobSize} bytes).`;
-      return reject(new DOMException(msg, 'NotReadableError'));
-    }
-    const reader = new FileReader();
-    reader.addEventListener('error', () => reject(reader.error));
-    reader.addEventListener('abort', () => resolve(reader.result));
-    reader.addEventListener('load', () => resolve(reader.result));
-    reader.readAsDataURL(blob);
-  });
+const convertFromBuffer = async blob => {
+  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
+  const buffer = await blob.arrayBuffer();
+  const base64 = globalThis.Buffer.from(buffer).toString('base64');
+  return `data:${mimeStr},${base64}`;
+};
 
 /**
- * Safely removes a trailing empty hash and an empty query string from a URL.
- * @param {string} url - The target URL string to be cleaned.
- * @returns {string} The cleaned URL string or the original input.
+ * Converts Blob to data URL from FileReader.
+ * @private
+ * @param {Blob} blob - The target Blob object.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
  */
-export const trimTrailingEmptyQueryAndHash = url => {
-  if (!isString(url)) {
-    return url;
+const convertFromFileReader = blob => new Promise((resolve, reject) => {
+  const reader = new globalThis.FileReader();
+  reader.addEventListener('error', () => reject(reader.error));
+  reader.addEventListener('abort', () => resolve(reader.result));
+  reader.addEventListener('load', () => resolve(reader.result));
+  reader.readAsDataURL(blob);
+});
+
+/**
+ * Converts Blob to data URL from btoa.
+ * @private
+ * @param {Blob} blob - The target Blob object.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ */
+const convertFromBtoa = async blob => {
+  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
+  const buffer = await blob.arrayBuffer();
+  const uint8arr = new Uint8Array(buffer);
+  const chunks = [];
+  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
   }
-  return url.replace(REG_HASH, '').replace(REG_QUERY, '');
+  return `data:${mimeStr},${btoa(chunks.join(''))}`;
+};
+
+/**
+ * Converts a Blob to a data URL.
+ * @param {Blob} blob - The target Blob object.
+ * @param {number} [maxSize] - The maximum allowed blob size.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ * @throws {DOMException} Throws if the blob size exceeds maxBlobSize.
+ */
+export const convertBlobToDataURL = (blob, maxSize = MAX_BLOB_SIZE) => {
+  if (!Number.isInteger(blob?.size)) {
+    return null;
+  } else if (Number.isInteger(maxSize) && blob.size > maxSize) {
+    const msg =
+      `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+    throw new DOMException(msg, 'NotReadableError');
+  }
+  if (globalThis.Buffer) {
+    return convertFromBuffer(blob);
+  } else if (globalThis.FileReader) {
+    return convertFromFileReader(blob);
+  }
+  return convertFromBtoa(blob);
 };
