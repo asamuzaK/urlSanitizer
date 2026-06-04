@@ -9,7 +9,7 @@ import { getType, isString } from './common.js';
 /* constants */
 import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_HASH, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  REG_HASH, REG_NUM_REF, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
 } from './regexp.js';
 import {
   CTRL_CHAR_CODES, TEXT_CHAR_CODES, WINDOWS1252_TO_UNICODE
@@ -24,8 +24,24 @@ const [
 ] = ['&', '#', '<', '>', '"', "'"].map(ch =>
   `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
 );
+const ESCAPE_MAP = {
+  [ENC_AMP]: `${ENC_AMP}amp;`,
+  [ENC_LT]: `${ENC_AMP}lt;`,
+  [ENC_GT]: `${ENC_AMP}gt;`,
+  [ENC_QUOT]: `${ENC_AMP}quot;`,
+  [ENC_APOS]: `${ENC_AMP}${ENC_NUM}39;`
+};
+const HEX_TABLE = Array.from({ length: HEX * HEX }, (_, i) =>
+  `%${i.toString(HEX).padStart(2, '0').toUpperCase()}`
+);
+const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`);
-const REG_NUM_REF = /&#(x(?:00)?[\dA-F]{2}|0?\d{1,3});?/gi;
+const REG_CTRL_CHARS =
+  new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`, 'g');
+
+/* encoder / decoder */
+const encoder = new TextEncoder();
+const decoder = new TextDecoder('utf-8', { fatal: true });
 
 /**
  * URI schemes
@@ -82,19 +98,18 @@ export class URISchemes {
 /**
  * Gets the URL-encoded representation of a given string.
  * @param {string} str - The target string.
- * @returns {string} The completely URL-encoded string.
+ * @returns {string} The URL-encoded string.
  */
 export const getURLEncodedString = str => {
   if (!isString(str)) {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
-  const encoder = new TextEncoder();
   const bytes = encoder.encode(str);
-  const chars = [];
-  for (const byte of bytes) {
-    chars.push(`%${byte.toString(HEX).padStart(2, '0').toUpperCase()}`);
+  const encoded = [];
+  for (let i = 0; i < bytes.length; i++) {
+    encoded.push(HEX_TABLE[bytes[i]]);
   }
-  return chars.join('');
+  return encoded.join('');
 };
 
 /**
@@ -102,32 +117,13 @@ export const getURLEncodedString = str => {
  * @param {string} ch - A URL-encoded (percent-encoded) character.
  * @returns {string} The escaped HTML special character, or the given character.
  */
+
 export const escapeURLEncodedHTMLChars = ch => {
-  let target = ch;
-  if (isString(target)) {
-    if (REG_URL_ENC.test(target)) {
-      target = target.toUpperCase();
-    }
-    switch (target) {
-      case ENC_AMP: {
-        return `${ENC_AMP}amp;`;
-      }
-      case ENC_LT: {
-        return `${ENC_AMP}lt;`;
-      }
-      case ENC_GT: {
-        return `${ENC_AMP}gt;`;
-      }
-      case ENC_QUOT: {
-        return `${ENC_AMP}quot;`;
-      }
-      case ENC_APOS: {
-        return `${ENC_AMP}${ENC_NUM}39;`;
-      }
-      default:
-    }
+  if (!isString(ch)) {
+    return ch;
   }
-  return target;
+  const target = REG_URL_ENC.test(ch) ? ch.toUpperCase() : ch;
+  return ESCAPE_MAP[target] ?? ch;
 };
 
 /**
@@ -148,7 +144,6 @@ export const parseBase64 = data => {
   }
   const bytes = Uint8Array.from(binStr, c => c.charCodeAt(0));
   try {
-    const decoder = new TextDecoder('utf-8', { fatal: true });
     const text = decoder.decode(bytes);
     if (REG_BINARY.test(text)) {
       return cleanData;
@@ -207,17 +202,18 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
   }
-  let res = decodeURIComponent(str);
-  while (/&#/.test(res)) {
-    if (nest > MAX_NEST) {
-      throw new Error('Character references nested too deeply.');
-    }
+  // Throws URIError if URL-encoded string is malformed.
+  let res = decodeURIComponent(str).replace(REG_CTRL_CHARS, '');
+  let depth = 0;
+  for (; depth + nest <= MAX_NEST; depth++) {
     const previousRes = res;
     res = res.replace(REG_NUM_REF, replaceNumCharRef);
     if (res === previousRes) {
       break;
     }
-    nest++;
+  }
+  if (depth + nest > MAX_NEST && /&#/.test(res)) {
+    throw new Error('Character references nested too deeply.');
   }
   return res;
 };
@@ -244,7 +240,7 @@ const convertFromBuffer = async blob => {
 const convertFromFileReader = blob => new Promise((resolve, reject) => {
   const reader = new globalThis.FileReader();
   reader.addEventListener('error', () => reject(reader.error));
-  reader.addEventListener('abort', () => resolve(reader.result));
+  reader.addEventListener('abort', () => resolve(null));
   reader.addEventListener('load', () => resolve(reader.result));
   reader.readAsDataURL(blob);
 });
@@ -271,9 +267,8 @@ const convertFromBtoa = async blob => {
  * @param {Blob} blob - The target Blob object.
  * @param {number} [maxSize] - The maximum allowed blob size.
  * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
- * @throws {DOMException} Throws if the blob size exceeds maxBlobSize.
  */
-export const convertBlobToDataURL = (blob, maxSize = MAX_BLOB_SIZE) => {
+export const convertBlobToDataURL = async (blob, maxSize = MAX_BLOB_SIZE) => {
   if (!Number.isInteger(blob?.size)) {
     return null;
   } else if (Number.isInteger(maxSize) && blob.size > maxSize) {
@@ -281,7 +276,7 @@ export const convertBlobToDataURL = (blob, maxSize = MAX_BLOB_SIZE) => {
       `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
-  if (globalThis.Buffer) {
+  if (IS_NODE && globalThis.Buffer) {
     return convertFromBuffer(blob);
   } else if (globalThis.FileReader) {
     return convertFromFileReader(blob);

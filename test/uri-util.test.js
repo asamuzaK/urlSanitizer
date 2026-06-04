@@ -299,8 +299,10 @@ describe('uri-util', () => {
       const data = 'a'.repeat(100);
       const blob = new Blob([data], { type: 'text/plain' });
       const maxSize = 50;
-      assert.throws(
-        () => func(blob, maxSize),
+      await assert.rejects(
+        async () => {
+          await func(blob, maxSize);
+        },
         err => {
           assert.strictEqual(err.name, 'NotReadableError', 'error name');
           assert.strictEqual(
@@ -367,9 +369,11 @@ describe('uri-util', () => {
           constructor() {
             this.listeners = {};
           }
+
           addEventListener(type, callback) {
             this.listeners[type] = callback;
           }
+
           readAsDataURL(blob) {
             setTimeout(() => {
               this.result = sampleDataURL;
@@ -391,9 +395,11 @@ describe('uri-util', () => {
             this.listeners = {};
             this.error = mockError;
           }
+
           addEventListener(type, callback) {
             this.listeners[type] = callback;
           }
+
           readAsDataURL(blob) {
             setTimeout(() => {
               if (this.listeners.error) {

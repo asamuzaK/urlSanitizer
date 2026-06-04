@@ -27,6 +27,12 @@ export const REG_MIME_DOM = /^(?:application\/(?:[\w.-]+\+)?xml|image\/svg\+xml|
 export const REG_MIME_TEXT = /^text\/[\w#&.;-]+/;
 
 /**
+ * Matches numeric character reference.
+ * @type {RegExp}
+ */
+export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
+
+/**
  * Matches a trailing empty query string (?), ensuring it is not part of a hash.
  * @type {RegExp}
  */
