@@ -480,7 +480,7 @@ class URLSanitizer extends URISchemes {
         sanitizedUrl = url;
       } else {
         try {
-          sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data', 'file'] });
+          sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data'] });
           if (!sanitizedUrl) {
             invalidReason =
               'Sanitization failed (blocked by allowed schemes or rules).';
