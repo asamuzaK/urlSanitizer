@@ -753,7 +753,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               if (res) {
                 const decoded = fullyDecodeAndStrip(res);
                 if (decoded.startsWith('javascript:') ||
-                    decoded.startsWith('vbscript:')) {
+                    decoded.startsWith('vbscript:') ||
+                    decoded.startsWith('data:')) {
                   console.error(
                     'Bypass detected via Scheme Splitting URL:',
                     directUrl, '\nResult:', res
@@ -774,7 +775,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               if (res && typeof res === 'string') {
                 const decoded = fullyDecodeAndStrip(res);
                 if (decoded.includes('javascript:') ||
-                    decoded.includes('vbscript:')) {
+                    decoded.includes('vbscript:') ||
+                    decoded.includes('data:')) {
                   console.error(
                     'Bypass detected via Scheme Splitting Data URL:',
                     dataUrl, '\nResult:', res
