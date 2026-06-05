@@ -162,7 +162,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               const res = sanitizeURLSync(directUrl, { allowRelative: true });
               if (res &&
                   (res.startsWith('javascript:') ||
-                   res.startsWith('vbscript:'))
+                   res.startsWith('vbscript:') ||
+                   res.startsWith('data:'))
               ) {
                 console.error('Bypass detected via direct obfuscated URL:',
                   directUrl, 'Result:', res);
@@ -241,8 +242,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               if (res) {
                 const cleanDirect =
                   res.replace(/[\x00-\x20\x7F]/g, '').toLowerCase();
-                if (cleanDirect.startsWith('javascript:') ||
-                  cleanDirect.startsWith('vbscript:')) {
+                if (
+                  cleanDirect.startsWith('javascript:') ||
+                  cleanDirect.startsWith('vbscript:') ||
+                  cleanDirect.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via direct obfuscated URL (Unicode):',
                     directUrl, 'Result:', res
@@ -304,8 +308,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                 const cleanDirect = decoded
                   .replace(/[\x00-\x20\x7F]/g, '')
                   .toLowerCase();
-                if (cleanDirect.startsWith('javascript:') ||
-                    cleanDirect.startsWith('vbscript:')) {
+                if (
+                  cleanDirect.startsWith('javascript:') ||
+                  cleanDirect.startsWith('vbscript:') ||
+                  cleanDirect.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via %xx obfuscated URL:',
                     directUrl, 'Result:', res
@@ -333,8 +340,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                 const cleanFullyEncoded = decoded
                   .replace(/[\x00-\x20\x7F]/g, '')
                   .toLowerCase();
-                if (cleanFullyEncoded.startsWith('javascript:') ||
-                    cleanFullyEncoded.startsWith('vbscript:')) {
+                if (
+                  cleanFullyEncoded.startsWith('javascript:') ||
+                  cleanFullyEncoded.startsWith('vbscript:') ||
+                  cleanFullyEncoded.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via fully %xx encoded scheme:',
                     fullEncodedUrl, 'Result:', res
@@ -451,8 +461,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                 const flatDecoded = fullyDecodeHTML(res);
                 const cleanDirect =
                   flatDecoded.replace(/[\x00-\x20\x7F]/g, '').toLowerCase();
-                if (cleanDirect.startsWith('javascript:') ||
-                    cleanDirect.startsWith('vbscript:')) {
+                if (
+                  cleanDirect.startsWith('javascript:') ||
+                  cleanDirect.startsWith('vbscript:') ||
+                  cleanDirect.startsWith('data:')
+                ) {
                   console.error(
                     `Bypass detected via direct nested entity URL (depth: ${depth}):`,
                     directUrl, 'Result:', res
@@ -513,8 +526,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                   .normalize('NFKC')
                   .replace(/[\x00-\x20\x7F]/g, '')
                   .toLowerCase();
-                if (normalized.startsWith('javascript:') ||
-                    normalized.startsWith('vbscript:')) {
+                if (
+                  normalized.startsWith('javascript:') ||
+                  normalized.startsWith('vbscript:') ||
+                  normalized.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via Unicode Normalization URL:',
                     directUrl, '\nResult:', res
@@ -641,9 +657,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               const res = sanitizeURLSync(directUrl, { allowRelative: true });
               if (res) {
                 const decoded = fullyDecode(res);
-                if (decoded.startsWith('javascript:') ||
-                    decoded.startsWith('vbscript:') ||
-                    decoded.startsWith('data:')) {
+                if (
+                  decoded.startsWith('javascript:') ||
+                  decoded.startsWith('vbscript:') ||
+                  decoded.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via Mixed Encoding URL:',
                     directUrl, '\nResult:', res
@@ -754,9 +772,11 @@ describe('Fuzz Testing (Property-based Testing)', () => {
               const res = sanitizeURLSync(directUrl, { allowRelative: true });
               if (res) {
                 const decoded = fullyDecodeAndStrip(res);
-                if (decoded.startsWith('javascript:') ||
-                    decoded.startsWith('vbscript:') ||
-                    decoded.startsWith('data:')) {
+                if (
+                  decoded.startsWith('javascript:') ||
+                  decoded.startsWith('vbscript:') ||
+                  decoded.startsWith('data:')
+                ) {
                   console.error(
                     'Bypass detected via Scheme Splitting URL:',
                     directUrl, '\nResult:', res
