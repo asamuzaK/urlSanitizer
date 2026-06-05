@@ -80,6 +80,7 @@ export class URISchemes {
     if (!isString(uri)) {
       return false;
     }
+    uri = uri.normalize('NFKC');
     try {
       const { protocol } = new URL(uri);
       const scheme = protocol.replace(/:$/, '');
@@ -202,12 +203,25 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (!Number.isInteger(nest)) {
     throw new TypeError(`Expected Number but got ${getType(nest)}.`);
   }
-  // Throws URIError if URL-encoded string is malformed.
-  let res = decodeURIComponent(str).replace(REG_CTRL_CHARS, '');
+  let res;
+  try {
+    res = decodeURIComponent(str);
+  } catch {
+    // Fallback: decode only valid multi-byte %XX sequences.
+    res = str.replace(/(?:%[\dA-F]{2})+/gi, match => {
+      try {
+        return decodeURIComponent(match);
+      } catch {
+        return match;
+      }
+    });
+  }
+  res = res.replace(REG_CTRL_CHARS, '');
   let depth = 0;
   for (; depth + nest <= MAX_NEST; depth++) {
     const previousRes = res;
-    res = res.replace(REG_NUM_REF, replaceNumCharRef);
+    // Decode '&amp;' before decoding numeric references.
+    res = res.replace(/&amp;/gi, '&').replace(REG_NUM_REF, replaceNumCharRef);
     if (res === previousRes) {
       break;
     }
@@ -215,7 +229,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (depth + nest > MAX_NEST && /&#/.test(res)) {
     throw new Error('Character references nested too deeply.');
   }
-  return res;
+  return res.normalize('NFKC');
 };
 
 /**

@@ -13,8 +13,8 @@ import {
 /* constants */
 import { MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB, REG_TAG_QUOT,
-  REG_VERIFY_RELATIVE
+  REG_AMP_ENC, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB,
+  REG_TAG_QUOT, REG_VERIFY_RELATIVE
 } from './regexp.js';
 const URL_PROPS = Object.freeze([
   'href',
@@ -200,7 +200,7 @@ class URLSanitizer extends URISchemes {
   #purify(dom, ctx) {
     let decodedDom = dom;
     try {
-      decodedDom = decodeURIComponent(dom);
+      decodedDom = decodeURIComponent(dom).normalize('NFKC');
     } catch {
       // fall through
     }
@@ -349,6 +349,7 @@ class URLSanitizer extends URISchemes {
           } catch (e) {
             const msg = 'Failed to parse inner data URL protocol.';
             logDebug(ctx.debug, msg, e);
+            urlToSanitize = '';
           }
           if (!mediaType || REG_MIME_DOM.test(mediaType)) {
             parsedData = this.#purify(parsedData, ctx);
@@ -362,11 +363,19 @@ class URLSanitizer extends URISchemes {
             urlToSanitize = '';
           }
         }
-        if (!isDataUrl && REG_TAG_QUOT.test(urlToSanitize)) {
-          const item = REG_TAG_QUOT.exec(urlToSanitize);
-          const { index } = item;
-          urlToSanitize =
-            urlToSanitize.substring(0, index).replace(/[?&]$/, '');
+        if (!isDataUrl) {
+          if (REG_TAG_QUOT.test(urlToSanitize)) {
+            const item = REG_TAG_QUOT.exec(urlToSanitize);
+            const { index } = item;
+            urlToSanitize =
+              urlToSanitize.substring(0, index).replace(/[?&]$/, '');
+          }
+          if (REG_AMP_ENC.test(urlToSanitize)) {
+            const item = REG_AMP_ENC.exec(urlToSanitize);
+            const { index } = item;
+            urlToSanitize =
+              urlToSanitize.substring(0, index).replace(/[?&]$/, '');
+          }
         }
         if (urlToSanitize) {
           sanitizedUrl = urlToSanitize;
@@ -393,6 +402,7 @@ class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
+    url = url.normalize('NFKC');
     const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
       ? opt.maxLength
       : 0;
@@ -452,6 +462,7 @@ class URLSanitizer extends URISchemes {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
+    url = url.normalize('NFKC');
     const parsedUrl = new Map([['input', url]]);
     let sanitizedUrl;
     let invalidReason = null;
@@ -614,6 +625,7 @@ export const sanitizeURL = async (url, opt = {
     : MAX_BLOB_SIZE;
   let res;
   if (url && isString(url)) {
+    url = url.normalize('NFKC');
     let scheme;
     try {
       const { protocol } = new URL(url);
@@ -688,6 +700,7 @@ export const sanitizeURLSync = (url, opt = {
   const isDebug = !!opt?.debug;
   let res;
   if (url && isString(url)) {
+    url = url.normalize('NFKC');
     let scheme;
     try {
       const { protocol } = new URL(url);

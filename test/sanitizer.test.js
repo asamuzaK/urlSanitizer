@@ -1949,6 +1949,73 @@ describe('sanitizer', () => {
           assert.strictEqual(res, 'https://example.com/', 'result');
         });
       });
+
+      describe('Inner protocol fail secure', () => {
+        it('should return null when nested entities crash the parser', () => {
+          const warnStub = sinon.stub(console, 'warn');
+          try {
+            let nestedAmps = '&';
+            for (let i = 0; i < 20; i++) {
+              nestedAmps = nestedAmps.replace(/&/g, '&amp;');
+            }
+            const payload = `&#${nestedAmps}avascript:alert(1)`;
+            const sanitizer = new mjs.URLSanitizer();
+            const res = sanitizer.sanitize(`data:text/html,${payload}`, {
+              allow: ['data'],
+              debug: true
+            });
+            assert.strictEqual(res, null,
+              'should fail securely and return null');
+            assert.strictEqual(warnStub.called, true,
+              'console.warn should be called in debug mode');
+            assert.strictEqual(
+              warnStub.args.some(args => args[0] === '[URLSanitizer Debug] Failed to parse inner data URL protocol.'),
+              true,
+              'should log the specific inner parsing failure message'
+            );
+          } finally {
+            warnStub.restore();
+          }
+        });
+
+        it('should return null when new URL() throws during parsing', () => {
+          const warnStub = sinon.stub(console, 'warn');
+          const OriginalURL = globalThis.URL;
+          globalThis.URL = class extends OriginalURL {
+            constructor(url, base) {
+              if (base === 'http://dummy.local' &&
+                  url === 'trigger-parsing-error') {
+                throw new TypeError('Simulated inner URL parsing error');
+              }
+              super(url, base);
+            }
+          };
+          try {
+            const sanitizer = new mjs.URLSanitizer();
+            const res = sanitizer.sanitize(
+              'data:text/html,trigger-parsing-error',
+              { allow: ['data'], debug: true }
+            );
+            assert.strictEqual(res, null,
+              'should fail securely and return null');
+            assert.strictEqual(warnStub.called, true,
+              'console.warn should be called');
+            assert.strictEqual(
+              warnStub.args.some(args => args[0] === '[URLSanitizer Debug] Failed to parse inner data URL protocol.'),
+              true,
+              'should log the inner parsing failure message'
+            );
+            assert.strictEqual(
+              warnStub.args.some(args => args[1] === 'Simulated inner URL parsing error'),
+              true,
+              'should pass the correct error message'
+            );
+          } finally {
+            globalThis.URL = OriginalURL;
+            warnStub.restore();
+          }
+        });
+      });
     });
 
     describe('sanitize URL sync', () => {

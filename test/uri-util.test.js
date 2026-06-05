@@ -255,6 +255,24 @@ describe('uri-util', () => {
       assert.throws(() => func(str), Error,
         'Character references nested too deeply.');
     });
+
+    it('should fallback to partial decoding', () => {
+      const str = 'Hello%2C%20World!%';
+      const res = func(str);
+      assert.strictEqual(res, 'Hello, World!%', 'result');
+    });
+
+    it('should fallback and leave invalid multi-byte sequences intact', () => {
+      const str = 'Hello%E0%A4-%20World!';
+      const res = func(str);
+      assert.strictEqual(res, 'Hello%E0%A4- World!', 'result');
+    });
+
+    it('should successfully resolve entities', () => {
+      const str = 'j%26%23x61%3Bvascript:%';
+      const res = func(str);
+      assert.strictEqual(res, 'javascript:%', 'result');
+    });
   });
 
   describe('convert blob to data URL', () => {
