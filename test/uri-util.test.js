@@ -130,6 +130,40 @@ describe('uri-util', () => {
       const res = func(base64Data);
       assert.strictEqual(res, validText, 'result');
     });
+
+    describe('environment specific decoding optimizations', () => {
+      it('should decode base64 using Buffer', () => {
+        assert.ok(globalThis.Buffer,
+          'Buffer should be available in this environment');
+        const data = 'Hello, Node.js Buffer optimization!';
+        const base64Data = btoa(data);
+        const res = func(base64Data);
+        assert.strictEqual(res, data, 'result');
+      });
+
+      it('should decode base64 using Uint8Array fallback', () => {
+        const originalBuffer = globalThis.Buffer;
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        try {
+          assert.strictEqual(globalThis.Buffer, undefined,
+            'Buffer should be hidden');
+          const data = 'Hello, Uint8Array loop optimization!';
+          const base64Data = btoa(data);
+          const res = func(base64Data);
+          assert.strictEqual(res, data, 'result');
+        } finally {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: originalBuffer,
+            writable: true,
+            configurable: true
+          });
+        }
+      });
+    });
   });
 
   describe('replace numeric character reference', () => {

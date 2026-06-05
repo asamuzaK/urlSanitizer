@@ -200,7 +200,7 @@ class URLSanitizer extends URISchemes {
   #purify(dom, ctx) {
     let decodedDom = dom;
     try {
-      decodedDom = decodeURIComponent(dom).normalize('NFKC');
+      decodedDom = decodeURIComponent(dom);
     } catch {
       // fall through
     }
@@ -284,9 +284,12 @@ class URLSanitizer extends URISchemes {
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
       try {
         const dummyUrl = new URL(url, 'http://dummy.local');
+        const dummyUrlNormalized =
+          new URL(url.normalize('NFKC'), 'http://dummy.local');
         if (
           dummyUrl.protocol === 'http:' &&
-          dummyUrl.hostname === 'dummy.local'
+          dummyUrl.hostname === 'dummy.local' &&
+          dummyUrlNormalized.protocol === 'http:'
         ) {
           isVerified = true;
           isRelative = true;
@@ -307,7 +310,7 @@ class URLSanitizer extends URISchemes {
       } else {
         const urlObj = new URL(url);
         ({ hash, href, pathname, protocol, search } = urlObj);
-        scheme = protocol.replace(/:$/, '');
+        scheme = protocol.replace(/:$/, '').normalize('NFKC');
         schemeParts = scheme.split('+');
         if (restrictScheme) {
           bool = schemeParts.every(s => schemeMap.get(s));
@@ -340,8 +343,9 @@ class URLSanitizer extends URISchemes {
           }
           try {
             const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
+            const normalizedData = decodedData.normalize('NFKC');
             const { protocol: dataScheme } =
-              new URL(decodedData, 'http://dummy.local');
+              new URL(normalizedData, 'http://dummy.local');
             const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
             if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
               urlToSanitize = '';
@@ -402,7 +406,6 @@ class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
-    url = url.normalize('NFKC');
     const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
       ? opt.maxLength
       : 0;
@@ -462,7 +465,6 @@ class URLSanitizer extends URISchemes {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    url = url.normalize('NFKC');
     const parsedUrl = new Map([['input', url]]);
     let sanitizedUrl;
     let invalidReason = null;
@@ -625,7 +627,6 @@ export const sanitizeURL = async (url, opt = {
     : MAX_BLOB_SIZE;
   let res;
   if (url && isString(url)) {
-    url = url.normalize('NFKC');
     let scheme;
     try {
       const { protocol } = new URL(url);
@@ -700,7 +701,6 @@ export const sanitizeURLSync = (url, opt = {
   const isDebug = !!opt?.debug;
   let res;
   if (url && isString(url)) {
-    url = url.normalize('NFKC');
     let scheme;
     try {
       const { protocol } = new URL(url);

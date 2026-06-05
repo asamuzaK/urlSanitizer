@@ -36,7 +36,7 @@ export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
  * Matches a trailing empty query string (?), ensuring it is not part of a hash.
  * @type {RegExp}
  */
-export const REG_QUERY = /(?<!(?:#|%23).*)(?:\?|%3F)$/;
+export const REG_QUERY = /^((?:[^#%]|%(?!23))*)(?:\?|%3F)$/i;
 
 /**
  * Validates a string against standard IANA URI scheme syntax.

@@ -80,9 +80,8 @@ export class URISchemes {
     if (!isString(uri)) {
       return false;
     }
-    uri = uri.normalize('NFKC');
     try {
-      const { protocol } = new URL(uri);
+      const { protocol } = new URL(uri.normalize('NFKC'));
       const scheme = protocol.replace(/:$/, '');
       const parts = scheme.split('+');
       const isScript = parts.some(s => REG_SCRIPT.test(s));
@@ -143,7 +142,18 @@ export const parseBase64 = data => {
   } catch {
     throw new Error(`Invalid base64 data: ${data}`);
   }
-  const bytes = Uint8Array.from(binStr, c => c.charCodeAt(0));
+  let bytes;
+  if (IS_NODE && globalThis.Buffer) {
+    // Use 'latin1' to correctly map the binary string directly to bytes.
+    // @see https://nodejs.org/docs/latest/api/buffer.html#buffers-and-character-encodings
+    bytes = globalThis.Buffer.from(binStr, 'latin1');
+  } else {
+    const len = binStr.length;
+    bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binStr.charCodeAt(i);
+    }
+  }
   try {
     const text = decoder.decode(bytes);
     if (REG_BINARY.test(text)) {
@@ -187,7 +197,7 @@ export const trimTrailingEmptyQueryAndHash = url => {
   if (!isString(url)) {
     return url;
   }
-  return url.replace(REG_HASH, '').replace(REG_QUERY, '');
+  return url.replace(REG_HASH, '').replace(REG_QUERY, '$1');
 };
 
 /**
@@ -229,7 +239,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   if (depth + nest > MAX_NEST && /&#/.test(res)) {
     throw new Error('Character references nested too deeply.');
   }
-  return res.normalize('NFKC');
+  return res;
 };
 
 /**
