@@ -820,5 +820,43 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
       );
     });
+
+    it('should correctly handle various relative URLs', () => {
+      const prefixArb = fc.constantFrom(
+        '/', './', '../', '', '?', '#', 
+        '//', '\\\\', '/\\', '\\/', '\t//', ' //', '%2F%2F'
+      );
+      const relativeUrlArb = fc.tuple(
+        prefixArb,
+        fc.webPath(),
+        fc.oneof(fc.webQueryParameters(), fc.constant('')),
+        fc.oneof(fc.webFragments(), fc.constant(''))
+      ).map(([prefix, path, query, hash]) => {
+        const q = query ? `?${query}` : '';
+        const h = hash ? `#${hash}` : '';
+        return `${prefix}${path}${q}${h}`;
+      });
+
+      fc.assert(
+        fc.property(relativeUrlArb, (relativeUrl) => {
+          try {
+            const res = sanitizeURLSync(relativeUrl, { allowRelative: true });
+            const isProtocolRelative = /^[/\\]{2,}/.test(relativeUrl.trim());
+            if (isProtocolRelative && res !== null) {
+              console.error(
+                'Bypass detected! Protocol-relative URL allowed:',
+                relativeUrl, '\nResult:', res
+              );
+              return false;
+            }
+            return true;
+          } catch (e) {
+            console.error('Unhandled crash with relative URL:', relativeUrl, e);
+            return false;
+          }
+        }),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
   });
 });
