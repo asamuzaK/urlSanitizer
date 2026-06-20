@@ -25,20 +25,20 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "dompurify": "^3.4.8",
+    "dompurify": "^3.4.11",
     "jsdom": "^29.1.1"
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
     "@types/jsdom": "^28.0.3",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.0.0",
     "c8": "^11.0.0",
     "chai": "^6.2.2",
     "commander": "^15.0.0",
     "copyfiles-ng": "^2.4.7",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
-    "eslint-plugin-jsdoc": "^63.0.1",
+    "eslint-plugin-jsdoc": "^63.0.6",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^64.0.0",
     "fast-check": "^4.8.0",
@@ -47,26 +47,28 @@
     "mitata": "^1.0.34",
     "mocha": "^11.7.6",
     "neostandard": "^0.13.0",
-    "papaparse": "^5.5.3",
+    "papaparse": "^5.5.4",
     "sinon": "^22.0.0",
     "strict-url-sanitise": "^0.0.1",
     "typescript": "^6.0.3",
-    "undici": "^8.0.2"
+    "undici": "^7.28.0"
   },
   "overrides": {
     "c8": {
       "yargs": "^18.0.0"
     },
     "eslint": {
-      "brace-expansion": "^1.1.13"
+      "brace-expansion": "^1.1.13",
+      "js-yaml": "^4.2.0"
     },
     "mocha": {
-      "diff": "^8.0.3"
+      "diff": "^8.0.3",
+      "js-yaml": "^4.2.0"
     },
     "serialize-javascript": "^7.0.4"
   },
   "allowScripts": {
-    "esbuild@0.28.0": true
+    "esbuild@0.28.1": true
   },
   "scripts": {
     "bench": "node benchmark/benchmark.js",
@@ -89,5 +91,5 @@
   "engines": {
     "node": ">=22.13"
   },
-  "version": "4.1.1"
+  "version": "4.1.2"
 }
