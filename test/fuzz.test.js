@@ -823,7 +823,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
 
     it('should correctly handle various relative URLs', () => {
       const prefixArb = fc.constantFrom(
-        '/', './', '../', '', '?', '#', 
+        '/', './', '../', '', '?', '#',
         '//', '\\\\', '/\\', '\\/', '\t//', ' //', '%2F%2F'
       );
       const relativeUrlArb = fc.tuple(
