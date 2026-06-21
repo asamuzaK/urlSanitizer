@@ -465,7 +465,10 @@ class URLSanitizer extends URISchemes {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    const parsedUrl = new Map([['input', url]]);
+    const parsedUrl = {
+      input: url,
+      valid: false
+    };
     let sanitizedUrl;
     let invalidReason = null;
     const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
@@ -497,9 +500,8 @@ class URLSanitizer extends URISchemes {
       const { pathname, protocol } = urlObj;
       const schemeParts = protocol.replace(/:$/, '').split('+');
       const isDataUrl = schemeParts.includes('data');
-      parsedUrl.set('valid', true);
+      parsedUrl.valid = true;
       if (isDataUrl) {
-        const dataUrl = new Map();
         const [mediaType, ...dataParts] = pathname.split(',');
         const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
         const mediaTypes = mediaType.split(';');
@@ -507,26 +509,27 @@ class URLSanitizer extends URISchemes {
         if (isBase64) {
           mediaTypes.pop();
         }
-        dataUrl.set('mime', mediaTypes.join(';'));
-        dataUrl.set('base64', isBase64);
-        dataUrl.set('data', data);
-        parsedUrl.set('data', Object.fromEntries(dataUrl));
+        parsedUrl.data = {
+          mime: mediaTypes.join(';'),
+          base64: isBase64,
+          data
+        };
       } else {
-        parsedUrl.set('data', null);
+        parsedUrl.data = null;
       }
       for (const key of URL_PROPS) {
         const value = urlObj[key];
         if (isString(value)) {
-          parsedUrl.set(key, value);
+          parsedUrl[key] = value;
         }
       }
     } else {
-      parsedUrl.set('valid', false);
+      parsedUrl.valid = false;
       if (invalidReason) {
-        parsedUrl.set('reason', invalidReason);
+        parsedUrl.reason = invalidReason;
       }
     }
-    return Object.fromEntries(parsedUrl);
+    return parsedUrl;
   }
 
   /**
