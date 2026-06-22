@@ -30,10 +30,8 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
 
 * **Secure by Default**: Strictly blocks `javascript:` and `vbscript:` schemes.
 * **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
-* **Blob URL Support**: Converts and sanitizes blob URLs into safe data URLs (async).
+* **Blob URL Support**: Fetches the underlying blob content, purifies nested XSS vectors via DOMPurify, and outputs a safe data URL (async).
 * **Relative & Absolute Path Support**: Safely allows root-relative paths (e.g., `/foo`) and relative paths (e.g., `./foo`) via an opt-in parameter.
-* **DOMPurify Integration**: Purifies HTML/SVG content embedded within data URLs.
-* **Pure ESM with TypeScript Support**: Works seamlessly across modern environments like Node.js, Deno, websites, and browsers (including WebExtensions).
 
 ## Install
 
@@ -410,7 +408,7 @@ To help you decide if this library fits your security requirements, here is the 
 This library is primarily designed to prevent **Cross-Site Scripting (XSS)** and unauthorized protocol execution via malicious URLs.
 
 * **Direct XSS Execution:** Blocks `javascript:` and `vbscript:` schemes outright, even if they are obfuscated with whitespaces or control characters.
-* **Nested XSS in Data/Blob URLs:** Deeply inspects and sanitizes payloads within `data:` and `blob:` URLs. If an attacker tries to hide malicious HTML/SVG within a Base64-encoded data URL, the embedded content is purified using DOMPurify and re-encoded back into a sanitized URL.
+* **Nested XSS in Data/Blob URLs:** Deeply inspects and sanitizes payloads within `data:` and `blob:` URLs. If an attacker tries to hide malicious HTML/SVG within a Base64-encoded data URL or a blob URL, the embedded content is purified using DOMPurify and re-encoded back into a safe data URL.
 * **Unauthorized Schemes:** Denies unknown or unregistered URI schemes by default, preventing application-specific or OS-level protocol hijacking (unless explicitly allowed).
 
 ### Out-of-Scope (What we DO NOT protect against)
