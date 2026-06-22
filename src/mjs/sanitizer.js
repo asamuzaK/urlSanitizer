@@ -459,13 +459,13 @@ class URLSanitizer extends URISchemes {
    * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
    * @param {object} [opt] - Sanitization options.
-   * @returns {InspectedURLResult} The object containing parsed result.
+   * @returns {InspectedURLResult} The result of an inspected URL.
    */
   inspect(url, opt) {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
-    const parsedUrl = {
+    const inspectedURL = {
       input: url,
       valid: false
     };
@@ -500,7 +500,7 @@ class URLSanitizer extends URISchemes {
       const { pathname, protocol } = urlObj;
       const schemeParts = protocol.replace(/:$/, '').split('+');
       const isDataUrl = schemeParts.includes('data');
-      parsedUrl.valid = true;
+      inspectedURL.valid = true;
       if (isDataUrl) {
         const [mediaType, ...dataParts] = pathname.split(',');
         const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
@@ -509,27 +509,27 @@ class URLSanitizer extends URISchemes {
         if (isBase64) {
           mediaTypes.pop();
         }
-        parsedUrl.data = {
+        inspectedURL.data = {
           mime: mediaTypes.join(';'),
           base64: isBase64,
           data
         };
       } else {
-        parsedUrl.data = null;
+        inspectedURL.data = null;
       }
       for (const key of URL_PROPS) {
         const value = urlObj[key];
         if (isString(value)) {
-          parsedUrl[key] = value;
+          inspectedURL[key] = value;
         }
       }
     } else {
-      parsedUrl.valid = false;
+      inspectedURL.valid = false;
       if (invalidReason) {
-        parsedUrl.reason = invalidReason;
+        inspectedURL.reason = invalidReason;
       }
     }
-    return parsedUrl;
+    return inspectedURL;
   }
 
   /**
@@ -727,7 +727,7 @@ export const sanitizeURLSync = (url, opt = {
 /**
  * Inspects, parses, and sanitizes the given URL asynchronously.
  * @param {string} url - The URL string to inspect.
- * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
+ * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const inspectURL = async url => {
   const res = urlSanitizer.inspect(url);
@@ -737,21 +737,21 @@ export const inspectURL = async url => {
 /**
  * @deprecated Use inspectURL instead.
  * @param {string} url - The URL string to inspect.
- * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL object.
+ * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const parseURL = url => inspectURL(url);
 
 /**
  * Inspects, parses, and sanitizes the given URL synchronously.
  * @param {string} url - The URL string to inspect.
- * @returns {InspectedURLResult} The inspected URL object.
+ * @returns {InspectedURLResult} The inspected URL result.
  */
 export const inspectURLSync = url => urlSanitizer.inspect(url);
 
 /**
  * @deprecated Use inspectURLSync instead.
  * @param {string} url - The URL string to inspect.
- * @returns {InspectedURLResult} The inspected URL object.
+ * @returns {InspectedURLResult} The inspected URL result.
  */
 export const parseURLSync = url => inspectURLSync(url);
 
