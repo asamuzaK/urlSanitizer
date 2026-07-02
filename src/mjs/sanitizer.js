@@ -406,13 +406,6 @@ class URLSanitizer extends URISchemes {
    * @param {object} ctx - Context for DOMPurify sanitization.
    * @returns {string|null} Sanitized data URL or null.
    */
-/**
-   * Decodes, verifies inner protocols, and purifies data URLs.
-   * @private
-   * @param {object} parsed - Parsed URL details.
-   * @param {object} ctx - Context for DOMPurify sanitization.
-   * @returns {string|null} Sanitized data URL or null.
-   */
   #sanitizeDataURL(parsed, ctx) {
     const { urlObj, scheme } = parsed;
     const [mediaType, ...dataParts] = urlObj.pathname.split(',');
@@ -435,7 +428,7 @@ class URLSanitizer extends URISchemes {
       const { protocol: dataScheme } = new URL(normalizedData, dummy);
       const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
       if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
-        return null; 
+        return null;
       }
     } catch (e) {
       const msg = 'Failed to parse inner data URL protocol.';
