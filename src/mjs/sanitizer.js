@@ -228,24 +228,60 @@ class URLSanitizer extends URISchemes {
    * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} rules - Normalized sanitization rules.
-   * @param {object} ctx - Internal context for state management.
+   * @param {object} ctx - Internal context for state.
    * @returns {string|null} The sanitized URL, or null.
    */
   #process(url, rules, ctx) {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
-    const { allow, deny, only, allowRelative } = rules;
+    // Resolve allowed/denied schemes
+    const {
+      allowedSchemes, restrictScheme, schemeMap
+    } = this.#resolveSchemeRules(rules, ctx);
+    // Parse and verify the URL
+    const parsed = this.#parseAndVerifyURL(
+      url, rules.allowRelative, allowedSchemes, ctx
+    );
+    if (!parsed.isVerified) {
+      return null;
+    }
+    // Check if the scheme is allowed
+    const isAllowed = this.#isSchemeAllowed(
+      parsed.scheme, parsed.schemeParts,
+      restrictScheme, schemeMap, parsed.isRelative
+    );
+    if (!isAllowed) {
+      return null;
+    }
+    // Sanitize based on URL type
+    if (parsed.isDataUrl) {
+      return this.#sanitizeDataURL(parsed, ctx);
+    }
+    return this.#sanitizeStandardURL(parsed.urlToSanitize);
+  }
+
+  /**
+   * Resolves allow, deny, and only rules into mappings.
+   * @private
+   * @param {object} rules - The sanitization rules.
+   * @param {string[]} rules.allow - Allowed schemes.
+   * @param {string[]} rules.deny - Denied schemes.
+   * @param {string[]} rules.only - Exclusively allowed schemes.
+   * @param {object} ctx - Context for state management.
+   * @returns {object} Resolved scheme objects and flags.
+   */
+  #resolveSchemeRules({ allow, deny, only }, ctx) {
     let allowedSchemes = this.#allowedSchemes;
     let restrictScheme = false;
     const schemeMap = new Map(ctx.schemeMap);
     if (only.length) {
       allowedSchemes = new Set();
-      for (let item of only) {
+      for (const item of only) {
         if (isString(item)) {
-          item = item.trim();
-          const registered =
-            this.#registerScheme(item, 'only', allowedSchemes, schemeMap, ctx);
+          const registered = this.#registerScheme(
+            item.trim(), 'only', allowedSchemes, schemeMap, ctx
+          );
           if (registered && !restrictScheme) {
             restrictScheme = true;
           }
@@ -257,11 +293,7 @@ class URLSanitizer extends URISchemes {
         for (const item of allow) {
           if (isString(item)) {
             this.#registerScheme(
-              item.trim(),
-              'allow',
-              allowedSchemes,
-              schemeMap,
-              ctx
+              item.trim(), 'allow', allowedSchemes, schemeMap, ctx
             );
           }
         }
@@ -277,15 +309,28 @@ class URLSanitizer extends URISchemes {
         }
       }
     }
-    let sanitizedUrl;
+    return { allowedSchemes, restrictScheme, schemeMap };
+  }
+
+  /**
+   * Parses and verifies absolute and relative URLs.
+   * @private
+   * @param {string} url - The URL to parse.
+   * @param {boolean} allowRelative - If relative URLs are OK.
+   * @param {Set<string>} allowedSchemes - Permitted schemes.
+   * @param {object} ctx - Context for logging and state.
+   * @returns {object} Parsed URL properties and flags.
+   */
+  #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
     let isVerified = super.verify(url, allowedSchemes);
     let isRelative = false;
     let relativeParsedPath = '';
+    // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
       try {
         const dummyUrl = new URL(url, 'http://dummy.local');
-        const dummyUrlNormalized =
-          new URL(url.normalize('NFKC'), 'http://dummy.local');
+        const normUrl = url.normalize('NFKC');
+        const dummyUrlNormalized = new URL(normUrl, 'http://dummy.local');
         if (
           dummyUrl.protocol === 'http:' &&
           dummyUrl.hostname === 'dummy.local' &&
@@ -300,93 +345,133 @@ class URLSanitizer extends URISchemes {
         logDebug(ctx.debug, 'Failed to parse relative URL.', e);
       }
     }
-    if (isVerified) {
-      let hash, href, pathname, protocol, search;
-      let scheme = '';
-      let schemeParts = [];
-      let bool = false;
-      if (isRelative) {
-        bool = true;
-      } else {
-        const urlObj = new URL(url);
-        ({ hash, href, pathname, protocol, search } = urlObj);
-        scheme = protocol.replace(/:$/, '').normalize('NFKC');
-        schemeParts = scheme.split('+');
-        if (restrictScheme) {
-          bool = schemeParts.every(s => schemeMap.get(s));
-        } else {
-          for (const [key, value] of schemeMap.entries()) {
-            bool =
-              value || (scheme !== key && schemeParts.every(s => s !== key));
-            if (!bool) {
-              break;
-            }
-          }
-        }
-      }
-      if (bool) {
-        const isDataUrl = isRelative ? false : schemeParts.includes('data');
-        let urlToSanitize = isRelative ? relativeParsedPath : href;
-        if (isDataUrl) {
-          const [mediaType, ...dataParts] = pathname.split(',');
-          const data = `${dataParts.join(',')}${search}${hash}`;
-          const mediaTypes = mediaType.split(';');
-          const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
-          let parsedData = data;
-          if (isBase64) {
-            try {
-              parsedData = parseBase64(data);
-            } catch (e) {
-              logDebug(ctx.debug, 'Failed to parse base64 data.', e);
-              urlToSanitize = '';
-            }
-          }
-          try {
-            const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-            const normalizedData = decodedData.normalize('NFKC');
-            const { protocol: dataScheme } =
-              new URL(normalizedData, 'http://dummy.local');
-            const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
-            if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
-              urlToSanitize = '';
-            }
-          } catch (e) {
-            const msg = 'Failed to parse inner data URL protocol.';
-            logDebug(ctx.debug, msg, e);
-            urlToSanitize = '';
-          }
-          if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-            parsedData = this.#purify(parsedData, ctx);
-          }
-          if (urlToSanitize && parsedData) {
-            if (isBase64 && parsedData !== data) {
-              mediaTypes.pop();
-            }
-            urlToSanitize = `${scheme}:${mediaTypes.join(';')},${parsedData}`;
-          } else {
-            urlToSanitize = '';
-          }
-        }
-        if (!isDataUrl) {
-          if (REG_TAG_QUOT.test(urlToSanitize)) {
-            const item = REG_TAG_QUOT.exec(urlToSanitize);
-            const { index } = item;
-            urlToSanitize =
-              urlToSanitize.substring(0, index).replace(/[?&]$/, '');
-          }
-          if (REG_AMP_ENC.test(urlToSanitize)) {
-            const item = REG_AMP_ENC.exec(urlToSanitize);
-            const { index } = item;
-            urlToSanitize =
-              urlToSanitize.substring(0, index).replace(/[?&]$/, '');
-          }
-        }
-        if (urlToSanitize) {
-          sanitizedUrl = urlToSanitize;
-        }
+    if (!isVerified) {
+      return { isVerified: false };
+    }
+    // Extract parts if verified
+    if (isRelative) {
+      return {
+        isVerified,
+        isRelative,
+        isDataUrl: false,
+        scheme: '',
+        schemeParts: [],
+        urlToSanitize: relativeParsedPath
+      };
+    }
+    const urlObj = new URL(url);
+    const scheme = urlObj.protocol.replace(/:$/, '').normalize('NFKC');
+    const schemeParts = scheme.split('+');
+    return {
+      isVerified,
+      isRelative,
+      isDataUrl: schemeParts.includes('data'),
+      scheme,
+      schemeParts,
+      urlToSanitize: urlObj.href,
+      urlObj
+    };
+  }
+
+  /**
+   * Evaluates if the extracted scheme is permitted.
+   * @private
+   * @param {string} scheme - The normalized URL scheme.
+   * @param {string[]} schemeParts - Parts of the split scheme.
+   * @param {boolean} restrictScheme - If rules strictly limit.
+   * @param {Map<string, boolean>} schemeMap - Scheme rules map.
+   * @param {boolean} isRelative - If the URL is relative.
+   * @returns {boolean} True if the scheme is allowed.
+   */
+  #isSchemeAllowed(scheme, schemeParts, restrictScheme, schemeMap, isRelative) {
+    if (isRelative) {
+      return true;
+    }
+    if (restrictScheme) {
+      return schemeParts.every(s => schemeMap.get(s));
+    }
+    for (const [key, value] of schemeMap.entries()) {
+      const bool = value || (scheme !== key && schemeParts.every(s => s !== key));
+      if (!bool) {
+        return false;
       }
     }
-    return sanitizedUrl || null;
+    return true;
+  }
+
+  /**
+   * Decodes, verifies inner protocols, and purifies data URLs.
+   * @private
+   * @param {object} parsed - Parsed URL details.
+   * @param {object} ctx - Context for DOMPurify sanitization.
+   * @returns {string|null} Sanitized data URL or null.
+   */
+/**
+   * Decodes, verifies inner protocols, and purifies data URLs.
+   * @private
+   * @param {object} parsed - Parsed URL details.
+   * @param {object} ctx - Context for DOMPurify sanitization.
+   * @returns {string|null} Sanitized data URL or null.
+   */
+  #sanitizeDataURL(parsed, ctx) {
+    const { urlObj, scheme } = parsed;
+    const [mediaType, ...dataParts] = urlObj.pathname.split(',');
+    const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
+    const mediaTypes = mediaType.split(';');
+    const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+    let parsedData = data;
+    if (isBase64) {
+      try {
+        parsedData = parseBase64(data);
+      } catch (e) {
+        logDebug(ctx.debug, 'Failed to parse base64 data.', e);
+        return null;
+      }
+    }
+    try {
+      const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
+      const normalizedData = decodedData.normalize('NFKC');
+      const dummy = 'http://dummy.local';
+      const { protocol: dataScheme } = new URL(normalizedData, dummy);
+      const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
+      if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
+        return null; 
+      }
+    } catch (e) {
+      const msg = 'Failed to parse inner data URL protocol.';
+      logDebug(ctx.debug, msg, e);
+      return null;
+    }
+    if (!mediaType || REG_MIME_DOM.test(mediaType)) {
+      parsedData = this.#purify(parsedData, ctx);
+    }
+    if (parsedData) {
+      if (isBase64 && parsedData !== data) {
+        mediaTypes.pop();
+      }
+      return `${scheme}:${mediaTypes.join(';')},${parsedData}`;
+    }
+    return null;
+  }
+
+  /**
+   * Applies regex cleanups to standard non-data URLs.
+   * Strips out trailing queries or problematic characters.
+   * @private
+   * @param {string} urlToSanitize - The absolute/relative URL.
+   * @returns {string|null} Cleaned URL string or null.
+   */
+  #sanitizeStandardURL(urlToSanitize) {
+    let sanitized = urlToSanitize;
+    if (REG_TAG_QUOT.test(sanitized)) {
+      const { index } = REG_TAG_QUOT.exec(sanitized);
+      sanitized = sanitized.substring(0, index).replace(/[?&]$/, '');
+    }
+    if (REG_AMP_ENC.test(sanitized)) {
+      const { index } = REG_AMP_ENC.exec(sanitized);
+      sanitized = sanitized.substring(0, index).replace(/[?&]$/, '');
+    }
+    return sanitized;
   }
 
   /**
