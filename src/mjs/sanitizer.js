@@ -252,31 +252,35 @@ class URLSanitizer extends URISchemes {
     const { allowedSchemes, restrictScheme, schemeMap } =
       this.#resolveSchemeRules(rules, ctx);
     // Parse and verify the URL
-    const parsed = this.#parseAndVerifyURL(
-      url,
-      rules.allowRelative,
-      allowedSchemes,
-      ctx
-    );
-    if (!parsed.isVerified) {
+    const {
+      isDataUrl,
+      isRelative,
+      isVerified,
+      scheme,
+      schemeParts,
+      urlObj,
+      urlToSanitize
+    } = this.#parseAndVerifyURL(url, rules.allowRelative, allowedSchemes, ctx);
+    if (!isVerified) {
       return null;
     }
     // Check if the scheme is allowed
-    const isAllowed = this.#isSchemeAllowed(
-      parsed.scheme,
-      parsed.schemeParts,
-      restrictScheme,
-      schemeMap,
-      parsed.isRelative
-    );
-    if (!isAllowed) {
+    if (
+      !this.#isSchemeAllowed(
+        scheme,
+        schemeParts,
+        restrictScheme,
+        schemeMap,
+        isRelative
+      )
+    ) {
       return null;
     }
     // Sanitize based on URL type
-    if (parsed.isDataUrl) {
-      return this.#sanitizeDataURL(parsed, ctx);
+    if (isDataUrl) {
+      return this.#sanitizeDataURL(urlObj, scheme, ctx);
     }
-    return this.#sanitizeStandardURL(parsed.urlToSanitize);
+    return this.#sanitizeStandardURL(urlToSanitize);
   }
 
   /**
@@ -376,8 +380,8 @@ class URLSanitizer extends URISchemes {
     // Extract parts if verified
     if (isRelative) {
       return {
-        isVerified,
         isRelative,
+        isVerified,
         isDataUrl: false,
         scheme: '',
         schemeParts: [],
@@ -388,13 +392,13 @@ class URLSanitizer extends URISchemes {
     const scheme = urlObj.protocol.replace(/:$/, '').normalize('NFKC');
     const schemeParts = scheme.split('+');
     return {
-      isVerified,
       isRelative,
-      isDataUrl: schemeParts.includes('data'),
+      isVerified,
       scheme,
       schemeParts,
-      urlToSanitize: urlObj.href,
-      urlObj
+      urlObj,
+      isDataUrl: schemeParts.includes('data'),
+      urlToSanitize: urlObj.href
     };
   }
 
@@ -428,12 +432,12 @@ class URLSanitizer extends URISchemes {
   /**
    * Decodes, verifies inner protocols, and purifies data URLs.
    * @private
-   * @param {object} parsed - Parsed URL details.
+   * @param {object} urlObj - The URL object.
+   * @param {string} scheme - The URL scheme.
    * @param {object} ctx - Context for DOMPurify sanitization.
    * @returns {string|null} Sanitized data URL or null.
    */
-  #sanitizeDataURL(parsed, ctx) {
-    const { urlObj, scheme } = parsed;
+  #sanitizeDataURL(urlObj, scheme, ctx) {
     const [mediaType, ...dataParts] = urlObj.pathname.split(',');
     const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
     const mediaTypes = mediaType.split(';');
@@ -529,8 +533,7 @@ class URLSanitizer extends URISchemes {
     ) {
       try {
         const { href } = new URL(url);
-        const res = href;
-        return res.replace(/%26/g, escapeURLEncodedHTMLChars);
+        return href.replace(/%26/g, escapeURLEncodedHTMLChars);
       } catch {
         return null;
       }
