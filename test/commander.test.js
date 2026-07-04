@@ -9,8 +9,14 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  commander, cleanDirectory, createCharTable, includeLibraries, parseCommand,
-  renameFile, saveUriSchemes, storeTextChars
+  commander,
+  cleanDirectory,
+  createCharTable,
+  includeLibraries,
+  parseCommand,
+  renameFile,
+  saveUriSchemes,
+  storeTextChars
 } from '../scripts/commander.js';
 
 /* constants */
@@ -46,7 +52,9 @@ describe('save URI schemes file', () => {
     const libPath = path.resolve(process.cwd(), 'src', 'lib');
     const filePath = path.resolve(libPath, dir, 'uri-schemes.json');
     const url = new URL(`${BASE_URL_IANA}${DIR_IANA}uri-schemes-1.csv`);
-    mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
+    mockAgent
+      .get(url.origin)
+      .intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     const res = await saveUriSchemes();
     const { callCount: writeCallCount } = stubWrite;
@@ -67,7 +75,9 @@ describe('save URI schemes file', () => {
     const libPath = path.resolve(process.cwd(), 'src', 'lib');
     const filePath = path.resolve(libPath, dir, 'uri-schemes.json');
     const url = new URL(`${BASE_URL_IANA}${DIR_IANA}uri-schemes-1.csv`);
-    mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
+    mockAgent
+      .get(url.origin)
+      .intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     const res = await saveUriSchemes({ info: true });
     const { callCount: writeCallCount } = stubWrite;
@@ -104,7 +114,9 @@ describe('include libraries', () => {
     const stubWrite = sinon.stub(fs.promises, 'writeFile');
     stubWrite.rejects(new Error('error'));
     const url = new URL(`${BASE_URL_IANA}${DIR_IANA}uri-schemes-1.csv`);
-    mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
+    mockAgent
+      .get(url.origin)
+      .intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     await includeLibraries().catch(e => {
       assert.deepStrictEqual(e, new Error('error'));
@@ -122,7 +134,9 @@ describe('include libraries', () => {
     const libPath = path.resolve(process.cwd(), 'src', 'lib');
     const filePath = path.resolve(libPath, dir, 'uri-schemes.json');
     const url = new URL(`${BASE_URL_IANA}${DIR_IANA}uri-schemes-1.csv`);
-    mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
+    mockAgent
+      .get(url.origin)
+      .intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     const res = await includeLibraries();
     const { callCount: writeCallCount } = stubWrite;
@@ -145,7 +159,9 @@ describe('include libraries', () => {
     const libPath = path.resolve(process.cwd(), 'src', 'lib');
     const filePath = path.resolve(libPath, dir, 'uri-schemes.json');
     const url = new URL(`${BASE_URL_IANA}${DIR_IANA}uri-schemes-1.csv`);
-    mockAgent.get(url.origin).intercept({ path: url.pathname, method: 'GET' })
+    mockAgent
+      .get(url.origin)
+      .intercept({ path: url.pathname, method: 'GET' })
       .reply(200, csvText);
     const res = await includeLibraries({ info: true });
     const { callCount: writeCallCount } = stubWrite;
@@ -234,15 +250,21 @@ describe('create a table of chars', () => {
 
 describe('rename file', () => {
   it('should throw', () => {
-    assert.throws(() => renameFile(), Error,
-      'No such file or directory: undefined');
+    assert.throws(
+      () => renameFile(),
+      Error,
+      'No such file or directory: undefined'
+    );
   });
 
   it('should throw if file does not exist', () => {
     const oldpath = path.resolve('test', 'file', 'foo.txt');
     const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
-    assert.throws(() => renameFile({ oldpath, newpath }), Error,
-      `No such file or directory: ${oldpath}`);
+    assert.throws(
+      () => renameFile({ oldpath, newpath }),
+      Error,
+      `No such file or directory: ${oldpath}`
+    );
   });
 
   it('should call function', () => {
@@ -347,11 +369,7 @@ describe('parse command', () => {
   it('should not parse', () => {
     const stubParse = sinon.stub(commander, 'parse');
     const i = stubParse.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      'baz'
-    ]);
+    parseCommand(['foo', 'bar', 'baz']);
     assert.strictEqual(stubParse.callCount, i, 'not called');
     stubParse.restore();
   });
@@ -361,11 +379,7 @@ describe('parse command', () => {
     const stubVer = sinon.stub(commander, 'version');
     const i = stubParse.callCount;
     const j = stubVer.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      '-v'
-    ]);
+    parseCommand(['foo', 'bar', '-v']);
     assert.strictEqual(stubParse.callCount, i + 1, 'called');
     assert.strictEqual(stubVer.callCount, j + 1, 'called');
     stubParse.restore();
@@ -379,11 +393,7 @@ describe('parse command', () => {
     const i = stubParse.callCount;
     const j = stubVer.callCount;
     const k = spyCmd.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      'char'
-    ]);
+    parseCommand(['foo', 'bar', 'char']);
     assert.strictEqual(stubParse.callCount, i + 1, 'called');
     assert.strictEqual(stubVer.callCount, j + 1, 'called');
     assert.strictEqual(spyCmd.callCount, k + 1, 'called');
@@ -399,11 +409,7 @@ describe('parse command', () => {
     const i = stubParse.callCount;
     const j = stubVer.callCount;
     const k = spyCmd.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      'clean'
-    ]);
+    parseCommand(['foo', 'bar', 'clean']);
     assert.strictEqual(stubParse.callCount, i + 1, 'called');
     assert.strictEqual(stubVer.callCount, j + 1, 'called');
     assert.strictEqual(spyCmd.callCount, k + 1, 'called');
@@ -419,11 +425,7 @@ describe('parse command', () => {
     const i = stubParse.callCount;
     const j = stubVer.callCount;
     const k = spyCmd.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      'include'
-    ]);
+    parseCommand(['foo', 'bar', 'include']);
     assert.strictEqual(stubParse.callCount, i + 1, 'called');
     assert.strictEqual(stubVer.callCount, j + 1, 'called');
     assert.strictEqual(spyCmd.callCount, k + 1, 'called');
@@ -439,11 +441,7 @@ describe('parse command', () => {
     const i = stubParse.callCount;
     const j = stubVer.callCount;
     const k = spyCmd.callCount;
-    parseCommand([
-      'foo',
-      'bar',
-      'rename'
-    ]);
+    parseCommand(['foo', 'bar', 'rename']);
     assert.strictEqual(stubParse.callCount, i + 1, 'called');
     assert.strictEqual(stubVer.callCount, j + 1, 'called');
     assert.strictEqual(spyCmd.callCount, k + 1, 'called');

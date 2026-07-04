@@ -5,7 +5,12 @@
 /* test */
 import { assert } from '../../node_modules/chai/index.js';
 import urlSanitizer, {
-  inspectURL, inspectURLSync, isURI, isURISync, sanitizeURL, sanitizeURLSync
+  inspectURL,
+  inspectURLSync,
+  isURI,
+  isURISync,
+  sanitizeURL,
+  sanitizeURLSync
 } from '../../dist/url-sanitizer-wo-dompurify.min.js';
 
 const { describe, it } = globalThis;
@@ -82,7 +87,8 @@ describe('dist URL Sanitizer', () => {
     });
 
     it('should get result', async () => {
-      const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
+      const url =
+        'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = await sanitizeURL(url);
       assert.strictEqual(res, 'http://example.com/', 'result');
     });
@@ -115,8 +121,7 @@ describe('dist URL Sanitizer', () => {
     });
 
     it('should throw', async () => {
-      const base64data =
-        btoa('<div><img src="javascript:alert(1)"></div>');
+      const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
       let err;
       const res = await sanitizeURL(url, {
@@ -190,7 +195,8 @@ describe('dist URL Sanitizer', () => {
 
   describe('sanitize URL sync', () => {
     it('should get result', () => {
-      const url = 'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
+      const url =
+        'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
       const res = sanitizeURLSync(url);
       assert.strictEqual(res, 'http://example.com/', 'result');
     });
@@ -199,26 +205,31 @@ describe('dist URL Sanitizer', () => {
       const data =
         '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
       const url = `data:text/html,${encodeURIComponent(data)}`;
-      assert.throws(() => sanitizeURLSync(url, {
-        allow: ['data']
-      }));
+      assert.throws(() =>
+        sanitizeURLSync(url, {
+          allow: ['data']
+        })
+      );
     });
 
     it('should throw', () => {
       const base64data = btoa('<div><script>alert(1);</script></div>');
       const url = `data:text/html;base64,${base64data}`;
-      assert.throws(() => sanitizeURLSync(url, {
-        allow: ['data']
-      }));
+      assert.throws(() =>
+        sanitizeURLSync(url, {
+          allow: ['data']
+        })
+      );
     });
 
     it('should throw', () => {
-      const base64data =
-        btoa('<div><img src="javascript:alert(1)"></div>');
+      const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
       const url = `data:text/html;base64,${base64data}`;
-      assert.throws(() => sanitizeURLSync(url, {
-        allow: ['data']
-      }));
+      assert.throws(() =>
+        sanitizeURLSync(url, {
+          allow: ['data']
+        })
+      );
     });
 
     it('should get null', async () => {
@@ -268,66 +279,87 @@ describe('dist URL Sanitizer', () => {
   describe('inspect URL', () => {
     it('should get result', async () => {
       const res = await inspectURL('javascript:alert(1)');
-      assert.deepEqual(res, {
-        input: 'javascript:alert(1)',
-        valid: false,
-        reason: 'Invalid URI syntax or scheme is not registered.'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input: 'javascript:alert(1)',
+          valid: false,
+          reason: 'Invalid URI syntax or scheme is not registered.'
+        },
+        'result'
+      );
     });
 
     it('should get result', async () => {
       const res = await inspectURL('https://example.com/?foo=bar#baz');
-      assert.deepEqual(res, {
-        input: 'https://example.com/?foo=bar#baz',
-        valid: true,
-        data: null,
-        href: 'https://example.com/?foo=bar#baz',
-        origin: 'https://example.com',
-        protocol: 'https:',
-        username: '',
-        password: '',
-        host: 'example.com',
-        port: '',
-        hostname: 'example.com',
-        pathname: '/',
-        search: '?foo=bar',
-        hash: '#baz'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input: 'https://example.com/?foo=bar#baz',
+          valid: true,
+          data: null,
+          href: 'https://example.com/?foo=bar#baz',
+          origin: 'https://example.com',
+          protocol: 'https:',
+          username: '',
+          password: '',
+          host: 'example.com',
+          port: '',
+          hostname: 'example.com',
+          pathname: '/',
+          search: '?foo=bar',
+          hash: '#baz'
+        },
+        'result'
+      );
     });
 
     it('should get result', async () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
       const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(res, {
-        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-        valid: false,
-        reason: 'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input:
+            'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+          valid: false,
+          reason:
+            'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+        },
+        'result'
+      );
     });
 
     it('should get result', async () => {
-      const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+      const data =
+        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
       const res = await inspectURL(`data:image/png;base64,${data}`);
-      assert.deepEqual(res, {
-        input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        valid: true,
-        data: {
-          mime: 'image/png',
-          base64: true,
-          data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+      assert.deepEqual(
+        res,
+        {
+          input:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          valid: true,
+          data: {
+            mime: 'image/png',
+            base64: true,
+            data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+          },
+          href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          origin: 'null',
+          protocol: 'data:',
+          username: '',
+          password: '',
+          host: '',
+          port: '',
+          hostname: '',
+          pathname:
+            'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          search: '',
+          hash: ''
         },
-        href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        origin: 'null',
-        protocol: 'data:',
-        username: '',
-        password: '',
-        host: '',
-        port: '',
-        hostname: '',
-        pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        search: '',
-        hash: ''
-      }, 'result');
+        'result'
+      );
     });
 
     it('should get value', async () => {
@@ -355,66 +387,87 @@ describe('dist URL Sanitizer', () => {
   describe('inspect URL sync', () => {
     it('should get result', () => {
       const res = inspectURLSync('javascript:alert(1)');
-      assert.deepEqual(res, {
-        input: 'javascript:alert(1)',
-        valid: false,
-        reason: 'Invalid URI syntax or scheme is not registered.'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input: 'javascript:alert(1)',
+          valid: false,
+          reason: 'Invalid URI syntax or scheme is not registered.'
+        },
+        'result'
+      );
     });
 
     it('should get result', () => {
       const res = inspectURLSync('https://example.com/?foo=bar#baz');
-      assert.deepEqual(res, {
-        input: 'https://example.com/?foo=bar#baz',
-        valid: true,
-        data: null,
-        href: 'https://example.com/?foo=bar#baz',
-        origin: 'https://example.com',
-        protocol: 'https:',
-        username: '',
-        password: '',
-        host: 'example.com',
-        port: '',
-        hostname: 'example.com',
-        pathname: '/',
-        search: '?foo=bar',
-        hash: '#baz'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input: 'https://example.com/?foo=bar#baz',
+          valid: true,
+          data: null,
+          href: 'https://example.com/?foo=bar#baz',
+          origin: 'https://example.com',
+          protocol: 'https:',
+          username: '',
+          password: '',
+          host: 'example.com',
+          port: '',
+          hostname: 'example.com',
+          pathname: '/',
+          search: '?foo=bar',
+          hash: '#baz'
+        },
+        'result'
+      );
     });
 
     it('should get result', () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
       const res = inspectURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(res, {
-        input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-        valid: false,
-        reason: 'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
-      }, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input:
+            'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+          valid: false,
+          reason:
+            'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+        },
+        'result'
+      );
     });
 
     it('should get result', () => {
-      const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+      const data =
+        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
       const res = inspectURLSync(`data:image/png;base64,${data}`);
-      assert.deepEqual(res, {
-        input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        valid: true,
-        data: {
-          mime: 'image/png',
-          base64: true,
-          data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+      assert.deepEqual(
+        res,
+        {
+          input:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          valid: true,
+          data: {
+            mime: 'image/png',
+            base64: true,
+            data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
+          },
+          href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          origin: 'null',
+          protocol: 'data:',
+          username: '',
+          password: '',
+          host: '',
+          port: '',
+          hostname: '',
+          pathname:
+            'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          search: '',
+          hash: ''
         },
-        href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        origin: 'null',
-        protocol: 'data:',
-        username: '',
-        password: '',
-        host: '',
-        port: '',
-        hostname: '',
-        pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-        search: '',
-        hash: ''
-      }, 'result');
+        'result'
+      );
     });
 
     it('should get value', () => {

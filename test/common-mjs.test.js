@@ -53,16 +53,7 @@ describe('common', () => {
     const func = mjs.isString;
 
     it('should get false', () => {
-      const items = [
-        [],
-        ['foo'],
-        {},
-        { foo: 'bar' },
-        undefined,
-        null,
-        1,
-        true
-      ];
+      const items = [[], ['foo'], {}, { foo: 'bar' }, undefined, null, 1, true];
       for (const item of items) {
         assert.strictEqual(func(item), false);
       }

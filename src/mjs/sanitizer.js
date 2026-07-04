@@ -6,15 +6,24 @@
 import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
-  URISchemes, convertBlobToDataURL, escapeURLEncodedHTMLChars, parseBase64,
-  parseURLEncodedNumCharRef, trimTrailingEmptyQueryAndHash
+  URISchemes,
+  convertBlobToDataURL,
+  escapeURLEncodedHTMLChars,
+  parseBase64,
+  parseURLEncodedNumCharRef,
+  trimTrailingEmptyQueryAndHash
 } from './uri-util.js';
 
 /* constants */
 import { MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_AMP_ENC, REG_MIME_DOM, REG_SCHEME, REG_SCRIPT, REG_SCRIPT_BLOB,
-  REG_TAG_QUOT, REG_VERIFY_RELATIVE
+  REG_AMP_ENC,
+  REG_MIME_DOM,
+  REG_SCHEME,
+  REG_SCRIPT,
+  REG_SCRIPT_BLOB,
+  REG_TAG_QUOT,
+  REG_VERIFY_RELATIVE
 } from './regexp.js';
 const URL_PROPS = Object.freeze([
   'href',
@@ -137,12 +146,16 @@ class URLSanitizer extends URISchemes {
       ctx.nest++;
       ctx.recurse.add(originalUrl);
       try {
-        const sanitized = sanitizer.#process(originalUrl, {
-          allow: ['data'],
-          deny: [],
-          only: [],
-          allowRelative: false
-        }, ctx);
+        const sanitized = sanitizer.#process(
+          originalUrl,
+          {
+            allow: ['data'],
+            deny: [],
+            only: [],
+            allowRelative: false
+          },
+          ctx
+        );
         e.attrValue = sanitized || '';
       } finally {
         ctx.nest--;
@@ -236,20 +249,25 @@ class URLSanitizer extends URISchemes {
       throw new Error('Data URLs nested too deeply.');
     }
     // Resolve allowed/denied schemes
-    const {
-      allowedSchemes, restrictScheme, schemeMap
-    } = this.#resolveSchemeRules(rules, ctx);
+    const { allowedSchemes, restrictScheme, schemeMap } =
+      this.#resolveSchemeRules(rules, ctx);
     // Parse and verify the URL
     const parsed = this.#parseAndVerifyURL(
-      url, rules.allowRelative, allowedSchemes, ctx
+      url,
+      rules.allowRelative,
+      allowedSchemes,
+      ctx
     );
     if (!parsed.isVerified) {
       return null;
     }
     // Check if the scheme is allowed
     const isAllowed = this.#isSchemeAllowed(
-      parsed.scheme, parsed.schemeParts,
-      restrictScheme, schemeMap, parsed.isRelative
+      parsed.scheme,
+      parsed.schemeParts,
+      restrictScheme,
+      schemeMap,
+      parsed.isRelative
     );
     if (!isAllowed) {
       return null;
@@ -280,7 +298,11 @@ class URLSanitizer extends URISchemes {
       for (const item of only) {
         if (isString(item)) {
           const registered = this.#registerScheme(
-            item.trim(), 'only', allowedSchemes, schemeMap, ctx
+            item.trim(),
+            'only',
+            allowedSchemes,
+            schemeMap,
+            ctx
           );
           if (registered && !restrictScheme) {
             restrictScheme = true;
@@ -293,7 +315,11 @@ class URLSanitizer extends URISchemes {
         for (const item of allow) {
           if (isString(item)) {
             this.#registerScheme(
-              item.trim(), 'allow', allowedSchemes, schemeMap, ctx
+              item.trim(),
+              'allow',
+              allowedSchemes,
+              schemeMap,
+              ctx
             );
           }
         }
@@ -338,8 +364,7 @@ class URLSanitizer extends URISchemes {
         ) {
           isVerified = true;
           isRelative = true;
-          relativeParsedPath =
-            `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
+          relativeParsedPath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
         }
       } catch (e) {
         logDebug(ctx.debug, 'Failed to parse relative URL.', e);
@@ -391,7 +416,8 @@ class URLSanitizer extends URISchemes {
       return schemeParts.every(s => schemeMap.get(s));
     }
     for (const [key, value] of schemeMap.entries()) {
-      const bool = value || (scheme !== key && schemeParts.every(s => s !== key));
+      const bool =
+        value || (scheme !== key && schemeParts.every(s => s !== key));
       if (!bool) {
         return false;
       }
@@ -484,18 +510,17 @@ class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
-    const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
-      ? opt.maxLength
-      : 0;
+    const maxLength =
+      Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
     if (maxLength && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
       throw new RangeError(msg);
     }
-    const hasRestrictiveRules = opt && (
-      (Array.isArray(opt.deny) && opt.deny.length > 0) ||
-      (Array.isArray(opt.only) && opt.only.length > 0) ||
-      opt.allowRelative
-    );
+    const hasRestrictiveRules =
+      opt &&
+      ((Array.isArray(opt.deny) && opt.deny.length > 0) ||
+        (Array.isArray(opt.only) && opt.only.length > 0) ||
+        opt.allowRelative);
     if (
       !hasRestrictiveRules &&
       (url.startsWith('https://') || url.startsWith('http://')) &&
@@ -549,12 +574,10 @@ class URLSanitizer extends URISchemes {
     };
     let sanitizedUrl;
     let invalidReason = null;
-    const maxLength = Number.isInteger(opt?.maxLength) && opt.maxLength
-      ? opt.maxLength
-      : 0;
+    const maxLength =
+      Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
     if (maxLength && url.length > maxLength) {
-      invalidReason =
-        `URL length ${url.length} exceeds maxLength ${maxLength}.`;
+      invalidReason = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
     } else if (this.verify(url)) {
       const { protocol } = new URL(url);
       if (protocol === 'blob:') {
@@ -693,19 +716,23 @@ const urlSanitizer = new URLSanitizer();
  * @param {number} [opt.maxLength] - The maximum allowed URL length
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
-export const sanitizeURL = async (url, opt = {
-  allow: [],
-  deny: [],
-  only: [],
-  allowRelative: false,
-  debug: false,
-  revokeObjectURL: false,
-  maxBlobSize: MAX_BLOB_SIZE
-}) => {
+export const sanitizeURL = async (
+  url,
+  opt = {
+    allow: [],
+    deny: [],
+    only: [],
+    allowRelative: false,
+    debug: false,
+    revokeObjectURL: false,
+    maxBlobSize: MAX_BLOB_SIZE
+  }
+) => {
   const isDebug = !!opt?.debug;
-  const maxBlobSize = Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
-    ? opt.maxBlobSize
-    : MAX_BLOB_SIZE;
+  const maxBlobSize =
+    Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
+      ? opt.maxBlobSize
+      : MAX_BLOB_SIZE;
   let res;
   if (url && isString(url)) {
     let scheme;
@@ -717,9 +744,12 @@ export const sanitizeURL = async (url, opt = {
     }
     if (scheme === 'blob') {
       const { allow, deny, only } = opt;
-      if ((Array.isArray(allow) && allow.includes('blob') &&
-           !(Array.isArray(deny) && deny.includes('blob'))) ||
-          (Array.isArray(only) && only.includes('blob'))) {
+      if (
+        (Array.isArray(allow) &&
+          allow.includes('blob') &&
+          !(Array.isArray(deny) && deny.includes('blob'))) ||
+        (Array.isArray(only) && only.includes('blob'))
+      ) {
         let data;
         try {
           data = await fetch(url)
@@ -771,14 +801,17 @@ export const sanitizeURL = async (url, opt = {
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
-export const sanitizeURLSync = (url, opt = {
-  allow: [],
-  deny: [],
-  only: [],
-  allowRelative: false,
-  debug: false,
-  revokeObjectURL: false
-}) => {
+export const sanitizeURLSync = (
+  url,
+  opt = {
+    allow: [],
+    deny: [],
+    only: [],
+    allowRelative: false,
+    debug: false,
+    revokeObjectURL: false
+  }
+) => {
   const isDebug = !!opt?.debug;
   let res;
   if (url && isString(url)) {
