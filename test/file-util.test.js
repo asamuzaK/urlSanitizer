@@ -9,12 +9,18 @@ import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
 
 /* test */
 import {
-  createFile, fetchText, getStat, isDir, isFile, removeDir, rename
+  createFile,
+  fetchText,
+  getStat,
+  isDir,
+  isFile,
+  removeDir,
+  rename
 } from '../scripts/file-util.js';
 
 /* constants */
-const TMPDIR = process.env.TMP || process.env.TMPDIR || process.env.TEMP ||
-               os.tmpdir();
+const TMPDIR =
+  process.env.TMP || process.env.TMPDIR || process.env.TEMP || os.tmpdir();
 
 describe('getStat', () => {
   it('should be an object', () => {
@@ -71,7 +77,9 @@ describe('removeDir', () => {
     const filePath = path.join(subDirPath, 'test.txt');
     const value = 'test file.\n';
     await fsPromise.writeFile(filePath, value, {
-      encoding: 'utf8', flag: 'w', mode: 0o666
+      encoding: 'utf8',
+      flag: 'w',
+      mode: 0o666
     });
     const res1 = await Promise.all([
       fs.existsSync(dirPath),
@@ -108,31 +116,41 @@ describe('createFile', () => {
 
   it('should throw if first argument is not a string', () => {
     createFile().catch(e => {
-      assert.deepStrictEqual(e,
-        new TypeError('Expected String but got Undefined.'));
+      assert.deepStrictEqual(
+        e,
+        new TypeError('Expected String but got Undefined.')
+      );
     });
   });
 
   it('should throw if second argument is not a string', () => {
     const file = path.join(dirPath, 'test.txt');
     createFile(file).catch(e => {
-      assert.deepStrictEqual(e,
-        new TypeError('Expected String but got Undefined.'));
+      assert.deepStrictEqual(
+        e,
+        new TypeError('Expected String but got Undefined.')
+      );
     });
   });
 });
 
 describe('rename file or directory', () => {
   it('should throw', () => {
-    assert.throws(() => rename(), Error,
-      'No such file or directory: undefined');
+    assert.throws(
+      () => rename(),
+      Error,
+      'No such file or directory: undefined'
+    );
   });
 
   it('should throw if file does not exist', () => {
     const oldpath = path.resolve('test', 'file', 'foo.txt');
     const newpath = path.resolve('test', 'file', 'foo-renamed.txt');
-    assert.throws(() => rename(oldpath, newpath), Error,
-      `No such file or directory: ${oldpath}`);
+    assert.throws(
+      () => rename(oldpath, newpath),
+      Error,
+      `No such file or directory: ${oldpath}`
+    );
   });
 
   it('should not call function', () => {
@@ -169,8 +187,10 @@ describe('fetch text', () => {
 
   it('should throw', async () => {
     await fetchText().catch(e => {
-      assert.deepStrictEqual(e,
-        new TypeError('Expected String but got Undefined.'));
+      assert.deepStrictEqual(
+        e,
+        new TypeError('Expected String but got Undefined.')
+      );
     });
   });
 
@@ -178,14 +198,18 @@ describe('fetch text', () => {
     const base = 'https://example.com';
     mockAgent.get(base).intercept({ path: '/', method: 'GET' }).reply(404);
     await fetchText(base).catch(e => {
-      assert.deepStrictEqual(e,
-        new Error(`Network response was not ok. status: 404 url: ${base}`));
+      assert.deepStrictEqual(
+        e,
+        new Error(`Network response was not ok. status: 404 url: ${base}`)
+      );
     });
   });
 
   it('should get result', async () => {
     const base = 'https://example.com';
-    mockAgent.get(base).intercept({ path: '/', method: 'GET' })
+    mockAgent
+      .get(base)
+      .intercept({ path: '/', method: 'GET' })
       .reply(200, 'foo');
     const res = await fetchText('https://example.com');
     assert.strictEqual(res, 'foo', 'result');

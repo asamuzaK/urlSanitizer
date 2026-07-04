@@ -9,16 +9,17 @@ import sinon from 'sinon';
 import { isString } from '../scripts/common.js';
 
 /* test */
-import uriSchemes from '../src/lib/iana/uri-schemes.json' with {
-  type: 'json'
-};
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
 import urlSanitizer, * as mjs from '../src/mjs/sanitizer.js';
 
 describe('sanitizer', () => {
   describe('default', () => {
     it('should be instance of URLSanitizer', () => {
-      assert.strictEqual(urlSanitizer instanceof mjs.URLSanitizer, true,
-        'instance');
+      assert.strictEqual(
+        urlSanitizer instanceof mjs.URLSanitizer,
+        true,
+        'instance'
+      );
     });
   });
 
@@ -34,8 +35,11 @@ describe('sanitizer', () => {
 
     it('should call console.warn with a message when isDebug is true', () => {
       logDebug(true, 'Test message');
-      assert.strictEqual(warnStub.calledOnce, true,
-        'console.warn should be called once');
+      assert.strictEqual(
+        warnStub.calledOnce,
+        true,
+        'console.warn should be called once'
+      );
       assert.strictEqual(
         warnStub.calledWith('[URLSanitizer Debug] Test message', ''),
         true,
@@ -46,8 +50,11 @@ describe('sanitizer', () => {
     it('should call console.warn with a message when error is provided', () => {
       const testError = new Error('Test error detail');
       logDebug(true, 'Test message', testError);
-      assert.strictEqual(warnStub.calledOnce, true,
-        'console.warn should be called once');
+      assert.strictEqual(
+        warnStub.calledOnce,
+        true,
+        'console.warn should be called once'
+      );
       assert.strictEqual(
         warnStub.calledWith(
           '[URLSanitizer Debug] Test message',
@@ -60,15 +67,21 @@ describe('sanitizer', () => {
 
     it('should not call console.warn when isDebug is false', () => {
       logDebug(false, 'Test message');
-      assert.strictEqual(warnStub.called, false,
-        'console.warn should not be called');
+      assert.strictEqual(
+        warnStub.called,
+        false,
+        'console.warn should not be called'
+      );
     });
 
     it('should not call console.warn when isDebug is false', () => {
       const testError = new Error('Test error detail');
       logDebug(false, 'Test message', testError);
-      assert.strictEqual(warnStub.called, false,
-        'console.warn should not be called');
+      assert.strictEqual(
+        warnStub.called,
+        false,
+        'console.warn should not be called'
+      );
     });
   });
 
@@ -113,17 +126,24 @@ describe('sanitizer', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const res =
-          sanitizer.sanitize('https://example.com:8000/#foo?bar=baz qux');
-        assert.strictEqual(res, 'https://example.com:8000/#foo?bar=baz%20qux',
-          'result');
+        const res = sanitizer.sanitize(
+          'https://example.com:8000/#foo?bar=baz qux'
+        );
+        assert.strictEqual(
+          res,
+          'https://example.com:8000/#foo?bar=baz%20qux',
+          'result'
+        );
       });
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com/?foo=bar&baz=qux');
-        assert.strictEqual(res, 'https://example.com/?foo=bar&baz=qux',
-          'result');
+        assert.strictEqual(
+          res,
+          'https://example.com/?foo=bar&baz=qux',
+          'result'
+        );
       });
 
       it('should get null', () => {
@@ -382,7 +402,9 @@ describe('sanitizer', () => {
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        const res = sanitizer.sanitize(
+          'vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
+        );
         assert.deepEqual(res, null, 'result');
       });
 
@@ -394,7 +416,9 @@ describe('sanitizer', () => {
 
       it('should get null', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        const res = sanitizer.sanitize(
+          'web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
+        );
         assert.deepEqual(res, null, 'result');
       });
 
@@ -403,7 +427,14 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize('http://example.com/?lt=5&gt=4');
         const url = new URL(res);
         assert.strictEqual(res, 'http://example.com/?lt=5&gt=4', 'result');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [['lt', '5'], ['gt', '4']], 'search');
+        assert.deepEqual(
+          Array.from(url.searchParams.entries()),
+          [
+            ['lt', '5'],
+            ['gt', '4']
+          ],
+          'search'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -411,10 +442,16 @@ describe('sanitizer', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(`http://example.com/?lt=${value}`);
         const url = new URL(res);
-        assert.strictEqual(res, 'http://example.com/?lt=5%26amp;gt%3D4',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'http://example.com/?lt=5&amp;gt=4', 'decode');
+        assert.strictEqual(
+          res,
+          'http://example.com/?lt=5%26amp;gt%3D4',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'http://example.com/?lt=5&amp;gt=4',
+          'decode'
+        );
         assert.deepEqual(
           Array.from(url.searchParams.entries()),
           [['lt', '5&amp;gt=4']],
@@ -424,8 +461,9 @@ describe('sanitizer', () => {
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer
-          .sanitize("http://example.com/?<script>alert('XSS');</script>");
+        const res = sanitizer.sanitize(
+          "http://example.com/?<script>alert('XSS');</script>"
+        );
         const url = new URL(res);
         assert.strictEqual(res, 'http://example.com/', 'result');
         assert.deepEqual(Array.from(url.searchParams.entries()), [], 'search');
@@ -433,18 +471,23 @@ describe('sanitizer', () => {
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize("http://example.com/?foo=bar&<script>alert('XSS');</script>");
+        const res = sanitizer.sanitize(
+          "http://example.com/?foo=bar&<script>alert('XSS');</script>"
+        );
         const url = new URL(res);
         assert.strictEqual(res, 'http://example.com/?foo=bar', 'result');
-        assert.deepEqual(Array.from(url.searchParams.entries()), [
-          ['foo', 'bar']
-        ], 'search');
+        assert.deepEqual(
+          Array.from(url.searchParams.entries()),
+          [['foo', 'bar']],
+          'search'
+        );
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res =
-          sanitizer.sanitize('http://example.com/"onmouseover="alert(1)"');
+        const res = sanitizer.sanitize(
+          'http://example.com/"onmouseover="alert(1)"'
+        );
         assert.strictEqual(res, 'http://example.com/', 'result');
       });
 
@@ -469,49 +512,75 @@ describe('sanitizer', () => {
           allow: ['data']
         });
         assert.strictEqual(res, 'data:,Hello,%20World!', 'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:,Hello, World!',
-          'decode');
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:,Hello, World!',
+          'decode'
+        );
       });
 
       it('should get value', () => {
         const data = 'Hello%2C%20World!';
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer
-          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64Data}`, {
+        const res = sanitizer.sanitize(
+          `data:text/plain;charset=UTF-8;base64,${base64Data}`,
+          {
             allow: ['data']
-          });
-        assert.strictEqual(res,
-          'data:text/plain;charset=UTF-8,Hello%2C%20World!', 'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'data:text/plain;charset=UTF-8,Hello, World!', 'decode');
+          }
+        );
+        assert.strictEqual(
+          res,
+          'data:text/plain;charset=UTF-8,Hello%2C%20World!',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/plain;charset=UTF-8,Hello, World!',
+          'decode'
+        );
       });
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer
-          .sanitize('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', {
-            allow: ['data']
-          });
-        assert.strictEqual(res,
+        const res = sanitizer.sanitize(
           'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==', 'decode');
+          {
+            allow: ['data']
+          }
+        );
+        assert.strictEqual(
+          res,
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
         const data = 'Hello%2C%20World!';
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
-        const res = sanitizer
-          .sanitize(`data:text/plain;charset=UTF-8;base64,${base64Data}`, {
+        const res = sanitizer.sanitize(
+          `data:text/plain;charset=UTF-8;base64,${base64Data}`,
+          {
             allow: ['data']
-          });
-        assert.strictEqual(res,
-          'data:text/plain;charset=UTF-8,Hello%2C%20World!', 'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'data:text/plain;charset=UTF-8,Hello, World!', 'decode');
+          }
+        );
+        assert.strictEqual(
+          res,
+          'data:text/plain;charset=UTF-8,Hello%2C%20World!',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/plain;charset=UTF-8,Hello, World!',
+          'decode'
+        );
       });
 
       it('should get value', () => {
@@ -524,25 +593,34 @@ describe('sanitizer', () => {
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('data:,https://example.com/#<script>alert(1);</script>', {
-          allow: ['data']
-        });
+        const res = sanitizer.sanitize(
+          'data:,https://example.com/#<script>alert(1);</script>',
+          {
+            allow: ['data']
+          }
+        );
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('data:,https://example.com/?<script>alert(1);</script>', {
-          allow: ['data']
-        });
+        const res = sanitizer.sanitize(
+          'data:,https://example.com/?<script>alert(1);</script>',
+          {
+            allow: ['data']
+          }
+        );
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('data:,https://example.com/?<script>alert(1);</script>#<script>alert(1)</script>', {
-          allow: ['data']
-        });
+        const res = sanitizer.sanitize(
+          'data:,https://example.com/?<script>alert(1);</script>#<script>alert(1)</script>',
+          {
+            allow: ['data']
+          }
+        );
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
@@ -558,14 +636,18 @@ describe('sanitizer', () => {
 
       it('should get sanitized value', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize("data:text/html,%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E", {
-          allow: ['data']
-        });
+        const res = sanitizer.sanitize(
+          "data:text/html,%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E",
+          {
+            allow: ['data']
+          }
+        );
         assert.deepEqual(res, null, 'result');
       });
 
       it('should get sanitized value', () => {
-        const data = "%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E";
+        const data =
+          "%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E";
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
@@ -584,10 +666,16 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<img src="">',
-          'decode');
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cimg%20src=%22%22%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/html,<img src="">',
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -601,10 +689,16 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<img src="">', 'decode');
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cimg%20src=%22%22%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/html,<img src="">',
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -625,12 +719,16 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
           allow: ['data']
         });
-        assert.strictEqual(res,
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E%3Cimg%20src=%22%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:text/html,<img src=""><img src=""><img src="">',
-          'decode');
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -641,35 +739,41 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.strictEqual(res,
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cdiv%3E%3Cimg%20src=%22data:image/svg+xml,%253Csvg%253E%253C/svg%253E%22%3E%3C/div%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:text/html,<div><img src="data:image/svg+xml,%3Csvg%3E%3C/svg%3E"></div>',
-          'decode');
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
         const xss = 'javascript:alert(1)';
         const data1 = `data:base64,${btoa(encodeURIComponent(xss))}`;
         const html1 = `<img src="${data1}">`;
-        const data2 =
-          `data:text/html;base64,${btoa(encodeURIComponent(html1))}`;
+        const data2 = `data:text/html;base64,${btoa(encodeURIComponent(html1))}`;
         const html2 = `<img src="${data2}">`;
-        const data3 =
-          `data:text/html;base64,${btoa(encodeURIComponent(html2))}`;
+        const data3 = `data:text/html;base64,${btoa(encodeURIComponent(html2))}`;
         const html3 = `<img src="${data3}">`;
         const url = `data:text/html;base64,${btoa(encodeURIComponent(html3))}`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.strictEqual(res,
+        assert.strictEqual(
+          res,
           'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522data:text/html,%25253Cimg%252520src=%252522%252522%25253E%2522%253E%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
           'data:text/html,<img src="data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%22%3E">',
-          'decode');
+          'decode'
+        );
       });
 
       it('should throw', () => {
@@ -686,9 +790,14 @@ describe('sanitizer', () => {
           url = `data:text/html;base64,${htmlBase64}`;
         }
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.sanitize(url, {
-          allow: ['data']
-        }), Error, 'Data URLs nested too deeply.');
+        assert.throws(
+          () =>
+            sanitizer.sanitize(url, {
+              allow: ['data']
+            }),
+          Error,
+          'Data URLs nested too deeply.'
+        );
       });
 
       it('should get null', () => {
@@ -778,24 +887,31 @@ describe('sanitizer', () => {
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res), 'data:text/html,<img>',
-          'decode');
+        assert.strictEqual(res, 'data:text/html,%3Cimg%3E', 'result');
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/html,<img>',
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
         const xss = btoa('javascript:alert(1)');
-        const url =
-          `data:text/html,<img src="data:base64,${xss}">`;
+        const url = `data:text/html,<img src="data:base64,${xss}">`;
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
           allow: ['data']
         });
-        assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
-          'result');
-        assert.strictEqual(decodeURIComponent(res),
-          'data:text/html,<img src="">', 'decode');
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cimg%20src=%22%22%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:text/html,<img src="">',
+          'decode'
+        );
       });
 
       it('should get sanitized value', () => {
@@ -862,8 +978,11 @@ describe('sanitizer', () => {
         it('should block protocol-relative URL bypassing', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('//evil.com', { allowRelative: true });
-          assert.strictEqual(res, null,
-            'should reject protocol-relative redirect');
+          assert.strictEqual(
+            res,
+            null,
+            'should reject protocol-relative redirect'
+          );
         });
 
         it('should block backslash-obfuscated URL bypassing', () => {
@@ -871,25 +990,38 @@ describe('sanitizer', () => {
           const resSingle = sanitizer.sanitize('\\evil.com', {
             allowRelative: true
           });
-          assert.strictEqual(resSingle, null,
-            'should reject single backslash bypass');
+          assert.strictEqual(
+            resSingle,
+            null,
+            'should reject single backslash bypass'
+          );
           const resDouble = sanitizer.sanitize('\\\\evil.com', {
             allowRelative: true
           });
-          assert.strictEqual(resDouble, null,
-            'should reject double backslash bypass');
+          assert.strictEqual(
+            resDouble,
+            null,
+            'should reject double backslash bypass'
+          );
         });
 
         it('should handle scheme-prefixed URLs without slashes safely', () => {
           const sanitizer = new URLSanitizer();
           const resDefault = sanitizer.sanitize('http:example.com');
-          assert.strictEqual(resDefault, 'http://example.com/', 'should normalize to absolute URL');
+          assert.strictEqual(
+            resDefault,
+            'http://example.com/',
+            'should normalize to absolute URL'
+          );
           const resRestricted = sanitizer.sanitize('http:example.com', {
             only: ['https'],
             allowRelative: true
           });
-          assert.strictEqual(resRestricted, null,
-            'should reject when scheme is not allowed');
+          assert.strictEqual(
+            resRestricted,
+            null,
+            'should reject when scheme is not allowed'
+          );
         });
       });
 
@@ -910,12 +1042,16 @@ describe('sanitizer', () => {
             'data:text/html,%3Cdiv%3ENo%20URL%20scheme%20here%3C/div%3E',
             'result'
           );
-          const hasParseError = warnStub.args.some(args =>
-            args[0] &&
-            args[0].includes('Failed to parse inner data URL protocol.')
+          const hasParseError = warnStub.args.some(
+            args =>
+              args[0] &&
+              args[0].includes('Failed to parse inner data URL protocol.')
           );
-          assert.strictEqual(hasParseError, false,
-            'Should not log parse error for plain HTML');
+          assert.strictEqual(
+            hasParseError,
+            false,
+            'Should not log parse error for plain HTML'
+          );
         } finally {
           warnStub.restore();
         }
@@ -924,7 +1060,8 @@ describe('sanitizer', () => {
       it('should skip when circular Data URL is detected', () => {
         const warnStub = sinon.stub(console, 'warn');
         const originalHas = Set.prototype.has;
-        const hasStub = sinon.stub(Set.prototype, 'has')
+        const hasStub = sinon
+          .stub(Set.prototype, 'has')
           .callsFake(function (val) {
             if (val === 'data:text/html,loop') {
               return true;
@@ -937,15 +1074,21 @@ describe('sanitizer', () => {
             'data:text/html,<img src="data:text/html,loop">',
             { allow: ['data'], debug: true }
           );
-          assert.strictEqual(warnStub.called, true,
-            'console.warn should be called');
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop',
             'should output circular warning'
           );
-          assert.strictEqual(res, 'data:text/html,%3Cimg%20src=%22%22%3E',
-            'result');
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Cimg%20src=%22%22%3E',
+            'result'
+          );
         } finally {
           hasStub.restore();
           warnStub.restore();
@@ -953,7 +1096,8 @@ describe('sanitizer', () => {
       });
 
       it('should return unencoded DOM if encodeURI throws URIError', () => {
-        const encodeURIStub = sinon.stub(globalThis, 'encodeURI')
+        const encodeURIStub = sinon
+          .stub(globalThis, 'encodeURI')
           .throws(new URIError('URI malformed'));
         try {
           const sanitizer = new URLSanitizer();
@@ -961,7 +1105,11 @@ describe('sanitizer', () => {
             allow: ['data']
           });
           assert.strictEqual(res, 'data:text/html,<div>test</div>', 'result');
-          assert.strictEqual(encodeURIStub.called, true, 'encodeURI should be called');
+          assert.strictEqual(
+            encodeURIStub.called,
+            true,
+            'encodeURI should be called'
+          );
         } finally {
           encodeURIStub.restore();
         }
@@ -977,8 +1125,11 @@ describe('sanitizer', () => {
             debug: true
           });
           assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(warnStub.calledOnce, true,
-            'console.warn should be called once');
+          assert.strictEqual(
+            warnStub.calledOnce,
+            true,
+            'console.warn should be called once'
+          );
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Failed to parse relative URL.',
@@ -1003,8 +1154,11 @@ describe('sanitizer', () => {
           const res = sanitizer.sanitize('https://example.com/?foo=1%26bar=2', {
             allow: ['data']
           });
-          assert.strictEqual(res, 'https://example.com/?foo=1%26amp;bar=2',
-            'result');
+          assert.strictEqual(
+            res,
+            'https://example.com/?foo=1%26amp;bar=2',
+            'result'
+          );
         });
 
         it('should bypass fast-path if URL starts with "data:"', () => {
@@ -1012,11 +1166,7 @@ describe('sanitizer', () => {
           const res = sanitizer.sanitize('data:text/plain,test', {
             allow: ['data']
           });
-          assert.strictEqual(
-            res,
-            'data:text/plain,test',
-            'result'
-          );
+          assert.strictEqual(res, 'data:text/plain,test', 'result');
         });
 
         it('should bypass fast-path if URL contains "data:"', () => {
@@ -1037,13 +1187,19 @@ describe('sanitizer', () => {
           const resDeny = sanitizer.sanitize('https://example.com/', {
             deny: ['file']
           });
-          assert.strictEqual(resDeny, 'https://example.com/',
-            'result with deny');
+          assert.strictEqual(
+            resDeny,
+            'https://example.com/',
+            'result with deny'
+          );
           const resOnly = sanitizer.sanitize('https://example.com/', {
             only: ['https', 'data']
           });
-          assert.strictEqual(resOnly, 'https://example.com/',
-            'result with only');
+          assert.strictEqual(
+            resOnly,
+            'https://example.com/',
+            'result with only'
+          );
         });
 
         it('should catch and return null if new URL() throws', () => {
@@ -1059,19 +1215,26 @@ describe('sanitizer', () => {
     describe('inspect sanitized URL', () => {
       it('should throw', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(() => sanitizer.inspect(), TypeError,
-          'Expected String but got Undefined.');
+        assert.throws(
+          () => sanitizer.inspect(),
+          TypeError,
+          'Expected String but got Undefined.'
+        );
       });
 
       it('should get result', () => {
         const sanitizer = new URLSanitizer();
         const url = 'javascript:alert(1)';
         const res = sanitizer.inspect(url);
-        assert.deepEqual(res, {
-          input: 'javascript:alert(1)',
-          valid: false,
-          reason: 'Invalid URI syntax or scheme is not registered.'
-        }, 'result');
+        assert.deepEqual(
+          res,
+          {
+            input: 'javascript:alert(1)',
+            valid: false,
+            reason: 'Invalid URI syntax or scheme is not registered.'
+          },
+          'result'
+        );
       });
 
       it('should get result', () => {
@@ -1259,7 +1422,8 @@ describe('sanitizer', () => {
 
       it('should get value', () => {
         const sanitizer = new URLSanitizer();
-        const url = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+        const url =
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
         const obj = new URL(url);
         const items = {};
         for (const key in obj) {
@@ -1303,28 +1467,46 @@ describe('sanitizer', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect(testUrl, { maxLength: 49 });
         assert.strictEqual(res.valid, false, 'should be invalid');
-        assert.strictEqual(res.reason, 'URL length 50 exceeds maxLength 49.', 'reason should match');
+        assert.strictEqual(
+          res.reason,
+          'URL length 50 exceeds maxLength 49.',
+          'reason should match'
+        );
       });
 
       it('should return with reason for unregistered scheme', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect('foo://bar');
         assert.strictEqual(res.valid, false, 'should be invalid');
-        assert.strictEqual(res.reason, 'Invalid URI syntax or scheme is not registered.', 'reason should match');
+        assert.strictEqual(
+          res.reason,
+          'Invalid URI syntax or scheme is not registered.',
+          'reason should match'
+        );
       });
 
       it('should return with reason when restricted by options', () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = sanitizer.inspect('https://example.com', { only: ['http'] });
+        const res = sanitizer.inspect('https://example.com', {
+          only: ['http']
+        });
         assert.strictEqual(res.valid, false, 'should be invalid');
-        assert.strictEqual(res.reason, 'Sanitization failed (blocked by allowed schemes or rules).', 'reason should match');
+        assert.strictEqual(
+          res.reason,
+          'Sanitization failed (blocked by allowed schemes or rules).',
+          'reason should match'
+        );
       });
 
       it('should NOT include reason when URL is valid', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.inspect('https://example.com');
         assert.strictEqual(res.valid, true, 'should be valid');
-        assert.strictEqual('reason' in res, false, 'reason property should not exist');
+        assert.strictEqual(
+          'reason' in res,
+          false,
+          'reason property should not exist'
+        );
       });
     });
 
@@ -1362,32 +1544,47 @@ describe('sanitizer', () => {
     describe('add scheme', () => {
       it('should throw', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add(), TypeError,
-          'Expected String but got Undefined.');
+        assert.throws(
+          () => schemes.add(),
+          TypeError,
+          'Expected String but got Undefined.'
+        );
       });
 
       it('should throw', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('javascript'), Error,
-          'Invalid scheme: javascript');
+        assert.throws(
+          () => schemes.add('javascript'),
+          Error,
+          'Invalid scheme: javascript'
+        );
       });
 
       it('should throw', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('vbscript'), Error,
-          'Invalid scheme: vbscript');
+        assert.throws(
+          () => schemes.add('vbscript'),
+          Error,
+          'Invalid scheme: vbscript'
+        );
       });
 
       it('should throw', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('web+javascript'), Error,
-          'Invalid scheme: web+javascript');
+        assert.throws(
+          () => schemes.add('web+javascript'),
+          Error,
+          'Invalid scheme: web+javascript'
+        );
       });
 
       it('should throw', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('foo=bar'), Error,
-          'Invalid scheme: foo=bar');
+        assert.throws(
+          () => schemes.add('foo=bar'),
+          Error,
+          'Invalid scheme: foo=bar'
+        );
       });
 
       it('should add scheme', () => {
@@ -1406,10 +1603,16 @@ describe('sanitizer', () => {
 
       it('should throw if scheme contains script', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('web+javascript'), Error,
-          'Invalid scheme: web+javascript');
-        assert.throws(() => schemes.add('ext+vbscript'), Error,
-          'Invalid scheme: ext+vbscript');
+        assert.throws(
+          () => schemes.add('web+javascript'),
+          Error,
+          'Invalid scheme: web+javascript'
+        );
+        assert.throws(
+          () => schemes.add('ext+vbscript'),
+          Error,
+          'Invalid scheme: ext+vbscript'
+        );
       });
     });
 
@@ -1486,7 +1689,9 @@ describe('sanitizer', () => {
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const res = await func(url);
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1499,7 +1704,9 @@ describe('sanitizer', () => {
           allow: ['blob'],
           deny: ['blob']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
@@ -1512,7 +1719,9 @@ describe('sanitizer', () => {
         const res = await func(url, {
           only: ['https']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1524,7 +1733,9 @@ describe('sanitizer', () => {
         const res = await func(url, {
           allow: ['blob']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
@@ -1547,7 +1758,9 @@ describe('sanitizer', () => {
         const res = await func(url, {
           allow: ['blob']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
@@ -1561,7 +1774,9 @@ describe('sanitizer', () => {
           allow: ['blob'],
           deny: ['data']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
@@ -1583,7 +1798,9 @@ describe('sanitizer', () => {
         const res = await func(url, {
           only: ['blob', 'https']
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(isRevoked, false, 'should not be revoked');
         assert.strictEqual(
@@ -1606,7 +1823,9 @@ describe('sanitizer', () => {
           allow: ['blob'],
           revokeObjectURL: true
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         assert.strictEqual(isRevoked, true, 'should be revoked');
         assert.strictEqual(
           res,
@@ -1622,7 +1841,9 @@ describe('sanitizer', () => {
         const res = await func(url, {
           revokeObjectURL: true
         });
-        const isRevoked = await fetch(url).then(() => false).catch(() => true);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         assert.strictEqual(isRevoked, true, 'should be revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -1761,10 +1982,16 @@ describe('sanitizer', () => {
           const base64Data = btoa(innerHtml);
           const url = `data:text/html;base64,${base64Data}`;
           const res = sanitizer.sanitize(url, { allow: ['data'] });
-          assert.strictEqual(isCatchHit, true,
-            'catch block should be executed');
-          assert.strictEqual(typeof res, 'string',
-            'should safely return sanitized string');
+          assert.strictEqual(
+            isCatchHit,
+            true,
+            'catch block should be executed'
+          );
+          assert.strictEqual(
+            typeof res,
+            'string',
+            'should safely return sanitized string'
+          );
         } finally {
           globalThis.URL = OriginalURL;
         }
@@ -1772,12 +1999,17 @@ describe('sanitizer', () => {
 
       it('should return null when given malformed base64 data', () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res1 =
-          sanitizer.sanitize('data:text/html;base64,invalid!base64', {
+        const res1 = sanitizer.sanitize(
+          'data:text/html;base64,invalid!base64',
+          {
             allow: ['data']
-          });
-        assert.deepEqual(res1, null,
-          'result should be null for failing REG_B64');
+          }
+        );
+        assert.deepEqual(
+          res1,
+          null,
+          'result should be null for failing REG_B64'
+        );
         const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
           allow: ['data']
         });
@@ -1813,7 +2045,9 @@ describe('sanitizer', () => {
 
         it('should handle CJK characters in standard URL', () => {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('https://example.com/テスト?検索=テスト#ハッシュ');
+          const res = sanitizer.sanitize(
+            'https://example.com/テスト?検索=テスト#ハッシュ'
+          );
           assert.strictEqual(
             res,
             'https://example.com/%E3%83%86%E3%82%B9%E3%83%88?%E6%A4%9C%E7%B4%A2=%E3%83%86%E3%82%B9%E3%83%88#%E3%83%8F%E3%83%83%E3%82%B7%E3%83%A5',
@@ -1823,7 +2057,9 @@ describe('sanitizer', () => {
 
         it('should strip XSS mixed with CJK characters in standard URL', () => {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('https://example.com/テスト?<script>alert("攻撃")</script>');
+          const res = sanitizer.sanitize(
+            'https://example.com/テスト?<script>alert("攻撃")</script>'
+          );
           assert.strictEqual(
             res,
             'https://example.com/%E3%83%86%E3%82%B9%E3%83%88',
@@ -1833,9 +2069,12 @@ describe('sanitizer', () => {
 
         it('should handle CJK characters in plain data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('data:text/html,<div>こんにちは世界</div>', {
-            allow: ['data']
-          });
+          const res = sanitizer.sanitize(
+            'data:text/html,<div>こんにちは世界</div>',
+            {
+              allow: ['data']
+            }
+          );
           assert.strictEqual(
             res,
             'data:text/html,%3Cdiv%3E%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E4%B8%96%E7%95%8C%3C/div%3E',
@@ -1851,9 +2090,12 @@ describe('sanitizer', () => {
         it('should handle CJK characters in base64 data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const base64Data = encodeBase64UTF8('<div>こんにちは世界</div>');
-          const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
-            allow: ['data']
-          });
+          const res = sanitizer.sanitize(
+            `data:text/html;base64,${base64Data}`,
+            {
+              allow: ['data']
+            }
+          );
           assert.strictEqual(
             res,
             'data:text/html,%3Cdiv%3E%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%E4%B8%96%E7%95%8C%3C/div%3E',
@@ -1868,10 +2110,15 @@ describe('sanitizer', () => {
 
         it('should strip XSS mixed with CJK in base64 data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
-          const base64Data = encodeBase64UTF8('<div>安全<script>alert("危険")</script></div>');
-          const res = sanitizer.sanitize(`data:text/html;base64,${base64Data}`, {
-            allow: ['data']
-          });
+          const base64Data = encodeBase64UTF8(
+            '<div>安全<script>alert("危険")</script></div>'
+          );
+          const res = sanitizer.sanitize(
+            `data:text/html;base64,${base64Data}`,
+            {
+              allow: ['data']
+            }
+          );
           assert.strictEqual(
             res,
             'data:text/html,%3Cdiv%3E%E5%AE%89%E5%85%A8%3C/div%3E',
@@ -1899,7 +2146,9 @@ describe('sanitizer', () => {
         });
 
         it('should allow zero-width characters in path or query of allowed schemes', async () => {
-          const res = await func('https://example.com/path\u200Bname?q=val\u200Bue');
+          const res = await func(
+            'https://example.com/path\u200Bname?q=val\u200Bue'
+          );
           assert.strictEqual(
             res,
             'https://example.com/path%E2%80%8Bname?q=val%E2%80%8Bue',
@@ -1919,9 +2168,12 @@ describe('sanitizer', () => {
         });
 
         it('should safely handle zero-width characters in MIME types (bypassing DOMPurify but neutralizing execution)', async () => {
-          const res = await func('data:text/h\u200Btml,<script>alert(1)</script>', {
-            allow: ['data']
-          });
+          const res = await func(
+            'data:text/h\u200Btml,<script>alert(1)</script>',
+            {
+              allow: ['data']
+            }
+          );
           assert.strictEqual(
             res,
             'data:text/h%E2%80%8Btml,<script>alert(1)</script>',
@@ -1931,7 +2183,8 @@ describe('sanitizer', () => {
 
         it('should return null when zero-width characters are injected into base64 payloads', async () => {
           const base64Data = btoa('<div>test</div>'); // "PGRpdj50ZXN0PC9kaXY+"
-          const obfuscatedBase64 = base64Data.slice(0, 5) + '\u200B' + base64Data.slice(5);
+          const obfuscatedBase64 =
+            base64Data.slice(0, 5) + '\u200B' + base64Data.slice(5);
           const res = await func(`data:text/html;base64,${obfuscatedBase64}`, {
             allow: ['data']
           });
@@ -1939,7 +2192,9 @@ describe('sanitizer', () => {
         });
 
         it('should truncate URL if zero-width obfuscated tags are used in standard URL queries', async () => {
-          const res = await func('https://example.com/?q=<scr\u200Bipt>alert(1)</scr\u200Bipt>');
+          const res = await func(
+            'https://example.com/?q=<scr\u200Bipt>alert(1)</scr\u200Bipt>'
+          );
           assert.strictEqual(res, 'https://example.com/?q=', 'result');
         });
 
@@ -1964,12 +2219,22 @@ describe('sanitizer', () => {
               allow: ['data'],
               debug: true
             });
-            assert.strictEqual(res, null,
-              'should fail securely and return null');
-            assert.strictEqual(warnStub.called, true,
-              'console.warn should be called in debug mode');
             assert.strictEqual(
-              warnStub.args.some(args => args[0] === '[URLSanitizer Debug] Failed to parse inner data URL protocol.'),
+              res,
+              null,
+              'should fail securely and return null'
+            );
+            assert.strictEqual(
+              warnStub.called,
+              true,
+              'console.warn should be called in debug mode'
+            );
+            assert.strictEqual(
+              warnStub.args.some(
+                args =>
+                  args[0] ===
+                  '[URLSanitizer Debug] Failed to parse inner data URL protocol.'
+              ),
               true,
               'should log the specific inner parsing failure message'
             );
@@ -1983,8 +2248,10 @@ describe('sanitizer', () => {
           const OriginalURL = globalThis.URL;
           globalThis.URL = class extends OriginalURL {
             constructor(url, base) {
-              if (base === 'http://dummy.local' &&
-                  url === 'trigger-parsing-error') {
+              if (
+                base === 'http://dummy.local' &&
+                url === 'trigger-parsing-error'
+              ) {
                 throw new TypeError('Simulated inner URL parsing error');
               }
               super(url, base);
@@ -1996,17 +2263,29 @@ describe('sanitizer', () => {
               'data:text/html,trigger-parsing-error',
               { allow: ['data'], debug: true }
             );
-            assert.strictEqual(res, null,
-              'should fail securely and return null');
-            assert.strictEqual(warnStub.called, true,
-              'console.warn should be called');
             assert.strictEqual(
-              warnStub.args.some(args => args[0] === '[URLSanitizer Debug] Failed to parse inner data URL protocol.'),
+              res,
+              null,
+              'should fail securely and return null'
+            );
+            assert.strictEqual(
+              warnStub.called,
+              true,
+              'console.warn should be called'
+            );
+            assert.strictEqual(
+              warnStub.args.some(
+                args =>
+                  args[0] ===
+                  '[URLSanitizer Debug] Failed to parse inner data URL protocol.'
+              ),
               true,
               'should log the inner parsing failure message'
             );
             assert.strictEqual(
-              warnStub.args.some(args => args[1] === 'Simulated inner URL parsing error'),
+              warnStub.args.some(
+                args => args[1] === 'Simulated inner URL parsing error'
+              ),
               true,
               'should pass the correct error message'
             );
@@ -2058,7 +2337,9 @@ describe('sanitizer', () => {
         const res = func(url, {
           allow: ['blob']
         });
-        const revoked = await fetch(url).then(() => false).catch(() => true);
+        const revoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         URL.revokeObjectURL(url);
         assert.strictEqual(revoked, false, 'should not be revoked');
         assert.deepEqual(res, null, 'result');
@@ -2074,7 +2355,9 @@ describe('sanitizer', () => {
           allow: ['blob'],
           revokeObjectURL: true
         });
-        const revoked = await fetch(url).then(() => false).catch(() => true);
+        const revoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
         assert.strictEqual(revoked, true, 'revoked');
         assert.deepEqual(res, null, 'result');
       });
@@ -2085,14 +2368,22 @@ describe('sanitizer', () => {
           const invalidUrl = 'invalid-url-string';
           const res = func(invalidUrl, { debug: true });
           assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(warnStub.calledOnce, true,
-            'console.warn should be called once');
-          const expectedPrefix =
-            `[URLSanitizer Debug] Invalid URL input format: ${invalidUrl}`;
-          assert.strictEqual(warnStub.firstCall.args[0], expectedPrefix,
-            'should output the correct debug message');
-          assert.strictEqual(isString(warnStub.firstCall.args[1]), true,
-            'should output the error message');
+          assert.strictEqual(
+            warnStub.calledOnce,
+            true,
+            'console.warn should be called once'
+          );
+          const expectedPrefix = `[URLSanitizer Debug] Invalid URL input format: ${invalidUrl}`;
+          assert.strictEqual(
+            warnStub.firstCall.args[0],
+            expectedPrefix,
+            'should output the correct debug message'
+          );
+          assert.strictEqual(
+            isString(warnStub.firstCall.args[1]),
+            true,
+            'should output the error message'
+          );
         } finally {
           warnStub.restore();
         }
@@ -2104,8 +2395,11 @@ describe('sanitizer', () => {
           const invalidUrl = 'invalid-url-string';
           const res = func(invalidUrl, { debug: false });
           assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(warnStub.called, false,
-            'console.warn should not be called');
+          assert.strictEqual(
+            warnStub.called,
+            false,
+            'console.warn should not be called'
+          );
         } finally {
           warnStub.restore();
         }

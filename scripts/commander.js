@@ -9,7 +9,12 @@ import { program as commander } from 'commander';
 import papa from 'papaparse';
 import { throwErr } from './common.js';
 import {
-  createFile, fetchText, isDir, isFile, removeDir, rename
+  createFile,
+  fetchText,
+  isDir,
+  isFile,
+  removeDir,
+  rename
 } from './file-util.js';
 
 /* constants */
@@ -34,14 +39,18 @@ export const saveUriSchemes = async (cmdOpts = {}) => {
   const schemes = new Set(['moz-extension']);
   for (const item of items) {
     const { 'URI Scheme': scheme, Status: status } = item;
-    if (!/obsolete|\+/i.test(scheme) &&
-        /^p(?:ermanent|rovisional)$/i.test(status)) {
+    if (
+      !/obsolete|\+/i.test(scheme) &&
+      /^p(?:ermanent|rovisional)$/i.test(status)
+    ) {
       schemes.add(scheme);
     }
   }
   const content = JSON.stringify([...schemes].sort(), null, null);
-  const filePath =
-    await createFile(path.resolve(libPath, 'uri-schemes.json'), `${content}\n`);
+  const filePath = await createFile(
+    path.resolve(libPath, 'uri-schemes.json'),
+    `${content}\n`
+  );
   if (filePath && info) {
     console.info(`Created: ${filePath}`);
   }
@@ -73,8 +82,10 @@ export const storeTextChars = async (cmdOpts = {}) => {
     textChars.add(i);
   }
   const content = JSON.stringify([...textChars], null, null);
-  const filePath =
-    await createFile(path.resolve(libPath, 'text-chars.json'), `${content}\n`);
+  const filePath = await createFile(
+    path.resolve(libPath, 'text-chars.json'),
+    `${content}\n`
+  );
   if (filePath && info) {
     console.info(`Created: ${filePath}`);
   }
@@ -128,24 +139,28 @@ export const parseCommand = args => {
     commander.exitOverride();
     commander.version(process.env.npm_package_version, '-v, --version');
     if (args.includes('char')) {
-      commander.command('char')
+      commander
+        .command('char')
         .description('create text chars table')
         .option('-i, --info', 'console info')
         .action(createCharTable);
     } else if (args.includes('clean')) {
-      commander.command('clean')
+      commander
+        .command('clean')
         .description('clean directory')
         .option('-d, --dir <name>', 'specify directory')
         .option('-i, --info', 'console info')
         .action(cleanDirectory);
     } else if (args.includes('include')) {
-      commander.command('include')
+      commander
+        .command('include')
         .description('include library packages')
         .option('-d, --dir <name>', 'specify library directory')
         .option('-i, --info', 'console info')
         .action(includeLibraries);
     } else if (args.includes('rename')) {
-      commander.command('rename')
+      commander
+        .command('rename')
         .description('rename file')
         .option('-o, --oldpath <name>', 'old path')
         .option('-n, --newpath <name>', 'new path')
@@ -157,6 +172,4 @@ export const parseCommand = args => {
 };
 
 /* For test */
-export {
-  commander
-};
+export { commander };

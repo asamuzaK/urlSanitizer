@@ -9,21 +9,26 @@ import { getType, isString } from './common.js';
 /* constants */
 import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
-  REG_HASH, REG_NUM_REF, REG_QUERY, REG_SCHEME_EXT, REG_SCRIPT, REG_URL_ENC
+  REG_HASH,
+  REG_NUM_REF,
+  REG_QUERY,
+  REG_SCHEME_EXT,
+  REG_SCRIPT,
+  REG_URL_ENC
 } from './regexp.js';
 import {
-  CTRL_CHAR_CODES, TEXT_CHAR_CODES, WINDOWS1252_TO_UNICODE
+  CTRL_CHAR_CODES,
+  TEXT_CHAR_CODES,
+  WINDOWS1252_TO_UNICODE
 } from './text-chars.js';
-const [
-  ENC_AMP,
-  ENC_NUM,
-  ENC_LT,
-  ENC_GT,
-  ENC_QUOT,
-  ENC_APOS
-] = ['&', '#', '<', '>', '"', "'"].map(ch =>
-  `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`
-);
+const [ENC_AMP, ENC_NUM, ENC_LT, ENC_GT, ENC_QUOT, ENC_APOS] = [
+  '&',
+  '#',
+  '<',
+  '>',
+  '"',
+  "'"
+].map(ch => `%${ch.charCodeAt(0).toString(HEX).toUpperCase()}`);
 const ESCAPE_MAP = {
   [ENC_AMP]: `${ENC_AMP}amp;`,
   [ENC_LT]: `${ENC_AMP}lt;`,
@@ -31,13 +36,16 @@ const ESCAPE_MAP = {
   [ENC_QUOT]: `${ENC_AMP}quot;`,
   [ENC_APOS]: `${ENC_AMP}${ENC_NUM}39;`
 };
-const HEX_TABLE = Array.from({ length: HEX * HEX }, (_, i) =>
-  `%${i.toString(HEX).padStart(2, '0').toUpperCase()}`
+const HEX_TABLE = Array.from(
+  { length: HEX * HEX },
+  (_, i) => `%${i.toString(HEX).padStart(2, '0').toUpperCase()}`
 );
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const REG_BINARY = new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`);
-const REG_CTRL_CHARS =
-  new RegExp(`[${[...CTRL_CHAR_CODES.values()].join('')}]`, 'g');
+const REG_CTRL_CHARS = new RegExp(
+  `[${[...CTRL_CHAR_CODES.values()].join('')}]`,
+  'g'
+);
 
 /* encoder / decoder */
 const encoder = new TextEncoder();
@@ -261,13 +269,14 @@ const convertFromBuffer = async blob => {
  * @param {Blob} blob - The target Blob object.
  * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
  */
-const convertFromFileReader = blob => new Promise((resolve, reject) => {
-  const reader = new globalThis.FileReader();
-  reader.addEventListener('error', () => reject(reader.error));
-  reader.addEventListener('abort', () => resolve(null));
-  reader.addEventListener('load', () => resolve(reader.result));
-  reader.readAsDataURL(blob);
-});
+const convertFromFileReader = blob =>
+  new Promise((resolve, reject) => {
+    const reader = new globalThis.FileReader();
+    reader.addEventListener('error', () => reject(reader.error));
+    reader.addEventListener('abort', () => resolve(null));
+    reader.addEventListener('load', () => resolve(reader.result));
+    reader.readAsDataURL(blob);
+  });
 
 /**
  * Converts Blob to data URL from btoa.
@@ -296,8 +305,7 @@ export const convertBlobToDataURL = async (blob, maxSize = MAX_BLOB_SIZE) => {
   if (!Number.isInteger(blob?.size)) {
     return null;
   } else if (Number.isInteger(maxSize) && blob.size > maxSize) {
-    const msg =
-      `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+    const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
   if (IS_NODE && globalThis.Buffer) {

@@ -7,9 +7,7 @@ import { strict as assert } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'mocha';
 
 /* test */
-import uriSchemes from '../src/lib/iana/uri-schemes.json' with {
-  type: 'json'
-};
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
 import * as mjs from '../src/mjs/uri-util.js';
 
 describe('uri-util', () => {
@@ -17,8 +15,11 @@ describe('uri-util', () => {
     const func = mjs.getURLEncodedString;
 
     it('should throw', () => {
-      assert.throws(() => func(), TypeError,
-        'Expected String but got Undefined.');
+      assert.throws(
+        () => func(),
+        TypeError,
+        'Expected String but got Undefined.'
+      );
     });
 
     it('should get empty string', () => {
@@ -95,17 +96,24 @@ describe('uri-util', () => {
     const func = mjs.parseBase64;
 
     it('should throw', () => {
-      assert.throws(() => func(), TypeError,
-        'Expected String but got Undefined.');
+      assert.throws(
+        () => func(),
+        TypeError,
+        'Expected String but got Undefined.'
+      );
     });
 
     it('should throw', () => {
-      assert.throws(() => func('foo%20bar'), Error,
-        'Invalid base64 data: foo%20bar');
+      assert.throws(
+        () => func('foo%20bar'),
+        Error,
+        'Invalid base64 data: foo%20bar'
+      );
     });
 
     it('should get data', () => {
-      const data = 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+      const data =
+        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
       const res = func(data);
       assert.strictEqual(res, data, 'result');
     });
@@ -133,8 +141,10 @@ describe('uri-util', () => {
 
     describe('environment specific decoding optimizations', () => {
       it('should decode base64 using Buffer', () => {
-        assert.ok(globalThis.Buffer,
-          'Buffer should be available in this environment');
+        assert.ok(
+          globalThis.Buffer,
+          'Buffer should be available in this environment'
+        );
         const data = 'Hello, Node.js Buffer optimization!';
         const base64Data = btoa(data);
         const res = func(base64Data);
@@ -149,8 +159,11 @@ describe('uri-util', () => {
           configurable: true
         });
         try {
-          assert.strictEqual(globalThis.Buffer, undefined,
-            'Buffer should be hidden');
+          assert.strictEqual(
+            globalThis.Buffer,
+            undefined,
+            'Buffer should be hidden'
+          );
           const data = 'Hello, Uint8Array loop optimization!';
           const base64Data = btoa(data);
           const res = func(base64Data);
@@ -230,14 +243,20 @@ describe('uri-util', () => {
     const func = mjs.parseURLEncodedNumCharRef;
 
     it('should throw', () => {
-      assert.throws(() => func(), TypeError,
-        'Expected String but got Undefined.');
+      assert.throws(
+        () => func(),
+        TypeError,
+        'Expected String but got Undefined.'
+      );
     });
 
     it('should throw', () => {
       const str = 'Hello%2C%20World!';
-      assert.throws(() => func(str, true), TypeError,
-        'Expected Number but got Boolean.');
+      assert.throws(
+        () => func(str, true),
+        TypeError,
+        'Expected Number but got Boolean.'
+      );
     });
 
     it('should get value', () => {
@@ -286,8 +305,11 @@ describe('uri-util', () => {
         nest = `${nest}#x26;`;
       }
       const str = `j${nest}#x61${semi}vascript:alert(1)`;
-      assert.throws(() => func(str), Error,
-        'Character references nested too deeply.');
+      assert.throws(
+        () => func(str),
+        Error,
+        'Character references nested too deeply.'
+      );
     });
 
     it('should fallback to partial decoding', () => {
@@ -368,8 +390,10 @@ describe('uri-util', () => {
     });
 
     it('should convert blob to data URL using Buffer', async () => {
-      assert.ok(globalThis.Buffer,
-        'Buffer should be available in this environment');
+      assert.ok(
+        globalThis.Buffer,
+        'Buffer should be available in this environment'
+      );
       const data = 'Hello, Node.js Buffer!';
       const blob = new Blob([data], {
         type: 'text/plain'
@@ -381,8 +405,10 @@ describe('uri-util', () => {
     });
 
     it('should handle blob without type using Buffer', async () => {
-      assert.ok(globalThis.Buffer,
-        'Buffer should be available in this environment');
+      assert.ok(
+        globalThis.Buffer,
+        'Buffer should be available in this environment'
+      );
       const data = 'No MIME type text';
       const blob = new Blob([data]);
       const base64 = globalThis.Buffer.from(data).toString('base64');
@@ -416,7 +442,7 @@ describe('uri-util', () => {
 
       it('should convert blob to data URL using FileReader', async () => {
         const sampleDataURL =
-        'data:text/html;base64,PHA+SGVsbG8sIHdvcmxkITwvcD4=';
+          'data:text/html;base64,PHA+SGVsbG8sIHdvcmxkITwvcD4=';
         globalThis.FileReader = class {
           constructor() {
             this.listeners = {};
@@ -507,10 +533,16 @@ describe('uri-util', () => {
       });
 
       it('should convert blob to data URL using btoa', async () => {
-        assert.strictEqual(globalThis.Buffer, undefined,
-          'Buffer should be hidden');
-        assert.strictEqual(globalThis.FileReader, undefined,
-          'FileReader should be hidden');
+        assert.strictEqual(
+          globalThis.Buffer,
+          undefined,
+          'Buffer should be hidden'
+        );
+        assert.strictEqual(
+          globalThis.FileReader,
+          undefined,
+          'FileReader should be hidden'
+        );
         const data = 'Hello, btoa fallback!';
         const blob = new Blob([data], {
           type: 'text/plain'
@@ -536,22 +568,37 @@ describe('uri-util', () => {
     const func = mjs.trimTrailingEmptyQueryAndHash;
 
     it('should remove a trailing empty hash', () => {
-      assert.strictEqual(func('https://example.com#'), 'https://example.com',
-        'result');
-      assert.strictEqual(func('https://example.com%23'), 'https://example.com',
-        'result');
+      assert.strictEqual(
+        func('https://example.com#'),
+        'https://example.com',
+        'result'
+      );
+      assert.strictEqual(
+        func('https://example.com%23'),
+        'https://example.com',
+        'result'
+      );
     });
 
     it('should remove a trailing empty query', () => {
-      assert.strictEqual(func('https://example.com?'), 'https://example.com',
-        'result');
-      assert.strictEqual(func('https://example.com%3F'), 'https://example.com',
-        'result');
+      assert.strictEqual(
+        func('https://example.com?'),
+        'https://example.com',
+        'result'
+      );
+      assert.strictEqual(
+        func('https://example.com%3F'),
+        'https://example.com',
+        'result'
+      );
     });
 
     it('should remove a trailing empty query followed by an empty hash', () => {
-      assert.strictEqual(func('https://example.com?#'), 'https://example.com',
-        'result');
+      assert.strictEqual(
+        func('https://example.com?#'),
+        'https://example.com',
+        'result'
+      );
       assert.strictEqual(
         func('https://example.com%3F%23'),
         'https://example.com',
@@ -768,13 +815,17 @@ describe('uri-util', () => {
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        const res = schemes.verify(
+          'ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
+        );
         assert.strictEqual(res, false, 'result');
       });
 
       it('should get false', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)');
+        const res = schemes.verify(
+          'web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
+        );
         assert.strictEqual(res, false, 'result');
       });
 
@@ -824,8 +875,16 @@ describe('uri-util', () => {
         const schemes = new URISchemes();
         const customSchemes = new Set(['foo', 'bar']);
         assert.strictEqual(schemes.verify('foo:test'), false, 'default false');
-        assert.strictEqual(schemes.verify('foo:test', customSchemes), true, 'custom true');
-        assert.strictEqual(schemes.verify('baz:test', customSchemes), false, 'custom false');
+        assert.strictEqual(
+          schemes.verify('foo:test', customSchemes),
+          true,
+          'custom true'
+        );
+        assert.strictEqual(
+          schemes.verify('baz:test', customSchemes),
+          false,
+          'custom false'
+        );
       });
     });
   });

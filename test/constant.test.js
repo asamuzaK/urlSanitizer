@@ -14,8 +14,13 @@ describe('constants', () => {
   for (const [key, value] of items) {
     it('should get string or number or regexp', () => {
       assert.strictEqual(/^[A-Z][A-Z_\d]+$/.test(key), true, 'key');
-      assert.strictEqual(typeof value === 'string' || Number.isInteger(value) ||
-        value instanceof RegExp, true, 'value');
+      assert.strictEqual(
+        typeof value === 'string' ||
+          Number.isInteger(value) ||
+          value instanceof RegExp,
+        true,
+        'value'
+      );
     });
   }
 });
