@@ -41,13 +41,13 @@ describe('sanitizer', () => {
         'console.warn should be called once'
       );
       assert.strictEqual(
-        warnStub.calledWith('[URLSanitizer Debug] Test message', ''),
+        warnStub.calledWith('[URLSanitizer Debug] Test message'),
         true,
-        'should output message with an empty error string'
+        'should include error message'
       );
     });
 
-    it('should call console.warn with a message when error is provided', () => {
+    it('should call console.warn with a message and an error', () => {
       const testError = new Error('Test error detail');
       logDebug(true, 'Test message', testError);
       assert.strictEqual(
@@ -56,12 +56,9 @@ describe('sanitizer', () => {
         'console.warn should be called once'
       );
       assert.strictEqual(
-        warnStub.calledWith(
-          '[URLSanitizer Debug] Test message',
-          'Test error detail'
-        ),
+        warnStub.calledWith('[URLSanitizer Debug] Test message', testError),
         true,
-        'should output message with the error.message'
+        'should include error message and the original error'
       );
     });
 
@@ -1133,7 +1130,12 @@ describe('sanitizer', () => {
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Failed to parse relative URL.',
-            'should output the correct debug message prefix'
+            'should output the correct debug message'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1] instanceof Error,
+            true,
+            'should include the original error message'
           );
         } finally {
           warnStub.restore();
@@ -1202,7 +1204,36 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should catch and return null if new URL() throws', () => {
+        it('should catch and log debug message when new URL() throws', () => {
+          const warnStub = sinon.stub(console, 'warn');
+          try {
+            const sanitizer = new URLSanitizer();
+            const res = sanitizer.sanitize('http://[::1', {
+              allow: ['data'],
+              debug: true
+            });
+            assert.deepEqual(res, null, 'result should be null');
+            assert.strictEqual(
+              warnStub.calledOnce,
+              true,
+              'console.warn should be called once'
+            );
+            assert.strictEqual(
+              warnStub.firstCall.args[0],
+              '[URLSanitizer Debug] Failed to parse URL.',
+              'should output the correct debug message'
+            );
+            assert.strictEqual(
+              warnStub.firstCall.args[1] instanceof Error,
+              true,
+              'should include the original error'
+            );
+          } finally {
+            warnStub.restore();
+          }
+        });
+
+        it('should catch and warn if new URL() throws', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('http://[::1', {
             allow: ['data']
@@ -2230,13 +2261,19 @@ describe('sanitizer', () => {
               'console.warn should be called in debug mode'
             );
             assert.strictEqual(
-              warnStub.args.some(
-                args =>
-                  args[0] ===
-                  '[URLSanitizer Debug] Failed to parse inner data URL protocol.'
-              ),
-              true,
+              warnStub.firstCall.args[0],
+              '[URLSanitizer Debug] Failed to parse inner data URL protocol.',
               'should log the specific inner parsing failure message'
+            );
+            assert.strictEqual(
+              warnStub.firstCall.args[1] instanceof Error,
+              true,
+              'should include the original error'
+            );
+            assert.strictEqual(
+              warnStub.firstCall.args[1].message,
+              'Character references nested too deeply.',
+              'should included the original error message'
             );
           } finally {
             warnStub.restore();
@@ -2246,13 +2283,14 @@ describe('sanitizer', () => {
         it('should return null when new URL() throws during parsing', () => {
           const warnStub = sinon.stub(console, 'warn');
           const OriginalURL = globalThis.URL;
+          const testError = new TypeError('Simulated inner URL parsing error');
           globalThis.URL = class extends OriginalURL {
             constructor(url, base) {
               if (
                 base === 'http://dummy.local' &&
                 url === 'trigger-parsing-error'
               ) {
-                throw new TypeError('Simulated inner URL parsing error');
+                throw testError;
               }
               super(url, base);
             }
@@ -2273,21 +2311,15 @@ describe('sanitizer', () => {
               true,
               'console.warn should be called'
             );
-            assert.strictEqual(
-              warnStub.args.some(
-                args =>
-                  args[0] ===
-                  '[URLSanitizer Debug] Failed to parse inner data URL protocol.'
-              ),
-              true,
+            assert.deepEqual(
+              warnStub.firstCall.args[0],
+              '[URLSanitizer Debug] Failed to parse inner data URL protocol.',
               'should log the inner parsing failure message'
             );
-            assert.strictEqual(
-              warnStub.args.some(
-                args => args[1] === 'Simulated inner URL parsing error'
-              ),
-              true,
-              'should pass the correct error message'
+            assert.deepEqual(
+              warnStub.firstCall.args[1],
+              testError,
+              'should include original error'
             );
           } finally {
             globalThis.URL = OriginalURL;
@@ -2380,9 +2412,9 @@ describe('sanitizer', () => {
             'should output the correct debug message'
           );
           assert.strictEqual(
-            isString(warnStub.firstCall.args[1]),
+            warnStub.firstCall.args[1] instanceof Error,
             true,
-            'should output the error message'
+            'should include the original error'
           );
         } finally {
           warnStub.restore();
