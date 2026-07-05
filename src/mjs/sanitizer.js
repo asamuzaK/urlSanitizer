@@ -55,7 +55,7 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
 
 /**
  * The result of an inspected URL, extending the standard URL API.
- * The properties except for input and valid are omitted from the object for invalid URLs.
+ * The properties except for input and valid are omitted for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URI is valid.
@@ -83,7 +83,7 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
  */
 export const logDebug = (isDebug, message, error) => {
   if (isDebug) {
-    console.warn(`[URLSanitizer Debug] ${message}`, error ? error.message : '');
+    console.warn(`[URLSanitizer Debug] ${message}`, error);
   }
 };
 
@@ -114,10 +114,10 @@ class URLSanitizer extends URISchemes {
    * @private
    * @static
    * @param {Node} node - The DOM node being sanitized.
-   * @param {object} e - The event object containing attribute details.
+   * @param {object} evt - The event object containing attribute details.
    */
-  static #uponSanitizeAttribute(node, e) {
-    if (!e.attrValue || !/^\s*data:/i.test(e.attrValue)) {
+  static #uponSanitizeAttribute(node, evt) {
+    if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
       return;
     }
     /** @type {URLSanitizer | null} */
@@ -128,19 +128,19 @@ class URLSanitizer extends URISchemes {
     }
     let urlObj;
     try {
-      urlObj = new URL(e.attrValue);
+      urlObj = new URL(evt.attrValue);
     } catch {
       return;
     }
     if (urlObj.protocol === 'data:') {
-      const originalUrl = e.attrValue;
+      const originalUrl = evt.attrValue;
       if (!ctx.recurse) {
         ctx.recurse = new Set();
       }
       if (ctx.recurse.has(originalUrl)) {
         const msg = `Circular Data URL detected and skipped: ${originalUrl}`;
         logDebug(ctx.debug, msg);
-        e.attrValue = '';
+        evt.attrValue = '';
         return;
       }
       ctx.nest++;
@@ -156,7 +156,7 @@ class URLSanitizer extends URISchemes {
           },
           ctx
         );
-        e.attrValue = sanitized || '';
+        evt.attrValue = sanitized || '';
       } finally {
         ctx.nest--;
         ctx.recurse.delete(originalUrl);
@@ -534,7 +534,9 @@ class URLSanitizer extends URISchemes {
       try {
         const { href } = new URL(url);
         return href.replace(/%26/g, escapeURLEncodedHTMLChars);
-      } catch {
+      } catch (e) {
+        const msg = `Failed to parse URL.`;
+        logDebug(opt?.debug, msg, e);
         return null;
       }
     }
@@ -579,8 +581,9 @@ class URLSanitizer extends URISchemes {
     let invalidReason = null;
     const maxLength =
       Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
-    if (maxLength && url.length > maxLength) {
-      invalidReason = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
+    const urlLength = url.length;
+    if (maxLength && urlLength > maxLength) {
+      invalidReason = `URL length ${urlLength} exceeds maxLength ${maxLength}.`;
     } else if (this.verify(url)) {
       const { protocol } = new URL(url);
       if (protocol === 'blob:') {
