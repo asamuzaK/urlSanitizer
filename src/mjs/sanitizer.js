@@ -662,7 +662,9 @@ class URLSanitizer extends URISchemes {
    * @returns {string[]} The updated array of registered schemes.
    */
   add(scheme) {
-    if (!isString(scheme)) {
+    if (isString(scheme)) {
+      scheme = scheme.trim();
+    } else {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
     const schemeParts = scheme.split('+');

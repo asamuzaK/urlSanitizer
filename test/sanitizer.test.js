@@ -1618,9 +1618,21 @@ describe('sanitizer', () => {
         );
       });
 
+      it('should throw', () => {
+        const schemes = new URLSanitizer();
+        assert.throws(() => schemes.add('FOO'), Error, 'Invalid scheme: FOO');
+      });
+
       it('should add scheme', () => {
         const schemes = new URLSanitizer();
         const res = schemes.add('foo');
+        assert.strictEqual(Array.isArray(res), true, 'result');
+        assert.strictEqual(res.includes('foo'), true, 'added');
+      });
+
+      it('should add scheme', () => {
+        const schemes = new URLSanitizer();
+        const res = schemes.add(' foo ');
         assert.strictEqual(Array.isArray(res), true, 'result');
         assert.strictEqual(res.includes('foo'), true, 'added');
       });

@@ -1,2 +1,2 @@
-export function getType(o: unknown): string;
-export function isString(o: unknown): boolean;
+export declare const getType: (o: unknown) => string;
+export declare const isString: (o: unknown) => boolean;
