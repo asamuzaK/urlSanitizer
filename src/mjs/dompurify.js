@@ -10,6 +10,6 @@ const { window } = new JSDOM('');
 /**
  * An instance of DOMPurify initialized with a JSDOM window context.
  * Used to sanitize HTML/SVG strings.
- * @type {import('dompurify')}
+ * @type {import('dompurify').DOMPurify}
  */
 export const domPurify = DOMPurify(window);

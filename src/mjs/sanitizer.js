@@ -854,11 +854,11 @@ export const inspectURL = async url => {
 };
 
 /**
- * @deprecated Use inspectURL instead.
+ * @deprecated Use {@link inspectURL} instead.
  * @param {string} url - The URL string to inspect.
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
-export const parseURL = url => inspectURL(url);
+export const parseURL = async url => inspectURL(url);
 
 /**
  * Inspects, parses, and sanitizes the given URL synchronously.
@@ -868,7 +868,7 @@ export const parseURL = url => inspectURL(url);
 export const inspectURLSync = url => urlSanitizer.inspect(url);
 
 /**
- * @deprecated Use inspectURLSync instead.
+ * @deprecated Use {@link inspectURLSync} instead.
  * @param {string} url - The URL string to inspect.
  * @returns {InspectedURLResult} The inspected URL result.
  */
