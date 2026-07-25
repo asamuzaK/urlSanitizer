@@ -427,17 +427,17 @@ Unpredictable AI outputs introduce unique security risks, and `url-sanitizer` is
 
 ### Defending Against Complex & Obfuscated Payloads
 LLMs can generate highly complex, nested, or Base64-encoded `data:` URLs — either through prompt injection, RAG data poisoning, or simply reproducing obfuscated code from their training data.
-Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the payload, purifying the inner HTML/SVG tree via DOMPurify, and re-encoding it — it physically neutralizes hidden XSS vectors, ensuring that AI-generated data URLs are safe to render.
+Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the payload, purifying the inner HTML/SVG tree via DOMPurify, and re-encoding it — it effectively neutralizes hidden XSS vectors, ensuring that AI-generated data URLs are safe to render.
 
 ### Neutralizing Hallucinated Schemes
 LLMs generate URLs based on statistical linguistic patterns rather than factual databases.
 As a result, they frequently hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
-By operating on a **Secure by Default** whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
-This strict blocking prevents hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
+By operating on a whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
+This strict blocking prevents non-existent or hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
 
 ## Performance
 
-Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js[cite: 9].
+Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
 
 ### Benchmark Results
 
