@@ -437,20 +437,23 @@ This strict blocking prevents hallucinated schemes from inadvertently triggering
 
 ## Performance
 
-Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
+Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js[cite: 9].
 
 ### Benchmark Results
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :---: | :---: | :---: |
-| **Normal HTTP URL** | ~1.42 µs/iter | ~4.68 µs/iter | ~4.31 µs/iter |
-| **XSS URL** | ~6.52 µs/iter | ~1.65 µs/iter | ~10.12 µs/iter |
-| **Complex Data URL** | ~178.56 µs/iter | ~2.93 µs/iter | ~9.83 µs/iter |
+| **Normal HTTP URL** | ~0.98 µs/iter | ~4.44 µs/iter | ~5.06 µs/iter |
+| **XSS URL** | ~5.33 µs/iter | ~1.50 µs/iter | ~9.67 µs/iter |
+| **Complex Data URL** | ~378.57 µs/iter | ~2.83 µs/iter | ~9.86 µs/iter |
+| **Invalid URL** | ~0.20 µs/iter | ~1.35 µs/iter | ~21.03 µs/iter |
 
 ### Characteristics & Trade-offs
 
 * **Optimized for Standard Routing & XSS Rejection**
   * For **Normal HTTP URLs** and **XSS URLs**, `url-sanitizer` achieves high performance by leveraging the native `URL` API and optimized early-return logic.
+* **Exceptional Invalid URL Handling (Fail-Fast)**
+  * For **Invalid URLs** (e.g., malformed schemes or unparseable formats), `url-sanitizer` utilizes a fail-fast architecture via `URL.parse()`.
 * **Deep Inspection for High-Risk Payloads**
   * For **Complex Data URLs**, `url-sanitizer` prioritizes security over execution speed. The following steps are taken to perform sanitization:
     1. Decodes the Base64 payload.
