@@ -11,4 +11,5 @@ export declare const REG_SCRIPT_BLOB: RegExp;
 export declare const REG_TAG_QUOT: RegExp;
 export declare const REG_URL_ENC: RegExp;
 export declare const REG_AMP_ENC: RegExp;
+export declare const REG_PCT_ENC: RegExp;
 export declare const REG_VERIFY_RELATIVE: RegExp;
