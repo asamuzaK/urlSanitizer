@@ -1132,11 +1132,6 @@ describe('sanitizer', () => {
             '[URLSanitizer Debug] Failed to parse relative URL.',
             'should output the correct debug message'
           );
-          assert.strictEqual(
-            warnStub.firstCall.args[1] instanceof Error,
-            true,
-            'should include the original error message'
-          );
         } finally {
           warnStub.restore();
         }
@@ -1222,11 +1217,6 @@ describe('sanitizer', () => {
               warnStub.firstCall.args[0],
               '[URLSanitizer Debug] Failed to parse URL.',
               'should output the correct debug message'
-            );
-            assert.strictEqual(
-              warnStub.firstCall.args[1] instanceof Error,
-              true,
-              'should include the original error'
             );
           } finally {
             warnStub.restore();
@@ -2007,39 +1997,6 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should silently catch and return', () => {
-        const OriginalURL = globalThis.URL;
-        let isCatchHit = false;
-        globalThis.URL = class extends OriginalURL {
-          constructor(url, base) {
-            if (url === 'data:text/html,error-trigger') {
-              isCatchHit = true;
-              throw new TypeError('Simulated URL parsing error');
-            }
-            super(url, base);
-          }
-        };
-        try {
-          const sanitizer = new mjs.URLSanitizer();
-          const innerHtml = '<a href="data:text/html,error-trigger">link</a>';
-          const base64Data = btoa(innerHtml);
-          const url = `data:text/html;base64,${base64Data}`;
-          const res = sanitizer.sanitize(url, { allow: ['data'] });
-          assert.strictEqual(
-            isCatchHit,
-            true,
-            'catch block should be executed'
-          );
-          assert.strictEqual(
-            typeof res,
-            'string',
-            'should safely return sanitized string'
-          );
-        } finally {
-          globalThis.URL = OriginalURL;
-        }
-      });
-
       it('should return null when given malformed base64 data', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res1 = sanitizer.sanitize(
@@ -2079,6 +2036,34 @@ describe('sanitizer', () => {
             true,
             'empty attribute should be safely processed'
           );
+        });
+
+        it('should return early in hook if URL.parse returns null', () => {
+          const parseStub = sinon.stub(URL, 'parse').callsFake((url, base) => {
+            if (url === 'data:text/html,error-trigger') {
+              return null;
+            }
+            return parseStub.wrappedMethod(url, base);
+          });
+          try {
+            const sanitizer = new mjs.URLSanitizer();
+            const html = '<a href="data:text/html,error-trigger">link</a>';
+            const base64Data = btoa(html);
+            const url = `data:text/html;base64,${base64Data}`;
+            const res = sanitizer.sanitize(url, { allow: ['data'] });
+            assert.strictEqual(
+              parseStub.calledWith('data:text/html,error-trigger'),
+              true,
+              'URL.parse should be called with the target URL'
+            );
+            assert.strictEqual(
+              typeof res,
+              'string',
+              'result should be a string'
+            );
+          } finally {
+            parseStub.restore();
+          }
         });
       });
 
@@ -2292,27 +2277,14 @@ describe('sanitizer', () => {
           }
         });
 
-        it('should return null when new URL() throws during parsing', () => {
+        it('should return null when inner URL parsing returns null', () => {
           const warnStub = sinon.stub(console, 'warn');
-          const OriginalURL = globalThis.URL;
-          const testError = new TypeError('Simulated inner URL parsing error');
-          globalThis.URL = class extends OriginalURL {
-            constructor(url, base) {
-              if (
-                base === 'http://dummy.local' &&
-                url === 'trigger-parsing-error'
-              ) {
-                throw testError;
-              }
-              super(url, base);
-            }
-          };
           try {
             const sanitizer = new mjs.URLSanitizer();
-            const res = sanitizer.sanitize(
-              'data:text/html,trigger-parsing-error',
-              { allow: ['data'], debug: true }
-            );
+            const res = sanitizer.sanitize('data:text/html,http://[::1', {
+              allow: ['data'],
+              debug: true
+            });
             assert.strictEqual(
               res,
               null,
@@ -2323,18 +2295,12 @@ describe('sanitizer', () => {
               true,
               'console.warn should be called'
             );
-            assert.deepEqual(
+            assert.strictEqual(
               warnStub.firstCall.args[0],
               '[URLSanitizer Debug] Failed to parse inner data URL protocol.',
               'should log the inner parsing failure message'
             );
-            assert.deepEqual(
-              warnStub.firstCall.args[1],
-              testError,
-              'should include original error'
-            );
           } finally {
-            globalThis.URL = OriginalURL;
             warnStub.restore();
           }
         });
@@ -2422,11 +2388,6 @@ describe('sanitizer', () => {
             warnStub.firstCall.args[0],
             expectedPrefix,
             'should output the correct debug message'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[1] instanceof Error,
-            true,
-            'should include the original error'
           );
         } finally {
           warnStub.restore();

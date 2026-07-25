@@ -88,18 +88,17 @@ export class URISchemes {
     if (!isString(uri)) {
       return false;
     }
-    try {
-      const { protocol } = new URL(uri.normalize('NFKC'));
-      const scheme = protocol.replace(/:$/, '');
-      const parts = scheme.split('+');
-      const isScript = parts.some(s => REG_SCRIPT.test(s));
-      if (isScript) {
-        return false;
-      }
-      return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
-    } catch {
+    const parsedUrl = URL.parse(uri.normalize('NFKC'));
+    if (!parsedUrl) {
       return false;
     }
+    const scheme = parsedUrl.protocol.replace(/:$/, '');
+    const parts = scheme.split('+');
+    const isScript = parts.some(s => REG_SCRIPT.test(s));
+    if (isScript) {
+      return false;
+    }
+    return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
   }
 }
 

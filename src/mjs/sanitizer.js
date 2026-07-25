@@ -126,10 +126,8 @@ class URLSanitizer extends URISchemes {
     if (!sanitizer || !ctx) {
       return;
     }
-    let urlObj;
-    try {
-      urlObj = new URL(evt.attrValue);
-    } catch {
+    const urlObj = URL.parse(evt.attrValue);
+    if (!urlObj) {
       return;
     }
     if (urlObj.protocol === 'data:') {
@@ -357,10 +355,10 @@ class URLSanitizer extends URISchemes {
     let relativeParsedPath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      try {
-        const dummyUrl = new URL(url, 'http://dummy.local');
-        const normUrl = url.normalize('NFKC');
-        const dummyUrlNormalized = new URL(normUrl, 'http://dummy.local');
+      const normUrl = url.normalize('NFKC');
+      const dummyUrl = URL.parse(url, 'http://dummy.local');
+      const dummyUrlNormalized = URL.parse(normUrl, 'http://dummy.local');
+      if (dummyUrl && dummyUrlNormalized) {
         if (
           dummyUrl.protocol === 'http:' &&
           dummyUrl.hostname === 'dummy.local' &&
@@ -370,8 +368,8 @@ class URLSanitizer extends URISchemes {
           isRelative = true;
           relativeParsedPath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
         }
-      } catch (e) {
-        logDebug(ctx.debug, 'Failed to parse relative URL.', e);
+      } else {
+        logDebug(ctx.debug, 'Failed to parse relative URL.');
       }
     }
     if (!isVerified) {
@@ -388,7 +386,7 @@ class URLSanitizer extends URISchemes {
         urlToSanitize: relativeParsedPath
       };
     }
-    const urlObj = new URL(url);
+    const urlObj = URL.parse(url);
     const scheme = urlObj.protocol.replace(/:$/, '').normalize('NFKC');
     const schemeParts = scheme.split('+');
     return {
@@ -455,14 +453,18 @@ class URLSanitizer extends URISchemes {
       const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
       const normalizedData = decodedData.normalize('NFKC');
       const dummy = 'http://dummy.local';
-      const { protocol: dataScheme } = new URL(normalizedData, dummy);
+      const parsedUrl = URL.parse(normalizedData, dummy);
+      if (!parsedUrl) {
+        logDebug(ctx.debug, 'Failed to parse inner data URL protocol.');
+        return null;
+      }
+      const dataScheme = parsedUrl.protocol;
       const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
       if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
         return null;
       }
     } catch (e) {
-      const msg = 'Failed to parse inner data URL protocol.';
-      logDebug(ctx.debug, msg, e);
+      logDebug(ctx.debug, 'Failed to parse inner data URL protocol.', e);
       return null;
     }
     if (!mediaType || REG_MIME_DOM.test(mediaType)) {
@@ -531,12 +533,11 @@ class URLSanitizer extends URISchemes {
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      try {
-        const { href } = new URL(url);
-        return href.replace(/%26/g, escapeURLEncodedHTMLChars);
-      } catch (e) {
-        const msg = `Failed to parse URL.`;
-        logDebug(opt?.debug, msg, e);
+      const parsedUrl = URL.parse(url);
+      if (parsedUrl) {
+        return parsedUrl.href.replace(/%26/g, escapeURLEncodedHTMLChars);
+      } else {
+        logDebug(opt?.debug, `Failed to parse URL.`);
         return null;
       }
     }
@@ -744,11 +745,11 @@ export const sanitizeURL = async (
   let res;
   if (url && isString(url)) {
     let scheme;
-    try {
-      const { protocol } = new URL(url);
-      scheme = protocol.replace(/:$/, '');
-    } catch (e) {
-      logDebug(isDebug, `Invalid URL input format: ${url}`, e);
+    const parsedUrl = URL.parse(url);
+    if (parsedUrl) {
+      scheme = parsedUrl.protocol.replace(/:$/, '');
+    } else {
+      logDebug(isDebug, `Invalid URL input format: ${url}`);
     }
     if (scheme === 'blob') {
       const { allow, deny, only } = opt;
@@ -824,12 +825,11 @@ export const sanitizeURLSync = (
   let res;
   if (url && isString(url)) {
     let scheme;
-    try {
-      const { protocol } = new URL(url);
-      scheme = protocol.replace(/:$/, '');
-    } catch (e) {
-      const msg = `Invalid URL input format: ${url}`;
-      logDebug(isDebug, msg, e);
+    const parsedUrl = URL.parse(url);
+    if (parsedUrl) {
+      scheme = parsedUrl.protocol.replace(/:$/, '');
+    } else {
+      logDebug(isDebug, `Invalid URL input format: ${url}`);
     }
     if (scheme === 'blob') {
       if (opt?.revokeObjectURL) {
