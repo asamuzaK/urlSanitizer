@@ -5,7 +5,12 @@ import path from 'node:path';
 import process from 'node:process';
 import sinon from 'sinon';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
+import {
+  fetch as undiciFetch,
+  getGlobalDispatcher,
+  MockAgent,
+  setGlobalDispatcher
+} from 'undici';
 
 /* test */
 import {
@@ -32,15 +37,18 @@ describe('save URI schemes file', () => {
     'qux,,Provisional',
     'quux,"foo, ""bar"", baz",Provisional'
   ].join('\n');
+  const originalFetch = globalThis.fetch;
   const globalDispatcher = getGlobalDispatcher();
   const mockAgent = new MockAgent();
   beforeEach(() => {
     setGlobalDispatcher(mockAgent);
     mockAgent.disableNetConnect();
+    globalThis.fetch = undiciFetch;
   });
   afterEach(() => {
     mockAgent.enableNetConnect();
     setGlobalDispatcher(globalDispatcher);
+    globalThis.fetch = originalFetch;
   });
 
   it('should get result', async () => {
@@ -99,15 +107,18 @@ describe('include libraries', () => {
     'qux,,Provisional',
     'quux,"foo, ""bar"", baz",Provisional'
   ].join('\n');
+  const originalFetch = globalThis.fetch;
   const globalDispatcher = getGlobalDispatcher();
   const mockAgent = new MockAgent();
   beforeEach(() => {
     setGlobalDispatcher(mockAgent);
     mockAgent.disableNetConnect();
+    globalThis.fetch = undiciFetch;
   });
   afterEach(() => {
     mockAgent.enableNetConnect();
     setGlobalDispatcher(globalDispatcher);
+    globalThis.fetch = originalFetch;
   });
 
   it('should throw', async () => {

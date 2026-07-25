@@ -5,7 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import sinon from 'sinon';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { getGlobalDispatcher, MockAgent, setGlobalDispatcher } from 'undici';
+import {
+  fetch as undiciFetch,
+  getGlobalDispatcher,
+  MockAgent,
+  setGlobalDispatcher
+} from 'undici';
 
 /* test */
 import {
@@ -174,15 +179,18 @@ describe('rename file or directory', () => {
 });
 
 describe('fetch text', () => {
+  const originalFetch = globalThis.fetch;
   const globalDispatcher = getGlobalDispatcher();
   const mockAgent = new MockAgent();
   beforeEach(() => {
     setGlobalDispatcher(mockAgent);
     mockAgent.disableNetConnect();
+    globalThis.fetch = undiciFetch;
   });
   afterEach(() => {
     mockAgent.enableNetConnect();
     setGlobalDispatcher(globalDispatcher);
+    globalThis.fetch = originalFetch;
   });
 
   it('should throw', async () => {
