@@ -113,11 +113,11 @@ export const getURLEncodedString = str => {
     throw new TypeError(`Expected String but got ${getType(str)}.`);
   }
   const bytes = encoder.encode(str);
-  const encoded = [];
+  let encoded = '';
   for (let i = 0; i < bytes.length; i++) {
-    encoded.push(HEX_TABLE[bytes[i]]);
+    encoded += HEX_TABLE[bytes[i]];
   }
-  return encoded.join('');
+  return encoded;
 };
 
 /**

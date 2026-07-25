@@ -80,6 +80,7 @@ export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 
 /**
  * Matches an ampersand-encoded character (&foo).
+ * @type {RegExp}
  */
 export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
 
