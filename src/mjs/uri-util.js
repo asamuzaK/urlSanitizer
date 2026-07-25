@@ -11,6 +11,7 @@ import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
   REG_HASH,
   REG_NUM_REF,
+  REG_PCT_ENC,
   REG_QUERY,
   REG_SCHEME_EXT,
   REG_SCRIPT,
@@ -88,7 +89,8 @@ export class URISchemes {
     if (!isString(uri)) {
       return false;
     }
-    const parsedUrl = URL.parse(uri.normalize('NFKC'));
+    const normalizedUri = uri.normalize('NFKC');
+    const parsedUrl = URL.parse(normalizedUri);
     if (!parsedUrl) {
       return false;
     }
@@ -225,7 +227,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
     res = decodeURIComponent(str);
   } catch {
     // Fallback: decode only valid multi-byte %XX sequences.
-    res = str.replace(/(?:%[\dA-F]{2})+/gi, match => {
+    res = str.replace(REG_PCT_ENC, match => {
       try {
         return decodeURIComponent(match);
       } catch {

@@ -85,6 +85,12 @@ export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
 
 /**
+ * Match one or more consecutive URL percent-encoded sequences (%20, %E3%81%82).
+ * @type {RegExp}
+ */
+export const REG_PCT_ENC = /(?:%[\dA-F]{2})+/gi;
+
+/**
  * Validates relative URLs and flags invalid patterns.
  * @type {RegExp}
  */
