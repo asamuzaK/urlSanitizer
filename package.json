@@ -93,5 +93,5 @@
   "engines": {
     "node": ">=22.13"
   },
-  "version": "4.2.0"
+  "version": "4.2.1"
 }
