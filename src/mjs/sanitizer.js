@@ -654,7 +654,10 @@ class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    return this.#allowedSchemes.has(scheme);
+    if (!isString(scheme)) {
+      return false;
+    }
+    return this.#allowedSchemes.has(scheme.trim().toLowerCase());
   }
 
   /**
@@ -663,17 +666,18 @@ class URLSanitizer extends URISchemes {
    * @returns {string[]} The updated array of registered schemes.
    */
   add(scheme) {
+    let loweredScheme;
     if (isString(scheme)) {
-      scheme = scheme.trim();
+      loweredScheme = scheme.trim().toLowerCase();
     } else {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const schemeParts = scheme.split('+');
+    const schemeParts = loweredScheme.split('+');
     const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(scheme)) {
+    if (isScript || !REG_SCHEME.test(loweredScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
-    this.#allowedSchemes.add(scheme);
+    this.#allowedSchemes.add(loweredScheme);
     return [...this.#allowedSchemes];
   }
 
@@ -683,7 +687,10 @@ class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme was successfully removed.
    */
   remove(scheme) {
-    return this.#allowedSchemes.delete(scheme);
+    if (!isString(scheme)) {
+      return false;
+    }
+    return this.#allowedSchemes.delete(scheme.trim().toLowerCase());
   }
 
   /**
