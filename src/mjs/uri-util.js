@@ -76,7 +76,10 @@ export class URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    return this.#schemes.has(scheme);
+    if (!isString(scheme)) {
+      return false;
+    }
+    return this.#schemes.has(scheme.trim().toLowerCase());
   }
 
   /**

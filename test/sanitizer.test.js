@@ -14,7 +14,7 @@ import urlSanitizer, * as mjs from '../src/mjs/sanitizer.js';
 
 describe('sanitizer', () => {
   describe('default', () => {
-    it('should be instance of URLSanitizer', () => {
+    it('is an instance of URLSanitizer', () => {
       assert.strictEqual(
         urlSanitizer instanceof mjs.URLSanitizer,
         true,
@@ -33,7 +33,7 @@ describe('sanitizer', () => {
       warnStub.restore();
     });
 
-    it('should call console.warn with a message when isDebug is true', () => {
+    it('logs message to console.warn when isDebug is true', () => {
       logDebug(true, 'Test message');
       assert.strictEqual(
         warnStub.calledOnce,
@@ -47,7 +47,7 @@ describe('sanitizer', () => {
       );
     });
 
-    it('should call console.warn with a message and an error', () => {
+    it('logs message and error details when isDebug is true', () => {
       const testError = new Error('Test error detail');
       logDebug(true, 'Test message', testError);
       assert.strictEqual(
@@ -62,7 +62,7 @@ describe('sanitizer', () => {
       );
     });
 
-    it('should not call console.warn when isDebug is false', () => {
+    it('does not log message when isDebug is false', () => {
       logDebug(false, 'Test message');
       assert.strictEqual(
         warnStub.called,
@@ -71,7 +71,7 @@ describe('sanitizer', () => {
       );
     });
 
-    it('should not call console.warn when isDebug is false', () => {
+    it('does not log error when isDebug is false', () => {
       const testError = new Error('Test error detail');
       logDebug(false, 'Test message', testError);
       assert.strictEqual(
@@ -85,43 +85,43 @@ describe('sanitizer', () => {
   describe('URL sanitizer', () => {
     const { URLSanitizer } = mjs;
 
-    it('should be instance of URLSanitizer', () => {
+    it('is an instance of URLSanitizer', () => {
       const sanitizer = new URLSanitizer();
       assert.strictEqual(sanitizer instanceof URLSanitizer, true, 'instance');
     });
 
     describe('sanitize URL', () => {
-      it('should get null', () => {
+      it('returns null for empty input', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize();
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('returns null for plain strings without a scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('foo');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('returns sanitized valid HTTPS URLs', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', () => {
+      it('ignores invalid string options and returns sanitized URL', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', 'foo');
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', () => {
+      it('ignores null options and returns sanitized URL', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', null);
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', () => {
+      it('encodes spaces in hash fragments', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'https://example.com:8000/#foo?bar=baz qux'
@@ -133,7 +133,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get value', () => {
+      it('preserves valid query parameters', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com/?foo=bar&baz=qux');
         assert.strictEqual(
@@ -143,43 +143,43 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get null', () => {
+      it('blocks relative path traversal (../../)', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('../../');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks absolute path traversal (/../)', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('/../');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks javascript: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert("XSS")');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks web+javascript: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+javascript:alert("XSS")');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows valid web+ custom schemes', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+foo:bar');
         assert.strictEqual(res, 'web+foo:bar', 'result');
       });
 
-      it('should get null if scheme is not registered', () => {
+      it('blocks unregistered custom schemes', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('foo:bar');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows dynamically added schemes via "only" option', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('foo');
         const res = sanitizer.sanitize('foo:bar', {
@@ -189,7 +189,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get value', () => {
+      it('allows schemes added to instance while restricting via "only"', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('bar');
         const res = sanitizer.sanitize('foo:bar', {
@@ -200,7 +200,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get value', () => {
+      it('allows dynamically added schemes via "allow" option', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('foo');
         const res = sanitizer.sanitize('foo:bar', {
@@ -210,7 +210,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get value', () => {
+      it('respects instance schemes alongside "allow" option', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('bar');
         const res = sanitizer.sanitize('foo:bar', {
@@ -221,7 +221,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null', () => {
+      it('is case-sensitive and blocks mismatched schemes in "only"', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('Foo:bar', {
           only: ['Foo', 'https']
@@ -229,7 +229,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('is case-sensitive and blocks mismatched schemes in "allow"', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('Foo:bar', {
           allow: ['Foo']
@@ -237,13 +237,13 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null if file scheme is not explicitly allowed', () => {
+      it('blocks file: scheme if not explicitly allowed', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should override allow and get null', () => {
+      it('blocks file: scheme if explicitly denied, overriding allow', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar', {
           deny: ['file'],
@@ -252,7 +252,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks blob: scheme by default', () => {
         const blob = new Blob(['<script>alert(1)</script>'], {
           type: 'text/html'
         });
@@ -262,7 +262,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null even if blob scheme is in the allowed list', () => {
+      it('blocks blob: scheme even if included in "allow" option', () => {
         const blob = new Blob(['<script>alert(1)</script>'], {
           type: 'text/html'
         });
@@ -275,7 +275,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null even if blob scheme is in the only list', () => {
+      it('blocks blob: scheme even if included in "only" option', () => {
         const blob = new Blob(['<script>alert(1)</script>'], {
           type: 'text/html'
         });
@@ -288,7 +288,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows file: scheme when explicitly permitted', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('file:///foo/bar', {
           allow: ['file']
@@ -296,7 +296,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'file:///foo/bar', 'result');
       });
 
-      it('should get value', () => {
+      it('allows specific web+ schemes when explicitly permitted', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+foo:bar', {
           allow: ['web+foo']
@@ -304,7 +304,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'web+foo:bar', 'result');
       });
 
-      it('should get null', () => {
+      it('blocks web+ schemes when explicitly denied', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+foo:bar', {
           deny: ['web+foo']
@@ -312,7 +312,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks standard HTTP when omitted from "only" list', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('http://example.com', {
           only: ['git', 'https']
@@ -320,7 +320,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows standard HTTPS when included in "only" list', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', {
           only: ['git', 'https']
@@ -328,7 +328,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', () => {
+      it('allows custom schemes included in "only" list', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('foo');
         const res = sanitizer.sanitize('foo:bar', {
@@ -338,7 +338,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get value', () => {
+      it('blocks custom schemes omitted from "only" list', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.add('bar');
         const res = sanitizer.sanitize('foo:bar', {
@@ -349,7 +349,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null', () => {
+      it('blocks specific custom schemes omitted from "only" list', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+foo:bar', {
           only: ['foo', 'git', 'https']
@@ -357,7 +357,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows valid scheme with + characters (e.g., git+https)', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('git+https://example.com', {
           only: ['git', 'https']
@@ -365,7 +365,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'git+https://example.com', 'result');
       });
 
-      it('should get null', () => {
+      it('blocks unknown scheme combinations', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('Foo:bar', {
           only: ['Foo', 'git', 'https']
@@ -373,7 +373,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should override allow and get null', () => {
+      it('blocks data: scheme if "only" list restricts it', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
           allow: ['data'],
@@ -382,7 +382,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should override deny and get value', () => {
+      it('allows scheme if present in "only", overriding "deny"', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com', {
           deny: ['https'],
@@ -391,13 +391,13 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get null', () => {
+      it('blocks javascript: scheme executing alert', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('javascript:alert(1)');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks vbscript: scheme executing scripts', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
@@ -405,13 +405,13 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks web+javascript: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('web+javascript:alert(1)');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks web+vbscript: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
@@ -419,7 +419,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('preserves valid URL-encoded query parameters', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('http://example.com/?lt=5&gt=4');
         const url = new URL(res);
@@ -434,7 +434,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('encodes unsafe HTML characters in query parameters', () => {
         const value = encodeURIComponent('5&gt=4');
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(`http://example.com/?lt=${value}`);
@@ -456,7 +456,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('strips malicious script tags from query parameters', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           "http://example.com/?<script>alert('XSS');</script>"
@@ -466,7 +466,7 @@ describe('sanitizer', () => {
         assert.deepEqual(Array.from(url.searchParams.entries()), [], 'search');
       });
 
-      it('should get sanitized value', () => {
+      it('strips malicious scripts while preserving safe query parameters', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           "http://example.com/?foo=bar&<script>alert('XSS');</script>"
@@ -480,7 +480,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('strips inline event handlers (e.g., onmouseover)', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'http://example.com/"onmouseover="alert(1)"'
@@ -488,13 +488,13 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'http://example.com/', 'result');
       });
 
-      it('should get null if data scheme is not explicitly allowed', () => {
+      it('blocks data: scheme by default', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should override allow and get null', () => {
+      it('blocks data: scheme when simultaneously allowed and denied', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
           allow: ['data'],
@@ -503,7 +503,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('allows and decodes text data: scheme when explicitly permitted', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,Hello%2C%20World!', {
           allow: ['data']
@@ -516,7 +516,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get value', () => {
+      it('allows and decodes base64 plain-text data: scheme', () => {
         const data = 'Hello%2C%20World!';
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
@@ -538,7 +538,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get value', () => {
+      it('allows and preserves base64 image data: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
@@ -558,7 +558,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('decodes and handles text/plain correctly', () => {
         const data = 'Hello%2C%20World!';
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
@@ -580,7 +580,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get value', () => {
+      it('preserves query components inside data URLs safely', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:,https://example.com/#foo?', {
           allow: ['data']
@@ -588,7 +588,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:,https://example.com/#foo?', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('sanitizes malicious scripts nested within data: scheme HTML hash tags', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'data:,https://example.com/#<script>alert(1);</script>',
@@ -599,7 +599,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('sanitizes malicious scripts nested within data: scheme HTML query tags', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'data:,https://example.com/?<script>alert(1);</script>',
@@ -610,7 +610,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('sanitizes malicious scripts within multiple query/hash parts of data: scheme', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           'data:,https://example.com/?<script>alert(1);</script>#<script>alert(1)</script>',
@@ -621,7 +621,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'data:,https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('returns null for base64 data containing XSS payloads', () => {
         const data = "<script>alert('XSS');</script><script>alert(1);</script>";
         const base64Data = btoa(data);
         const sanitizer = new URLSanitizer();
@@ -631,7 +631,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('blocks URL-encoded script tags inside text/html data URLs', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(
           "data:text/html,%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E",
@@ -642,7 +642,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('blocks base64-encoded URL-encoded script tags', () => {
         const data =
           "%3Cscript%3Ealert('XSS');%3C/script%3E%3Cscript%3Ealert(1);%3C/script%3E";
         const base64Data = btoa(data);
@@ -653,7 +653,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('removes scripts inside nested inner data URLs', () => {
         const innerData = '<script>alert(1)</script>';
         const encodedInnerData = encodeURIComponent(innerData);
         const innerUrl = `data:text/html,${encodedInnerData}`;
@@ -675,7 +675,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('removes scripts inside base64 nested inner data URLs', () => {
         const innerData = '<script>alert(1)</script>';
         const encodedInnerData = encodeURIComponent(innerData);
         const base64InnerData = btoa(encodedInnerData);
@@ -698,7 +698,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('cleans multiple nested malicious inner data URLs simultaneously', () => {
         const innerData1 = '<script>alert(1)</script>';
         const innerUrl1 = `data:text/html,${innerData1}`;
         const outerData1 = `<img src="${innerUrl1}">`;
@@ -728,7 +728,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('safely processes nested image/svg+xml data URLs', () => {
         const data = '<div><img src="data:image/svg+xml,<svg></svg>"></div>';
         const base64Data = btoa(data);
         const url = `data:text/html;base64,${base64Data}`;
@@ -748,7 +748,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('safely strips deeply nested base64 javascript: execution', () => {
         const xss = 'javascript:alert(1)';
         const data1 = `data:base64,${btoa(encodeURIComponent(xss))}`;
         const html1 = `<img src="${data1}">`;
@@ -773,7 +773,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws an error when Data URLs are nested too deeply', () => {
         let url;
         for (let i = 0; i < 18; i++) {
           let srcUrl;
@@ -797,7 +797,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get null', () => {
+      it('blocks data: schemes wrapping javascript: execution', () => {
         const url = 'data:,javascript:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -806,7 +806,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks case-manipulated javascript: inside data: schemes', () => {
         const url = 'data:,JAVASCRIPT:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -815,7 +815,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks URL-encoded javascript: inside data: schemes', () => {
         const url = 'data:,javasc%72ipt:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -824,7 +824,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks zero-width characters bypassing javascript: blocks', () => {
         const url = 'data:,javasc\u0072ipt:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -833,7 +833,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks hex-escaped characters in javascript: blocks', () => {
         const url = 'data:,javasc\u{0072}ipt:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -842,7 +842,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks whitespace or line separators obfuscating javascript:', () => {
         const url = 'data:,\u2028javascript:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -851,7 +851,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks HTML-entity obfuscated javascript: execution', () => {
         const url = 'data:,javasc&#x72;ipt:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -860,7 +860,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks non-breaking space obfuscation before javascript:', () => {
         const url = 'data:,&#xA0javascript:alert(1)';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -869,7 +869,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks entity obfuscation within queries of data URLs', () => {
         const url = 'data:,javasc&#x72;ipt:alert(1)?foo=bar&baz=qux';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -878,7 +878,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('removes javascript: execution from within img src of data: HTML', () => {
         const url = 'data:text/html,<img src="javascript:alert(1)">';
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize(url, {
@@ -892,7 +892,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('safely strips base64-encoded javascript: inside img src', () => {
         const xss = btoa('javascript:alert(1)');
         const url = `data:text/html,<img src="data:base64,${xss}">`;
         const sanitizer = new URLSanitizer();
@@ -911,7 +911,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value', () => {
+      it('strips dangling quotes triggering pseudo-attributes', () => {
         const xss = '" onclick="alert(1)"';
         const url = `https://example.com/${xss}`;
         const sanitizer = new URLSanitizer();
@@ -919,7 +919,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('strips URL-encoded dangling quotes', () => {
         const xss = '" onclick="alert(1)"';
         const url = `https://example.com/${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
@@ -927,7 +927,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('strips script tags injected in query', () => {
         const xss = '<script>alert(1)</script>';
         const url = `https://example.com/?${xss}`;
         const sanitizer = new URLSanitizer();
@@ -935,7 +935,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get sanitized value', () => {
+      it('strips URL-encoded script tags in query', () => {
         const xss = '<script>alert(1)</script>';
         const url = `https://example.com/?${encodeURIComponent(xss)}`;
         const sanitizer = new URLSanitizer();
@@ -943,7 +943,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should sanitize relative URLs when allowRelative is true', () => {
+      it('allows or blocks relative URLs based on allowRelative option', () => {
         const sanitizer = new URLSanitizer();
         assert.strictEqual(
           sanitizer.sanitize('/about/us', { allowRelative: false }),
@@ -972,7 +972,7 @@ describe('sanitizer', () => {
       });
 
       describe('malicious pseudo-relative payload detection', () => {
-        it('should block protocol-relative URL bypassing', () => {
+        it('blocks protocol-relative URL bypassing', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('//evil.com', { allowRelative: true });
           assert.strictEqual(
@@ -982,7 +982,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should block backslash-obfuscated URL bypassing', () => {
+        it('blocks backslash-obfuscated URL bypassing', () => {
           const sanitizer = new URLSanitizer();
           const resSingle = sanitizer.sanitize('\\evil.com', {
             allowRelative: true
@@ -1002,7 +1002,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should handle scheme-prefixed URLs without slashes safely', () => {
+        it('handles scheme-prefixed URLs without slashes safely', () => {
           const sanitizer = new URLSanitizer();
           const resDefault = sanitizer.sanitize('http:example.com');
           assert.strictEqual(
@@ -1022,13 +1022,13 @@ describe('sanitizer', () => {
         });
       });
 
-      it('should handle URIError in decodeURIComponent gracefully', () => {
+      it('handles URIError in decodeURIComponent gracefully', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('data:text/html,%', { allow: ['data'] });
         assert.strictEqual(res, 'data:text/html,%25', 'result');
       });
 
-      it('should NOT log debug error when inner data is plain HTML', async () => {
+      it('does not log debug error when inner data is plain HTML', async () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const url = 'data:text/html,<div>No URL scheme here</div>';
@@ -1054,7 +1054,7 @@ describe('sanitizer', () => {
         }
       });
 
-      it('should skip when circular Data URL is detected', () => {
+      it('skips processing when circular Data URL is detected', () => {
         const warnStub = sinon.stub(console, 'warn');
         const originalHas = Set.prototype.has;
         const hasStub = sinon
@@ -1092,7 +1092,7 @@ describe('sanitizer', () => {
         }
       });
 
-      it('should return unencoded DOM if encodeURI throws URIError', () => {
+      it('returns unencoded DOM if encodeURI throws URIError', () => {
         const encodeURIStub = sinon
           .stub(globalThis, 'encodeURI')
           .throws(new URIError('URI malformed'));
@@ -1112,7 +1112,7 @@ describe('sanitizer', () => {
         }
       });
 
-      it('should catch and log debug message when relative URL parsing fails', () => {
+      it('catches and logs debug message when relative URL parsing fails', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const sanitizer = new mjs.URLSanitizer();
@@ -1138,7 +1138,7 @@ describe('sanitizer', () => {
       });
 
       describe('fast-path processing', () => {
-        it('should use fast-path for HTTP(S) URLs', () => {
+        it('uses fast-path for HTTP(S) URLs without restrictive rules', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('https://example.com/foo', {
             allow: ['data']
@@ -1146,7 +1146,7 @@ describe('sanitizer', () => {
           assert.strictEqual(res, 'https://example.com/foo', 'result');
         });
 
-        it('should properly escape %26 within the fast-path', () => {
+        it('properly escapes %26 within the fast-path', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('https://example.com/?foo=1%26bar=2', {
             allow: ['data']
@@ -1158,7 +1158,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should bypass fast-path if URL starts with "data:"', () => {
+        it('bypasses fast-path if URL starts with "data:"', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('data:text/plain,test', {
             allow: ['data']
@@ -1166,7 +1166,7 @@ describe('sanitizer', () => {
           assert.strictEqual(res, 'data:text/plain,test', 'result');
         });
 
-        it('should bypass fast-path if URL contains "data:"', () => {
+        it('bypasses fast-path if URL contains "data:"', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize(
             'https://example.com/?redirect=data:text/plain,test',
@@ -1179,7 +1179,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should bypass fast-path', () => {
+        it('bypasses fast-path when restrictive deny or only rules apply', () => {
           const sanitizer = new URLSanitizer();
           const resDeny = sanitizer.sanitize('https://example.com/', {
             deny: ['file']
@@ -1199,7 +1199,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should catch and log debug message when new URL() throws', () => {
+        it('catches and logs debug message when new URL() throws', () => {
           const warnStub = sinon.stub(console, 'warn');
           try {
             const sanitizer = new URLSanitizer();
@@ -1223,7 +1223,7 @@ describe('sanitizer', () => {
           }
         });
 
-        it('should catch and warn if new URL() throws', () => {
+        it('catches and ignores error if new URL() throws without debug mode', () => {
           const sanitizer = new URLSanitizer();
           const res = sanitizer.sanitize('http://[::1', {
             allow: ['data']
@@ -1234,7 +1234,7 @@ describe('sanitizer', () => {
     });
 
     describe('inspect sanitized URL', () => {
-      it('should throw', () => {
+      it('throws TypeError for missing arguments', () => {
         const sanitizer = new URLSanitizer();
         assert.throws(
           () => sanitizer.inspect(),
@@ -1243,7 +1243,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get result', () => {
+      it('returns invalid object with syntax reason for unregistered schemes', () => {
         const sanitizer = new URLSanitizer();
         const url = 'javascript:alert(1)';
         const res = sanitizer.inspect(url);
@@ -1258,7 +1258,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get result', () => {
+      it('returns parsed URL object properties for valid URLs', () => {
         const sanitizer = new URLSanitizer();
         const url = 'https://www.example.com/?foo=bar#baz';
         const obj = new URL(url);
@@ -1276,7 +1276,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses unencoded plain text data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const url = 'data:,Hello,%20World!';
         const obj = new URL(url);
@@ -1298,7 +1298,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses base64 text/plain data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const data = 'Hello,%20World!';
         const base64Data = btoa(data);
@@ -1322,7 +1322,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses and sanitizes HTML data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const data = '<div onclick="alert(1)"/></div>';
         const encodedData = encodeURI('<div></div>');
@@ -1346,7 +1346,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses and sanitizes SVG data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const encodedData = encodeURI('<svg><g></g></svg>');
@@ -1370,7 +1370,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses and sanitizes encoded SVG data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const encodedData = encodeURI('<svg><g></g></svg>');
@@ -1394,7 +1394,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('parses and sanitizes base64 SVG data: URLs', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const encodedData = encodeURI('<svg><g></g></svg>');
@@ -1419,7 +1419,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('safely handles blob URLs during inspection', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
@@ -1441,7 +1441,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('should get value', () => {
+      it('identifies base64 encoded image data: URLs accurately', () => {
         const sanitizer = new URLSanitizer();
         const url =
           'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
@@ -1469,7 +1469,7 @@ describe('sanitizer', () => {
       const baseString = 'a'.repeat(30);
       const testUrl = `https://example.com/${baseString}`;
 
-      it('should throw RangeError when URL exceeds maxLength', () => {
+      it('throws RangeError when string exceeds maxLength during sanitize', () => {
         const sanitizer = new mjs.URLSanitizer();
         assert.throws(
           () => sanitizer.sanitize(testUrl, { maxLength: 49 }),
@@ -1478,13 +1478,13 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should pass when URL is within maxLength', () => {
+      it('allows URL when length is exactly at or below maxLength', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.sanitize(testUrl, { maxLength: 50 });
         assert.strictEqual(res, testUrl, 'result');
       });
 
-      it('should return with reason when exceeding maxLength', () => {
+      it('returns invalid object with length reason during inspect', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect(testUrl, { maxLength: 49 });
         assert.strictEqual(res.valid, false, 'should be invalid');
@@ -1495,7 +1495,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should return with reason for unregistered scheme', () => {
+      it('returns invalid object with syntax reason for unregistered schemes', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect('foo://bar');
         assert.strictEqual(res.valid, false, 'should be invalid');
@@ -1506,7 +1506,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should return with reason when restricted by options', () => {
+      it('returns invalid object with block reason when restricted by options', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect('https://example.com', {
           only: ['http']
@@ -1519,7 +1519,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should NOT include reason when URL is valid', () => {
+      it('omits reason property when URL is valid', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.inspect('https://example.com');
         assert.strictEqual(res.valid, true, 'should be valid');
@@ -1532,7 +1532,7 @@ describe('sanitizer', () => {
     });
 
     describe('inspect URL - sanitization failure and exception', () => {
-      it('should return with reason when sanitization fails', () => {
+      it('returns with reason when sanitization fails', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.inspect('http://example.com', {
           only: ['data']
@@ -1545,7 +1545,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should return with reason when sanitize() throws an error', () => {
+      it('returns with reason when sanitize() throws an error', () => {
         const sanitizer = new URLSanitizer();
         let url = 'data:text/html,test';
         for (let i = 0; i < 18; i++) {
@@ -1562,8 +1562,39 @@ describe('sanitizer', () => {
       });
     });
 
+    describe('has scheme', () => {
+      it('returns false if scheme is not a string', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(sanitizer.has(123), false, 'number');
+        assert.strictEqual(sanitizer.has(null), false, 'null');
+        assert.strictEqual(sanitizer.has(undefined), false, 'undefined');
+        assert.strictEqual(sanitizer.has({}), false, 'object');
+      });
+
+      it('returns true for registered default schemes', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(sanitizer.has('http'), true, 'http');
+        assert.strictEqual(sanitizer.has('https'), true, 'https');
+      });
+
+      it('returns false for unregistered schemes', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(sanitizer.has('unknown-scheme'), false, 'unknown');
+      });
+
+      it('normalizes input by trimming and lowercasing', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(
+          sanitizer.has(' HTTP '),
+          true,
+          'trimmed and lowercased'
+        );
+        assert.strictEqual(sanitizer.has('HtTpS'), true, 'mixed case');
+      });
+    });
+
     describe('add scheme', () => {
-      it('should throw', () => {
+      it('throws TypeError if scheme is undefined', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add(),
@@ -1572,7 +1603,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws Error if adding javascript:', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add('javascript'),
@@ -1581,7 +1612,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws Error if adding vbscript:', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add('vbscript'),
@@ -1590,7 +1621,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws Error if adding web+javascript:', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add('web+javascript'),
@@ -1599,7 +1630,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws Error for invalid characters (e.g., =)', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add('foo=bar'),
@@ -1608,33 +1639,33 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should throw', () => {
+      it('throws Error for invalid characters (e.g., ~)', () => {
         const schemes = new URLSanitizer();
-        assert.throws(() => schemes.add('FOO'), Error, 'Invalid scheme: FOO');
+        assert.throws(() => schemes.add('FOO~'), Error, 'Invalid scheme: FOO~');
       });
 
-      it('should add scheme', () => {
+      it('successfully adds valid standard schemes', () => {
         const schemes = new URLSanitizer();
         const res = schemes.add('foo');
         assert.strictEqual(Array.isArray(res), true, 'result');
         assert.strictEqual(res.includes('foo'), true, 'added');
       });
 
-      it('should add scheme', () => {
+      it('trims and lowercases schemes before adding', () => {
         const schemes = new URLSanitizer();
-        const res = schemes.add(' foo ');
+        const res = schemes.add(' Foo ');
         assert.strictEqual(Array.isArray(res), true, 'result');
         assert.strictEqual(res.includes('foo'), true, 'added');
       });
 
-      it('should add scheme', () => {
+      it('successfully adds custom web+ schemes', () => {
         const schemes = new URLSanitizer();
         const res = schemes.add('web+foo');
         assert.strictEqual(Array.isArray(res), true, 'result');
         assert.strictEqual(res.includes('web+foo'), true, 'added');
       });
 
-      it('should throw if scheme contains script', () => {
+      it('throws if scheme contains script even with prefix', () => {
         const schemes = new URLSanitizer();
         assert.throws(
           () => schemes.add('web+javascript'),
@@ -1650,22 +1681,39 @@ describe('sanitizer', () => {
     });
 
     describe('remove scheme', () => {
-      it('should get false', () => {
-        const schemes = new URLSanitizer();
-        const res = schemes.remove('foo');
+      it('returns false if scheme is not a string', () => {
+        const sanitizer = new URLSanitizer();
+        assert.strictEqual(sanitizer.remove(123), false, 'number');
+        assert.strictEqual(sanitizer.remove(null), false, 'null');
+        assert.strictEqual(sanitizer.remove(undefined), false, 'undefined');
+        assert.strictEqual(sanitizer.remove({}), false, 'object');
+      });
+
+      it('returns false for non-existent schemes', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.remove('foo');
         assert.strictEqual(res, false, 'result');
       });
 
-      it('should get true', () => {
-        const schemes = new URLSanitizer();
-        schemes.add('foo');
-        const res = schemes.remove('foo');
+      it('returns true when successfully removing a scheme', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.add('foo');
+        const res = sanitizer.remove('foo');
         assert.strictEqual(res, true, 'result');
+        assert.strictEqual(sanitizer.has('foo'), false, 'should be removed');
+      });
+
+      it('normalizes input by trimming and lowercasing before removal', () => {
+        const sanitizer = new URLSanitizer();
+        sanitizer.add('foo');
+        const res = sanitizer.remove(' FOO ');
+        assert.strictEqual(res, true, 'result');
+        assert.strictEqual(sanitizer.has('foo'), false, 'should be removed');
       });
     });
 
     describe('reset sanitizer', () => {
-      it('should reset', () => {
+      it('resets the registered schemes back to the default list', () => {
         const sanitizer = new URLSanitizer();
         sanitizer.remove('http');
         sanitizer.reset();
@@ -1677,7 +1725,7 @@ describe('sanitizer', () => {
   });
 
   describe('alias', () => {
-    it('should get aliases', () => {
+    it('exports all expected utility aliases', () => {
       assert.strictEqual(typeof mjs.sanitizeURL, 'function');
       assert.strictEqual(typeof mjs.sanitizeURLSync, 'function');
       assert.strictEqual(typeof mjs.inspectURL, 'function');
@@ -1689,27 +1737,27 @@ describe('sanitizer', () => {
     describe('sanitize URL async', () => {
       const func = mjs.sanitizeURL;
 
-      it('should get null', async () => {
+      it('returns null for missing input', async () => {
         const res = await func();
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', async () => {
+      it('returns null for plain string input', async () => {
         const res = await func('foo');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', async () => {
+      it('blocks javascript: scheme execution', async () => {
         const res = await func('javascript:alert(1)');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', async () => {
+      it('returns sanitized HTTPS URL', async () => {
         const res = await func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', async () => {
+      it('allows explicitly permitted custom schemes', async () => {
         const res = await func('foo:bar', {
           allow: ['foo']
         });
@@ -1717,7 +1765,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null and NOT revoke blob by default', async () => {
+      it('blocks blob: scheme and does NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1729,7 +1777,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null and NOT revoke blob by default', async () => {
+      it('blocks blob: scheme if denied, and does NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1745,7 +1793,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null and NOT revoke blob by default', async () => {
+      it('blocks blob: scheme if not in only list, and does NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1759,7 +1807,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value and NOT revoke blob', async () => {
+      it('allows blob: scheme, converts to data URL, and does NOT revoke by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1783,7 +1831,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get null if URL is already manually revoked', async () => {
+      it('returns null if blob: URL was manually revoked beforehand', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1799,7 +1847,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value and NOT revoke blob', async () => {
+      it('processes blob: without revoking, safely handling data conflicts', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1824,7 +1872,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value and NOT revoke blob', async () => {
+      it('processes blob: with "only" rules without revoking', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1848,7 +1896,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get sanitized value AND revoke blob', async () => {
+      it('revokes blob: URL automatically if revokeObjectURL is true', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1867,7 +1915,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should get null AND revoke blob', async () => {
+      it('blocks blob: and revokes URL automatically if revokeObjectURL is true', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1881,7 +1929,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('sanitizes and strips trailing quotes from URLs', async () => {
         const url = 'https://example.com/"quoted"';
         const res = await func(url, {
           allow: ['data', 'file']
@@ -1889,7 +1937,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('sanitizes and strips trailing single-quotes from URLs', async () => {
         const url = "https://example.com/'quoted'";
         const res = await func(url, {
           allow: ['data', 'file']
@@ -1897,7 +1945,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('sanitizes and strips trailing quotes from query parameters', async () => {
         const url = 'https://example.com/?q="quoted"';
         const res = await func(url, {
           allow: ['data', 'file']
@@ -1905,7 +1953,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
 
-      it('should get sanitized value', async () => {
+      it('sanitizes and strips trailing single-quotes from query parameters', async () => {
         const url = "https://example.com/?q='quoted'";
         const res = await func(url, {
           allow: ['data', 'file']
@@ -1913,7 +1961,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'https://example.com/?q=', 'result');
       });
 
-      it('should add scheme to options.only list', async () => {
+      it('merges schemes safely into options.only without mutating original array', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1932,7 +1980,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should keep scheme in options.only list', async () => {
+      it('preserves options.only if required schemes are already present', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1951,7 +1999,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should add to options.allow / remove from options.deny', async () => {
+      it('merges schemes safely into options.allow and removes from options.deny', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1978,7 +2026,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should keep scheme in options.allow', async () => {
+      it('preserves options.allow if required schemes are already present', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
@@ -1997,7 +2045,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('should return null when given malformed base64 data', () => {
+      it('returns null for malformed base64 strings', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res1 = sanitizer.sanitize(
           'data:text/html;base64,invalid!base64',
@@ -2017,14 +2065,14 @@ describe('sanitizer', () => {
       });
 
       describe('DOMPurify hook edge cases', () => {
-        it('should return early if active context is missing', async () => {
+        it('returns early if active context is missing', async () => {
           const { domPurify } = await import('../src/mjs/dompurify.js');
           assert.doesNotThrow(() => {
             domPurify.sanitize('<a href="data:text/html,test">link</a>');
           }, 'Should not throw when active context is missing');
         });
 
-        it('should return early in hook if attrValue is empty', () => {
+        it('returns early in hook if attrValue is empty', () => {
           const sanitizer = new mjs.URLSanitizer();
           const html = '<img src=""><input disabled>';
           const base64Data = btoa(html);
@@ -2038,7 +2086,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should return early in hook if URL.parse returns null', () => {
+        it('returns early in hook if URL.parse returns null', () => {
           const parseStub = sinon.stub(URL, 'parse').callsFake((url, base) => {
             if (url === 'data:text/html,error-trigger') {
               return null;
@@ -2071,7 +2119,7 @@ describe('sanitizer', () => {
         const encodeBase64UTF8 = str =>
           btoa(String.fromCharCode(...new TextEncoder().encode(str)));
 
-        it('should handle CJK characters in standard URL', () => {
+        it('safely handles CJK characters in standard URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const res = sanitizer.sanitize(
             'https://example.com/テスト?検索=テスト#ハッシュ'
@@ -2083,7 +2131,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should strip XSS mixed with CJK characters in standard URL', () => {
+        it('strips XSS mixed with CJK characters in standard URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const res = sanitizer.sanitize(
             'https://example.com/テスト?<script>alert("攻撃")</script>'
@@ -2095,7 +2143,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should handle CJK characters in plain data URL', () => {
+        it('safely handles CJK characters in plain data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const res = sanitizer.sanitize(
             'data:text/html,<div>こんにちは世界</div>',
@@ -2115,7 +2163,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should handle CJK characters in base64 data URL', () => {
+        it('safely handles CJK characters in base64 data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const base64Data = encodeBase64UTF8('<div>こんにちは世界</div>');
           const res = sanitizer.sanitize(
@@ -2136,7 +2184,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should strip XSS mixed with CJK in base64 data URL', () => {
+        it('strips XSS mixed with CJK in base64 data URL', () => {
           const sanitizer = new mjs.URLSanitizer();
           const base64Data = encodeBase64UTF8(
             '<div>安全<script>alert("危険")</script></div>'
@@ -2163,17 +2211,17 @@ describe('sanitizer', () => {
       describe('Zero Width Characters', () => {
         const func = mjs.sanitizeURL;
 
-        it('should block scheme obfuscation using zero-width characters', async () => {
+        it('blocks scheme obfuscation via zero-width characters', async () => {
           const res = await func('jav\u200Bascript:alert(1)');
           assert.deepEqual(res, null, 'result');
         });
 
-        it('should block URL-encoded zero-width characters in scheme', async () => {
+        it('blocks URL-encoded zero-width characters in schemes', async () => {
           const res = await func('jav%E2%80%8Bascript:alert(1)');
           assert.deepEqual(res, null, 'result');
         });
 
-        it('should allow zero-width characters in path or query of allowed schemes', async () => {
+        it('allows zero-width characters in paths or query strings', async () => {
           const res = await func(
             'https://example.com/path\u200Bname?q=val\u200Bue'
           );
@@ -2184,7 +2232,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should preserve zero-width characters in safe data URL payloads', async () => {
+        it('preserves zero-width characters in safe data URL payloads', async () => {
           const res = await func('data:text/html,<div>Hello\u200BWorld</div>', {
             allow: ['data']
           });
@@ -2195,7 +2243,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should safely handle zero-width characters in MIME types (bypassing DOMPurify but neutralizing execution)', async () => {
+        it('safely handling zero-width characters in MIME types neutralizing execution', async () => {
           const res = await func(
             'data:text/h\u200Btml,<script>alert(1)</script>',
             {
@@ -2209,7 +2257,7 @@ describe('sanitizer', () => {
           );
         });
 
-        it('should return null when zero-width characters are injected into base64 payloads', async () => {
+        it('returns null when zero-width characters are injected into base64 payloads', async () => {
           const base64Data = btoa('<div>test</div>'); // "PGRpdj50ZXN0PC9kaXY+"
           const obfuscatedBase64 =
             base64Data.slice(0, 5) + '\u200B' + base64Data.slice(5);
@@ -2219,14 +2267,14 @@ describe('sanitizer', () => {
           assert.deepEqual(res, null, 'result');
         });
 
-        it('should truncate URL if zero-width obfuscated tags are used in standard URL queries', async () => {
+        it('truncates standard URLs if zero-width obfuscated tags are detected', async () => {
           const res = await func(
             'https://example.com/?q=<scr\u200Bipt>alert(1)</scr\u200Bipt>'
           );
           assert.strictEqual(res, 'https://example.com/?q=', 'result');
         });
 
-        it('should safely process zero-width characters in domain names (domain spoofing is out-of-scope)', async () => {
+        it('safely processes zero-width characters in domain names', async () => {
           const res = await func('https://exam\u200Bple.com/');
           assert.ok(res !== null, 'should not be null');
           assert.strictEqual(res, 'https://example.com/', 'result');
@@ -2234,7 +2282,7 @@ describe('sanitizer', () => {
       });
 
       describe('Inner protocol fail secure', () => {
-        it('should return null when nested entities crash the parser', () => {
+        it('returns null securely when nested entities crash the parser', () => {
           const warnStub = sinon.stub(console, 'warn');
           try {
             let nestedAmps = '&';
@@ -2277,7 +2325,7 @@ describe('sanitizer', () => {
           }
         });
 
-        it('should return null when inner URL parsing returns null', () => {
+        it('returns null securely when inner URL parsing returns null', () => {
           const warnStub = sinon.stub(console, 'warn');
           try {
             const sanitizer = new mjs.URLSanitizer();
@@ -2310,27 +2358,27 @@ describe('sanitizer', () => {
     describe('sanitize URL sync', () => {
       const func = mjs.sanitizeURLSync;
 
-      it('should get null', () => {
+      it('returns null for missing input', () => {
         const res = func();
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('returns null for plain string input', () => {
         const res = func('foo');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null', () => {
+      it('blocks javascript: scheme execution', () => {
         const res = func('javascript:alert(1)');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get value', () => {
+      it('returns sanitized HTTPS URL', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, 'https://example.com/', 'result');
       });
 
-      it('should get value', () => {
+      it('allows explicitly permitted custom schemes', () => {
         const res = func('foo:bar', {
           allow: ['foo']
         });
@@ -2338,7 +2386,7 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('should get null and NOT revoke blob by default', async () => {
+      it('blocks blob: scheme and does NOT revoke blob by default', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
           type: 'image/svg+xml'
@@ -2355,7 +2403,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should get null AND revoke blob', async () => {
+      it('blocks blob: scheme and revokes blob if explicitly enabled', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
           type: 'image/svg+xml'
@@ -2372,7 +2420,7 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('should log debug message for invalid URL when debug is true', () => {
+      it('logs debug message for invalid URL format when debug is true', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const invalidUrl = 'invalid-url-string';
@@ -2394,7 +2442,7 @@ describe('sanitizer', () => {
         }
       });
 
-      it('should NOT log debug message for invalid URL when debug is false', () => {
+      it('does NOT log debug message for invalid URL format when debug is false', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const invalidUrl = 'invalid-url-string';
@@ -2414,7 +2462,7 @@ describe('sanitizer', () => {
     describe('parse URL async', () => {
       const func = mjs.inspectURL;
 
-      it('should get result', async () => {
+      it('returns parsed URL object correctly', async () => {
         const url = 'https://example.com';
         const obj = new URL(url);
         const items = {};
@@ -2435,7 +2483,7 @@ describe('sanitizer', () => {
     describe('parse URL sync', () => {
       const func = mjs.inspectURLSync;
 
-      it('should get result', () => {
+      it('returns parsed URL object correctly', () => {
         const url = 'https://example.com';
         const obj = new URL(url);
         const items = {};
@@ -2456,7 +2504,7 @@ describe('sanitizer', () => {
     describe('is URI async', () => {
       const func = mjs.isURI;
 
-      it('should get value', async () => {
+      it('identifies valid and registered scheme securely', async () => {
         const res = await func('https://example.com');
         assert.strictEqual(res, true, 'result');
       });
@@ -2465,7 +2513,7 @@ describe('sanitizer', () => {
     describe('is URI sync', () => {
       const func = mjs.isURISync;
 
-      it('should get value', () => {
+      it('identifies valid and registered scheme securely', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, true, 'result');
       });
