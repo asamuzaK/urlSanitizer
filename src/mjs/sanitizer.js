@@ -90,7 +90,7 @@ export const logDebug = (isDebug, message, error) => {
 /**
  * URL sanitizer
  */
-class URLSanitizer extends URISchemes {
+export class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
 
@@ -240,9 +240,10 @@ class URLSanitizer extends URISchemes {
    * @param {string} url - The URL string to sanitize.
    * @param {object} rules - Normalized sanitization rules.
    * @param {object} ctx - Internal context for state.
+   * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object to avoid redundant parsing.
    * @returns {string|null} The sanitized URL, or null.
    */
-  #process(url, rules, ctx) {
+  #process(url, rules, ctx, parsedUrl = null) {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
@@ -258,7 +259,13 @@ class URLSanitizer extends URISchemes {
       schemeParts,
       urlObj,
       urlToSanitize
-    } = this.#parseAndVerifyURL(url, rules.allowRelative, allowedSchemes, ctx);
+    } = this.#parseAndVerifyURL(
+      url,
+      rules.allowRelative,
+      allowedSchemes,
+      ctx,
+      parsedUrl
+    );
     if (!isVerified) {
       return null;
     }
@@ -347,17 +354,26 @@ class URLSanitizer extends URISchemes {
    * @param {boolean} allowRelative - If relative URLs are OK.
    * @param {Set<string>} allowedSchemes - Permitted schemes.
    * @param {object} ctx - Context for logging and state.
+   * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object.
    * @returns {object} Parsed URL properties and flags.
    */
-  #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
-    let isVerified = super.verify(url, allowedSchemes);
+  #parseAndVerifyURL(
+    url,
+    allowRelative,
+    allowedSchemes,
+    ctx,
+    parsedUrl = null
+  ) {
+    const normalizedUrl = url.normalize('NFKC');
+    // Reuse parsedUrl if available, otherwise parse anew.
+    const urlObj = parsedUrl || URL.parse(normalizedUrl);
+    let isVerified = this.verifyParsed(urlObj, allowedSchemes);
     let isRelative = false;
     let relativeParsedPath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const normUrl = url.normalize('NFKC');
       const dummyUrl = URL.parse(url, 'http://dummy.local');
-      const dummyUrlNormalized = URL.parse(normUrl, 'http://dummy.local');
+      const dummyUrlNormalized = URL.parse(normalizedUrl, 'http://dummy.local');
       if (dummyUrl && dummyUrlNormalized) {
         if (
           dummyUrl.protocol === 'http:' &&
@@ -386,7 +402,6 @@ class URLSanitizer extends URISchemes {
         urlToSanitize: relativeParsedPath
       };
     }
-    const urlObj = URL.parse(url);
     const scheme = urlObj.protocol.replace(/:$/, '').normalize('NFKC');
     const schemeParts = scheme.split('+');
     return {
@@ -500,19 +515,14 @@ class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Sanitizes the given URL.
+   * Executes the core sanitization logic.
+   * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} [opt] - Sanitization options.
-   * @param {string[]} [opt.allow] - An array of schemes to allow.
-   * @param {string[]} [opt.deny] - An array of schemes to deny.
-   * @param {string[]} [opt.only] - An array of specific schemes to allow.
-   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
-   * @param {boolean} [opt.debug] - Flag to enable debug mode.
-   * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
-   * @param {number} [opt.maxLength] - The maximum allowed URL length.
+   * @param {URL|null} [parsedUrl] - The pre-parsed URL object, if available.
    * @returns {string|null} The sanitized URL, or null.
    */
-  sanitize(url, opt) {
+  #executeSanitize(url, opt, parsedUrl = null) {
     if (!url || !isString(url)) {
       return null;
     }
@@ -527,15 +537,17 @@ class URLSanitizer extends URISchemes {
       ((Array.isArray(opt.deny) && opt.deny.length > 0) ||
         (Array.isArray(opt.only) && opt.only.length > 0) ||
         opt.allowRelative);
+    // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
       !hasRestrictiveRules &&
       (url.startsWith('https://') || url.startsWith('http://')) &&
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      const parsedUrl = URL.parse(url);
-      if (parsedUrl) {
-        return parsedUrl.href.replace(/%26/g, escapeURLEncodedHTMLChars);
+      // Reuse parsedUrl if available.
+      const urlObj = parsedUrl || URL.parse(url);
+      if (urlObj) {
+        return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       } else {
         logDebug(opt?.debug, `Failed to parse URL.`);
         return null;
@@ -560,7 +572,24 @@ class URLSanitizer extends URISchemes {
         ['vbscript', false]
       ])
     };
-    return this.#process(url, rules, ctx);
+    return this.#process(url, rules, ctx, parsedUrl);
+  }
+
+  /**
+   * Sanitizes the given URL.
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} [opt] - Sanitization options.
+   * @param {string[]} [opt.allow] - An array of schemes to allow.
+   * @param {string[]} [opt.deny] - An array of schemes to deny.
+   * @param {string[]} [opt.only] - An array of specific schemes to allow.
+   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
+   * @param {boolean} [opt.debug] - Flag to enable debug mode.
+   * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+   * @param {number} [opt.maxLength] - The maximum allowed URL length.
+   * @returns {string|null} The sanitized URL, or null.
+   */
+  sanitize(url, opt) {
+    return this.#executeSanitize(url, opt);
   }
 
   /**
@@ -583,15 +612,23 @@ class URLSanitizer extends URISchemes {
     const maxLength =
       Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
     const urlLength = url.length;
+    // Parse once globally for validation.
+    const normalizedUrl = url.normalize('NFKC');
+    const parsedUrl = URL.parse(normalizedUrl);
     if (maxLength && urlLength > maxLength) {
       invalidReason = `URL length ${urlLength} exceeds maxLength ${maxLength}.`;
-    } else if (this.verify(url)) {
-      const { protocol } = new URL(url);
+    } else if (parsedUrl && this.verifyParsed(parsedUrl)) {
+      const { protocol } = parsedUrl;
       if (protocol === 'blob:') {
         sanitizedUrl = url;
       } else {
         try {
-          sanitizedUrl = this.sanitize(url, opt ?? { allow: ['data'] });
+          // Utilize the private execute method to relay the parsed object
+          sanitizedUrl = this.#executeSanitize(
+            url,
+            opt ?? { allow: ['data'] },
+            parsedUrl
+          );
           if (!sanitizedUrl) {
             invalidReason =
               'Sanitization failed (blocked by allowed schemes or rules).';
@@ -604,7 +641,8 @@ class URLSanitizer extends URISchemes {
       invalidReason = 'Invalid URI syntax or scheme is not registered.';
     }
     if (sanitizedUrl) {
-      const urlObj = new URL(sanitizedUrl);
+      // Reparse only the sanitized string to safely extract updated properties.
+      const urlObj = URL.parse(sanitizedUrl);
       const { pathname, protocol } = urlObj;
       const schemeParts = protocol.replace(/:$/, '').split('+');
       const isDataUrl = schemeParts.includes('data');
@@ -711,7 +749,6 @@ class URLSanitizer extends URISchemes {
     return super.verify(uri, schemes);
   }
 }
-export { URLSanitizer };
 
 /* instance */
 const urlSanitizer = new URLSanitizer();
