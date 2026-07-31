@@ -83,6 +83,25 @@ export class URISchemes {
   }
 
   /**
+   * Verifies if the pre-parsed URL object is valid and its scheme is allowed.
+   * @param {URL} parsedUrl - The parsed URL object to verify.
+   * @param {Set<string>} [schemes] - The set of allowed schemes.
+   * @returns {boolean} True if the parsed URL is syntactically valid and permitted.
+   */
+  verifyParsed(parsedUrl, schemes = this.#schemes) {
+    if (!parsedUrl || !parsedUrl.protocol) {
+      return false;
+    }
+    const scheme = parsedUrl.protocol.replace(/:$/, '');
+    const parts = scheme.split('+');
+    const isScript = parts.some(s => REG_SCRIPT.test(s));
+    if (isScript) {
+      return false;
+    }
+    return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
+  }
+
+  /**
    * Verifies if the given URI is valid and its scheme is allowed.
    * @param {string} uri - The URI string to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
@@ -94,16 +113,7 @@ export class URISchemes {
     }
     const normalizedUri = uri.normalize('NFKC');
     const parsedUrl = URL.parse(normalizedUri);
-    if (!parsedUrl) {
-      return false;
-    }
-    const scheme = parsedUrl.protocol.replace(/:$/, '');
-    const parts = scheme.split('+');
-    const isScript = parts.some(s => REG_SCRIPT.test(s));
-    if (isScript) {
-      return false;
-    }
-    return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
+    return this.verifyParsed(parsedUrl, schemes);
   }
 }
 
@@ -129,7 +139,6 @@ export const getURLEncodedString = str => {
  * @param {string} ch - A URL-encoded (percent-encoded) character.
  * @returns {string} The escaped HTML special character, or the given character.
  */
-
 export const escapeURLEncodedHTMLChars = ch => {
   if (!isString(ch)) {
     return ch;
