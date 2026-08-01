@@ -26,12 +26,12 @@
   },
   "dependencies": {
     "dompurify": "^3.4.12",
-    "jsdom": "^29.1.1"
+    "jsdom": "^30.0.1"
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
     "@types/jsdom": "^28.0.3",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.1.2",
     "c8": "^12.0.0",
     "chai": "^6.2.2",
     "commander": "^15.0.0",
@@ -39,7 +39,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jsdoc": "^63.3.0",
+    "eslint-plugin-jsdoc": "^63.3.2",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-regexp": "^3.1.1",
     "eslint-plugin-unicorn": "^64.0.0",
@@ -57,17 +57,14 @@
     "undici": "^8.9.0"
   },
   "overrides": {
-    "c8": {
-      "yargs": "^18.0.0"
-    },
     "eslint": {
       "js-yaml": "^4.3.0"
     },
     "mocha": {
       "diff": "^8.0.3",
-      "js-yaml": "^4.3.0"
-    },
-    "serialize-javascript": "^7.0.4"
+      "js-yaml": "^4.3.0",
+      "serialize-javascript": "^7.0.7"
+    }
   },
   "allowScripts": {
     "esbuild@0.28.1": true
