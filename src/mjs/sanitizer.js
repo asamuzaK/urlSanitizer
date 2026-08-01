@@ -596,10 +596,9 @@ export class URLSanitizer extends URISchemes {
    * Inspects, parses, and sanitizes the given URL.
    * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
-   * @param {object} [opt] - Sanitization options.
    * @returns {InspectedURLResult} The result of an inspected URL.
    */
-  inspect(url, opt) {
+  inspect(url) {
     if (!isString(url)) {
       throw new TypeError(`Expected String but got ${getType(url)}.`);
     }
@@ -609,65 +608,59 @@ export class URLSanitizer extends URISchemes {
     };
     let sanitizedUrl;
     let invalidReason = null;
-    const maxLength =
-      Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
-    const urlLength = url.length;
-    // Parse once globally for validation.
     const normalizedUrl = url.normalize('NFKC');
     const parsedUrl = URL.parse(normalizedUrl);
-    if (maxLength && urlLength > maxLength) {
-      invalidReason = `URL length ${urlLength} exceeds maxLength ${maxLength}.`;
-    } else if (parsedUrl && this.verifyParsed(parsedUrl)) {
-      const { protocol } = parsedUrl;
-      if (protocol === 'blob:') {
-        sanitizedUrl = url;
-      } else {
-        try {
-          // Utilize the private execute method to relay the parsed object
-          sanitizedUrl = this.#executeSanitize(
-            normalizedUrl,
-            opt ?? { allow: ['data'] },
-            parsedUrl
-          );
-          if (!sanitizedUrl) {
-            invalidReason =
-              'Sanitization failed (blocked by allowed schemes or rules).';
-          }
-        } catch (e) {
-          invalidReason = e.message;
-        }
-      }
+    const protocol = parsedUrl ? parsedUrl.protocol : '';
+    if (protocol === 'blob:') {
+      sanitizedUrl = url;
     } else {
-      invalidReason = 'Invalid URI syntax or scheme is not registered.';
+      try {
+        sanitizedUrl = this.#executeSanitize(
+          normalizedUrl,
+          { allow: ['data'], allowRelative: true },
+          parsedUrl
+        );
+        if (!sanitizedUrl) {
+          invalidReason =
+            'Sanitization failed (blocked by allowed schemes or rules).';
+        }
+      } catch (e) {
+        invalidReason = e.message;
+      }
     }
     if (sanitizedUrl) {
-      // Reparse only the sanitized string to safely extract updated properties.
+      // Reparse the sanitized string to safely extract updated properties.
       const urlObj = URL.parse(sanitizedUrl);
-      const { pathname, protocol } = urlObj;
-      const schemeParts = protocol.replace(/:$/, '').split('+');
-      const isDataUrl = schemeParts.includes('data');
       inspectedURL.valid = true;
-      if (isDataUrl) {
-        const [mediaType, ...dataParts] = pathname.split(',');
-        const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
-        const mediaTypes = mediaType.split(';');
-        const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
-        if (isBase64) {
-          mediaTypes.pop();
+      if (urlObj) {
+        const { pathname, protocol } = urlObj;
+        const schemeParts = protocol.replace(/:$/, '').split('+');
+        const isDataUrl = schemeParts.includes('data');
+        if (isDataUrl) {
+          const [mediaType, ...dataParts] = pathname.split(',');
+          const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
+          const mediaTypes = mediaType.split(';');
+          const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+          if (isBase64) {
+            mediaTypes.pop();
+          }
+          inspectedURL.data = {
+            mime: mediaTypes.join(';'),
+            base64: isBase64,
+            data
+          };
+        } else {
+          inspectedURL.data = null;
         }
-        inspectedURL.data = {
-          mime: mediaTypes.join(';'),
-          base64: isBase64,
-          data
-        };
+        for (const key of URL_PROPS) {
+          const value = urlObj[key];
+          if (isString(value)) {
+            inspectedURL[key] = value;
+          }
+        }
       } else {
         inspectedURL.data = null;
-      }
-      for (const key of URL_PROPS) {
-        const value = urlObj[key];
-        if (isString(value)) {
-          inspectedURL[key] = value;
-        }
+        inspectedURL.href = sanitizedUrl;
       }
     } else {
       inspectedURL.valid = false;

@@ -317,7 +317,7 @@ describe('URL Sanitizer', () => {
         {
           input: 'javascript:alert(1)',
           valid: false,
-          reason: 'Invalid URI syntax or scheme is not registered.'
+          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
         },
         'result'
       );
@@ -431,7 +431,7 @@ describe('URL Sanitizer', () => {
     });
   });
 
-  describe('parse URL sync', () => {
+  describe('inspect URL sync', () => {
     it('should get result', () => {
       const res = inspectURLSync('javascript:alert(1)');
       assert.deepEqual(
@@ -439,7 +439,7 @@ describe('URL Sanitizer', () => {
         {
           input: 'javascript:alert(1)',
           valid: false,
-          reason: 'Invalid URI syntax or scheme is not registered.'
+          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
         },
         'result'
       );
