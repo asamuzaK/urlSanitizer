@@ -881,52 +881,18 @@ export const sanitizeURLSync = (
 };
 
 /**
- * Inspects, parses, and sanitizes the given URL asynchronously.
- * @param {string} url - The URL string to inspect.
- * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
- */
-export const inspectURL = async url => {
-  const res = urlSanitizer.inspect(url);
-  return res;
-};
-
-/**
- * @deprecated Use {@link inspectURL} instead.
- * @param {string} url - The URL string to inspect.
- * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
- */
-export const parseURL = async url => inspectURL(url);
-
-/**
- * Inspects, parses, and sanitizes the given URL synchronously.
+ * Inspects, parses, and sanitizes the given URL.
  * @param {string} url - The URL string to inspect.
  * @returns {InspectedURLResult} The inspected URL result.
  */
-export const inspectURLSync = url => urlSanitizer.inspect(url);
+export const inspectURL = url => urlSanitizer.inspect(url);
 
 /**
- * @deprecated Use {@link inspectURLSync} instead.
- * @param {string} url - The URL string to inspect.
- * @returns {InspectedURLResult} The inspected URL result.
- */
-export const parseURLSync = url => inspectURLSync(url);
-
-/**
- * Asynchronously checks if the given string is a valid URI and is registered.
- * @param {string} uri - The URI string to verify.
- * @returns {Promise<boolean>} True if valid and registered, false otherwise.
- */
-export const isURI = async uri => {
-  const res = urlSanitizer.verify(uri);
-  return res;
-};
-
-/**
- * Synchronously checks if the given string is a valid URI and is registered.
+ * Checks if the given string is a valid URI and is registered.
  * @param {string} uri - The URI string to verify.
  * @returns {boolean} True if valid and registered, false otherwise.
  */
-export const isURISync = uri => urlSanitizer.verify(uri);
+export const isURI = uri => urlSanitizer.verify(uri);
 
 /* export instance */
 export default urlSanitizer;

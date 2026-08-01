@@ -6,9 +6,7 @@ import { isString } from '../scripts/common.js';
 /* test */
 import urlSanitizer, {
   inspectURL,
-  inspectURLSync,
   isURI,
-  isURISync,
   sanitizeURL,
   sanitizeURLSync
 } from '../src/index.js';
@@ -310,130 +308,8 @@ describe('URL Sanitizer', () => {
   });
 
   describe('inspect URL', () => {
-    it('should get result', async () => {
-      const res = await inspectURL('javascript:alert(1)');
-      assert.deepEqual(
-        res,
-        {
-          input: 'javascript:alert(1)',
-          valid: false,
-          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
-        },
-        'result'
-      );
-    });
-
-    it('should get result', async () => {
-      const res = await inspectURL('https://example.com/?foo=bar#baz');
-      assert.deepEqual(
-        res,
-        {
-          input: 'https://example.com/?foo=bar#baz',
-          valid: true,
-          data: null,
-          href: 'https://example.com/?foo=bar#baz',
-          origin: 'https://example.com',
-          protocol: 'https:',
-          username: '',
-          password: '',
-          host: 'example.com',
-          port: '',
-          hostname: 'example.com',
-          pathname: '/',
-          search: '?foo=bar',
-          hash: '#baz'
-        },
-        'result'
-      );
-    });
-
-    it('should get result', async () => {
-      const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(
-        res,
-        {
-          input:
-            'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-          valid: true,
-          data: {
-            mime: 'image/svg+xml',
-            base64: false,
-            data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
-          },
-          href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          origin: 'null',
-          protocol: 'data:',
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          hostname: '',
-          pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          search: '',
-          hash: ''
-        },
-        'result'
-      );
-    });
-
-    it('should get result', async () => {
-      const data =
-        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = await inspectURL(`data:image/png;base64,${data}`);
-      assert.deepEqual(
-        res,
-        {
-          input:
-            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          valid: true,
-          data: {
-            mime: 'image/png',
-            base64: true,
-            data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
-          },
-          href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          origin: 'null',
-          protocol: 'data:',
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          hostname: '',
-          pathname:
-            'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          search: '',
-          hash: ''
-        },
-        'result'
-      );
-    });
-
-    it('should get value', async () => {
-      const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
-        type: 'image/svg+xml'
-      });
-      const url = URL.createObjectURL(blob);
-      const obj = new URL(url);
-      const items = {};
-      for (const key in obj) {
-        const value = obj[key];
-        if (isString(value)) {
-          items[key] = value;
-        }
-      }
-      items.input = url;
-      items.valid = true;
-      items.data = null;
-      const res = await inspectURL(url);
-      URL.revokeObjectURL(url);
-      assert.deepEqual(res, items, 'result');
-    });
-  });
-
-  describe('inspect URL sync', () => {
     it('should get result', () => {
-      const res = inspectURLSync('javascript:alert(1)');
+      const res = inspectURL('javascript:alert(1)');
       assert.deepEqual(
         res,
         {
@@ -446,7 +322,7 @@ describe('URL Sanitizer', () => {
     });
 
     it('should get result', () => {
-      const res = inspectURLSync('https://example.com/?foo=bar#baz');
+      const res = inspectURL('https://example.com/?foo=bar#baz');
       assert.deepEqual(
         res,
         {
@@ -471,7 +347,7 @@ describe('URL Sanitizer', () => {
 
     it('should get result', () => {
       const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = inspectURLSync(`data:image/svg+xml;base64,${btoa(data)}`);
+      const res = inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
       assert.deepEqual(
         res,
         {
@@ -502,7 +378,7 @@ describe('URL Sanitizer', () => {
     it('should get result', () => {
       const data =
         'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = inspectURLSync(`data:image/png;base64,${data}`);
+      const res = inspectURL(`data:image/png;base64,${data}`);
       assert.deepEqual(
         res,
         {
@@ -547,72 +423,40 @@ describe('URL Sanitizer', () => {
       items.input = url;
       items.valid = true;
       items.data = null;
-      const res = inspectURLSync(url);
+      const res = inspectURL(url);
       URL.revokeObjectURL(url);
       assert.deepEqual(res, items, 'result');
     });
   });
 
   describe('is URI', () => {
-    it('should get result', async () => {
-      const res = await isURI('https://example.com/foo');
-      assert.strictEqual(res, true, 'result');
-    });
-
-    it('should get result', async () => {
-      const res = await isURI('javascript:alert(1)');
-      assert.strictEqual(res, false, 'result');
-    });
-
-    it('should get result', async () => {
-      const res = await isURI('mailto:foo@example.com');
-      assert.strictEqual(res, true, 'result');
-    });
-
-    it('should get result', async () => {
-      const res = await isURI('foo:bar');
-      assert.strictEqual(res, false, 'result');
-    });
-
-    it('should get result', async () => {
-      const res = await isURI('web+foo:bar');
-      assert.strictEqual(res, true, 'result');
-    });
-
-    it('should get result', async () => {
-      const res = await isURI('web+javascript:alert(1)');
-      assert.strictEqual(res, false, 'result');
-    });
-  });
-
-  describe('is URI sync', () => {
     it('should get result', () => {
-      const res = isURISync('https://example.com/foo');
+      const res = isURI('https://example.com/foo');
       assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
-      const res = isURISync('javascript:alert(1)');
+      const res = isURI('javascript:alert(1)');
       assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
-      const res = isURISync('mailto:foo@example.com');
+      const res = isURI('mailto:foo@example.com');
       assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
-      const res = isURISync('foo:bar');
+      const res = isURI('foo:bar');
       assert.strictEqual(res, false, 'result');
     });
 
     it('should get result', () => {
-      const res = isURISync('web+foo:bar');
+      const res = isURI('web+foo:bar');
       assert.strictEqual(res, true, 'result');
     });
 
     it('should get result', () => {
-      const res = isURISync('web+javascript:alert(1)');
+      const res = isURI('web+javascript:alert(1)');
       assert.strictEqual(res, false, 'result');
     });
   });
