@@ -88,6 +88,55 @@ export const logDebug = (isDebug, message, error) => {
 };
 
 /**
+ * Context manager for the sanitization process.
+ */
+export class SanitizeContext {
+  /**
+   * @param {object} opt - Sanitization options.
+   * @param {object} domPurifyInstance - The DOMPurify instance.
+   */
+  constructor(opt, domPurifyInstance) {
+    this.debug = !!opt?.debug;
+    this.domPurify = domPurifyInstance;
+    this.nest = 0;
+    this.recurse = new Set();
+    this.schemeMap = new Map([
+      ['blob', false],
+      ['data', false],
+      ['file', false],
+      ['javascript', false],
+      ['vbscript', false]
+    ]);
+  }
+
+  /**
+   * Enters a new level of nested URL sanitization.
+   * Tracks the URL to prevent circular references.
+   * @param {string} url - The URL being processed.
+   * @returns {boolean} True if it is safe to proceed, false if circular reference detected.
+   */
+  enter(url) {
+    if (this.recurse.has(url)) {
+      logDebug(this.debug, `Circular Data URL detected and skipped: ${url}`);
+      return false;
+    }
+    this.nest++;
+    this.recurse.add(url);
+    return true;
+  }
+
+  /**
+   * Leaves the current level of nested URL sanitization.
+   * Cleans up the tracking state after processing the URL.
+   * @param {string} url - The URL that finished processing.
+   */
+  leave(url) {
+    this.nest--;
+    this.recurse.delete(url);
+  }
+}
+
+/**
  * URL sanitizer
  */
 export class URLSanitizer extends URISchemes {
@@ -107,6 +156,7 @@ export class URLSanitizer extends URISchemes {
    */
   /** @type {URLSanitizer | null} */
   static #currentInstance = null;
+  /** @type {SanitizeContext | null} */
   static #currentCtx = null;
 
   /**
@@ -132,17 +182,10 @@ export class URLSanitizer extends URISchemes {
     }
     if (urlObj.protocol === 'data:') {
       const originalUrl = evt.attrValue;
-      if (!ctx.recurse) {
-        ctx.recurse = new Set();
-      }
-      if (ctx.recurse.has(originalUrl)) {
-        const msg = `Circular Data URL detected and skipped: ${originalUrl}`;
-        logDebug(ctx.debug, msg);
+      if (!ctx.enter(originalUrl)) {
         evt.attrValue = '';
         return;
       }
-      ctx.nest++;
-      ctx.recurse.add(originalUrl);
       try {
         const sanitized = sanitizer.#process(
           originalUrl,
@@ -156,8 +199,7 @@ export class URLSanitizer extends URISchemes {
         );
         evt.attrValue = sanitized || '';
       } finally {
-        ctx.nest--;
-        ctx.recurse.delete(originalUrl);
+        ctx.leave(originalUrl);
       }
     }
   }
@@ -182,7 +224,7 @@ export class URLSanitizer extends URISchemes {
    * @param {string} listName - The name of the target option list.
    * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
    * @param {Map<string, boolean>} schemeMap - The local map of schemes.
-   * @param {object} ctx - The context for state management.
+   * @param {SanitizeContext} ctx - The context for state management.
    * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
@@ -205,7 +247,7 @@ export class URLSanitizer extends URISchemes {
    * Purifies a URL-encoded DOM string to prevent XSS.
    * @private
    * @param {string} dom - The URL-encoded DOM string.
-   * @param {object} ctx - The context for state management.
+   * @param {SanitizeContext} ctx - The context for state management.
    * @returns {string} The purified DOM string.
    */
   #purify(dom, ctx) {
@@ -239,7 +281,7 @@ export class URLSanitizer extends URISchemes {
    * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} rules - Normalized sanitization rules.
-   * @param {object} ctx - Internal context for state.
+   * @param {SanitizeContext} ctx - Internal context for state.
    * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object to avoid redundant parsing.
    * @returns {string|null} The sanitized URL, or null.
    */
@@ -295,7 +337,7 @@ export class URLSanitizer extends URISchemes {
    * @param {string[]} rules.allow - Allowed schemes.
    * @param {string[]} rules.deny - Denied schemes.
    * @param {string[]} rules.only - Exclusively allowed schemes.
-   * @param {object} ctx - Context for state management.
+   * @param {SanitizeContext} ctx - Context for state management.
    * @returns {object} Resolved scheme objects and flags.
    */
   #resolveSchemeRules({ allow, deny, only }, ctx) {
@@ -353,7 +395,7 @@ export class URLSanitizer extends URISchemes {
    * @param {string} url - The URL to parse.
    * @param {boolean} allowRelative - If relative URLs are OK.
    * @param {Set<string>} allowedSchemes - Permitted schemes.
-   * @param {object} ctx - Context for logging and state.
+   * @param {SanitizeContext} ctx - Context for logging and state.
    * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object.
    * @returns {object} Parsed URL properties and flags.
    */
@@ -447,7 +489,7 @@ export class URLSanitizer extends URISchemes {
    * @private
    * @param {object} urlObj - The URL object.
    * @param {string} scheme - The URL scheme.
-   * @param {object} ctx - Context for DOMPurify sanitization.
+   * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
    * @returns {string|null} Sanitized data URL or null.
    */
   #sanitizeDataURL(urlObj, scheme, ctx) {
@@ -559,19 +601,7 @@ export class URLSanitizer extends URISchemes {
       only: Array.isArray(opt?.only) ? opt.only : [],
       allowRelative: !!opt?.allowRelative
     };
-    const ctx = {
-      debug: !!opt?.debug,
-      domPurify,
-      nest: 0,
-      recurse: null,
-      schemeMap: new Map([
-        ['blob', false],
-        ['data', false],
-        ['file', false],
-        ['javascript', false],
-        ['vbscript', false]
-      ])
-    };
+    const ctx = new SanitizeContext(opt, domPurify);
     return this.#process(url, rules, ctx, parsedUrl);
   }
 
