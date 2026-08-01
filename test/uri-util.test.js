@@ -498,6 +498,80 @@ describe('uri-util', () => {
           'should reject with error'
         );
       });
+
+      it('falls back to default DOMException when FileReader error is null', async () => {
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+            this.error = null;
+          }
+
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+
+          readAsDataURL() {
+            setTimeout(() => {
+              if (this.listeners.error) {
+                this.listeners.error();
+              }
+            }, 0);
+          }
+        };
+        const blob = new Blob(['test'], { type: 'text/plain' });
+        await assert.rejects(
+          async () => {
+            await func(blob);
+          },
+          err => {
+            assert.ok(err instanceof DOMException, 'should be DOMException');
+            assert.strictEqual(err.name, 'NotReadableError', 'error name');
+            assert.strictEqual(
+              err.message,
+              'Failed to read Blob via FileReader.',
+              'error message'
+            );
+            return true;
+          },
+          'should reject with fallback DOMException when error is null'
+        );
+      });
+
+      it('falls back to default DOMException when FileReader error is undefined', async () => {
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+            // this.error is undefined
+          }
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+          readAsDataURL() {
+            setTimeout(() => {
+              if (this.listeners.error) {
+                this.listeners.error();
+              }
+            }, 0);
+          }
+        };
+        const blob = new Blob(['test'], { type: 'text/plain' });
+        await assert.rejects(
+          async () => {
+            await func(blob);
+          },
+          err => {
+            assert.ok(err instanceof DOMException, 'should be DOMException');
+            assert.strictEqual(err.name, 'NotReadableError', 'error name');
+            assert.strictEqual(
+              err.message,
+              'Failed to read Blob via FileReader.',
+              'error message'
+            );
+            return true;
+          },
+          'should reject with fallback DOMException when error is undefined'
+        );
+      });
     });
 
     describe('convert blob to data URL via btoa path', () => {
