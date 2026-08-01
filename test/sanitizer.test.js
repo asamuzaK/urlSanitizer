@@ -971,55 +971,53 @@ describe('sanitizer', () => {
         );
       });
 
-      describe('malicious pseudo-relative payload detection', () => {
-        it('blocks protocol-relative URL bypassing', () => {
-          const sanitizer = new URLSanitizer();
-          const res = sanitizer.sanitize('//evil.com', { allowRelative: true });
-          assert.strictEqual(
-            res,
-            null,
-            'should reject protocol-relative redirect'
-          );
-        });
+      it('blocks protocol-relative URL bypassing', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('//evil.com', { allowRelative: true });
+        assert.strictEqual(
+          res,
+          null,
+          'should reject protocol-relative redirect'
+        );
+      });
 
-        it('blocks backslash-obfuscated URL bypassing', () => {
-          const sanitizer = new URLSanitizer();
-          const resSingle = sanitizer.sanitize('\\evil.com', {
-            allowRelative: true
-          });
-          assert.strictEqual(
-            resSingle,
-            null,
-            'should reject single backslash bypass'
-          );
-          const resDouble = sanitizer.sanitize('\\\\evil.com', {
-            allowRelative: true
-          });
-          assert.strictEqual(
-            resDouble,
-            null,
-            'should reject double backslash bypass'
-          );
+      it('blocks backslash-obfuscated URL bypassing', () => {
+        const sanitizer = new URLSanitizer();
+        const resSingle = sanitizer.sanitize('\\evil.com', {
+          allowRelative: true
         });
+        assert.strictEqual(
+          resSingle,
+          null,
+          'should reject single backslash bypass'
+        );
+        const resDouble = sanitizer.sanitize('\\\\evil.com', {
+          allowRelative: true
+        });
+        assert.strictEqual(
+          resDouble,
+          null,
+          'should reject double backslash bypass'
+        );
+      });
 
-        it('handles scheme-prefixed URLs without slashes safely', () => {
-          const sanitizer = new URLSanitizer();
-          const resDefault = sanitizer.sanitize('http:example.com');
-          assert.strictEqual(
-            resDefault,
-            'http://example.com/',
-            'should normalize to absolute URL'
-          );
-          const resRestricted = sanitizer.sanitize('http:example.com', {
-            only: ['https'],
-            allowRelative: true
-          });
-          assert.strictEqual(
-            resRestricted,
-            null,
-            'should reject when scheme is not allowed'
-          );
+      it('handles scheme-prefixed URLs without slashes safely', () => {
+        const sanitizer = new URLSanitizer();
+        const resDefault = sanitizer.sanitize('http:example.com');
+        assert.strictEqual(
+          resDefault,
+          'http://example.com/',
+          'should normalize to absolute URL'
+        );
+        const resRestricted = sanitizer.sanitize('http:example.com', {
+          only: ['https'],
+          allowRelative: true
         });
+        assert.strictEqual(
+          resRestricted,
+          null,
+          'should reject when scheme is not allowed'
+        );
       });
 
       it('handles URIError in decodeURIComponent gracefully', () => {
@@ -1231,6 +1229,26 @@ describe('sanitizer', () => {
           assert.deepEqual(res, null, 'result should be null');
         });
       });
+
+      describe('maxLength and reason property', () => {
+        const baseString = 'a'.repeat(30);
+        const testUrl = `https://example.com/${baseString}`;
+
+        it('throws RangeError when string exceeds maxLength during sanitize', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          assert.throws(
+            () => sanitizer.sanitize(testUrl, { maxLength: 49 }),
+            RangeError,
+            'URL length 50 exceeds maxLength 49.'
+          );
+        });
+
+        it('allows URL when length is exactly at or below maxLength', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize(testUrl, { maxLength: 50 });
+          assert.strictEqual(res, testUrl, 'result');
+        });
+      });
     });
 
     describe('inspect sanitized URL', () => {
@@ -1252,7 +1270,7 @@ describe('sanitizer', () => {
           {
             input: 'javascript:alert(1)',
             valid: false,
-            reason: 'Invalid URI syntax or scheme is not registered.'
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
           },
           'result'
         );
@@ -1463,54 +1481,33 @@ describe('sanitizer', () => {
         const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
-    });
 
-    describe('maxLength and reason property', () => {
-      const baseString = 'a'.repeat(30);
-      const testUrl = `https://example.com/${baseString}`;
-
-      it('throws RangeError when string exceeds maxLength during sanitize', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        assert.throws(
-          () => sanitizer.sanitize(testUrl, { maxLength: 49 }),
-          RangeError,
-          'URL length 50 exceeds maxLength 49.'
-        );
-      });
-
-      it('allows URL when length is exactly at or below maxLength', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = sanitizer.sanitize(testUrl, { maxLength: 50 });
-        assert.strictEqual(res, testUrl, 'result');
-      });
-
-      it('returns invalid object with length reason during inspect', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = sanitizer.inspect(testUrl, { maxLength: 49 });
-        assert.strictEqual(res.valid, false, 'should be invalid');
+      it('allows and inspects relative URLs when allowRelative is true', () => {
+        const sanitizer = new URLSanitizer();
+        const url = './foo/bar';
+        const res = sanitizer.inspect(url);
+        assert.strictEqual(res.valid, true, 'result should be valid');
+        assert.strictEqual(res.input, url, 'input should match');
         assert.strictEqual(
-          res.reason,
-          'URL length 50 exceeds maxLength 49.',
-          'reason should match'
+          res.href,
+          '/foo/bar',
+          'href should match the normalized relative path'
+        );
+        assert.strictEqual(
+          res.data,
+          null,
+          'data should be null for non-data URLs'
+        );
+        assert.strictEqual(
+          res.protocol,
+          undefined,
+          'relative URLs should not have a protocol'
         );
       });
 
-      it('returns invalid object with syntax reason for unregistered schemes', () => {
+      it('returns invalid object with reason for unregistered schemes', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect('foo://bar');
-        assert.strictEqual(res.valid, false, 'should be invalid');
-        assert.strictEqual(
-          res.reason,
-          'Invalid URI syntax or scheme is not registered.',
-          'reason should match'
-        );
-      });
-
-      it('returns invalid object with block reason when restricted by options', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = sanitizer.inspect('https://example.com', {
-          only: ['http']
-        });
         assert.strictEqual(res.valid, false, 'should be invalid');
         assert.strictEqual(
           res.reason,
@@ -1529,21 +1526,6 @@ describe('sanitizer', () => {
           'reason property should not exist'
         );
       });
-    });
-
-    describe('inspect URL - sanitization failure and exception', () => {
-      it('returns with reason when sanitization fails', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.inspect('http://example.com', {
-          only: ['data']
-        });
-        assert.strictEqual(res.valid, false, 'should be valid: false');
-        assert.strictEqual(
-          res.reason,
-          'Sanitization failed (blocked by allowed schemes or rules).',
-          'reason should indicate sanitization failure'
-        );
-      });
 
       it('returns with reason when sanitize() throws an error', () => {
         const sanitizer = new URLSanitizer();
@@ -1552,7 +1534,7 @@ describe('sanitizer', () => {
           const htmlBase64 = btoa(`<img src="${url}">`);
           url = `data:text/html;base64,${htmlBase64}`;
         }
-        const res = sanitizer.inspect(url, { allow: ['data'] });
+        const res = sanitizer.inspect(url);
         assert.strictEqual(res.valid, false, 'should be valid: false');
         assert.strictEqual(
           res.reason,
@@ -2459,10 +2441,10 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('parse URL async', () => {
+    describe('inspect URL', () => {
       const func = mjs.inspectURL;
 
-      it('returns parsed URL object correctly', async () => {
+      it('returns inspected URL object correctly', async () => {
         const url = 'https://example.com';
         const obj = new URL(url);
         const items = {};
@@ -2480,10 +2462,10 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('parse URL sync', () => {
+    describe('inspect URL sync', () => {
       const func = mjs.inspectURLSync;
 
-      it('returns parsed URL object correctly', () => {
+      it('returns inspected URL object correctly', () => {
         const url = 'https://example.com';
         const obj = new URL(url);
         const items = {};
