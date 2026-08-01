@@ -1711,9 +1711,7 @@ describe('sanitizer', () => {
       assert.strictEqual(typeof mjs.sanitizeURL, 'function');
       assert.strictEqual(typeof mjs.sanitizeURLSync, 'function');
       assert.strictEqual(typeof mjs.inspectURL, 'function');
-      assert.strictEqual(typeof mjs.inspectURLSync, 'function');
       assert.strictEqual(typeof mjs.isURI, 'function');
-      assert.strictEqual(typeof mjs.isURISync, 'function');
     });
 
     describe('sanitize URL async', () => {
@@ -2444,27 +2442,6 @@ describe('sanitizer', () => {
     describe('inspect URL', () => {
       const func = mjs.inspectURL;
 
-      it('returns inspected URL object correctly', async () => {
-        const url = 'https://example.com';
-        const obj = new URL(url);
-        const items = {};
-        for (const key in obj) {
-          const value = obj[key];
-          if (isString(value)) {
-            items[key] = value;
-          }
-        }
-        items.input = url;
-        items.valid = true;
-        items.data = null;
-        const res = await func(url);
-        assert.deepEqual(res, items, 'result');
-      });
-    });
-
-    describe('inspect URL sync', () => {
-      const func = mjs.inspectURLSync;
-
       it('returns inspected URL object correctly', () => {
         const url = 'https://example.com';
         const obj = new URL(url);
@@ -2483,19 +2460,10 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('is URI async', () => {
+    describe('is URI', () => {
       const func = mjs.isURI;
 
       it('identifies valid and registered scheme securely', async () => {
-        const res = await func('https://example.com');
-        assert.strictEqual(res, true, 'result');
-      });
-    });
-
-    describe('is URI sync', () => {
-      const func = mjs.isURISync;
-
-      it('identifies valid and registered scheme securely', () => {
         const res = func('https://example.com');
         assert.strictEqual(res, true, 'result');
       });

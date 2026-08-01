@@ -17,9 +17,7 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
   * [sanitizeURL(url, opt)](#sanitizeurlurl-opt)
   * [sanitizeURLSync(url, opt)](#sanitizeurlsyncurl-opt)
   * [inspectURL(url)](#inspecturlurl)
-  * [inspectURLSync(url)](#inspecturlsyncurl)
   * [isURI(uri)](#isuriuri)
-  * [isURISync(uri)](#isurisyncuri)
   * [urlSanitizer Instance](#urlsanitizer)
 * [Threat Model](#threat-model)
 * [AI / LLM Application Security](#ai--llm-application-security)
@@ -223,9 +221,7 @@ Synchronous version of `sanitizeURL()`.
 
 ### inspectURL(url)
 
-**Note:** `parseURL()` is deprecated. Please use `inspectURL()` instead.
-
-Inspects, parses, and sanitizes the given URL asynchronously.
+Inspects, parses, and sanitizes the given URL.
 
 * **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
 * **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
@@ -235,7 +231,8 @@ Inspects, parses, and sanitizes the given URL asynchronously.
 
 * url **string** URL input.
 
-**Returns** **Promise&lt;InspectedURLResult&gt;** Result.
+**Returns** **InspectedURLResult** Result.
+`inspectURL()` is a synchronous function since v5.x.
 
 #### InspectedURLResult
 
@@ -252,13 +249,13 @@ The properties except for `input` and `valid` are omitted from the object for in
 * `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string | undefined]** Properties identical to the standard URL API (omitted if the URL is invalid).
 
 ``` javascript
-const res1 = await inspectURL('javascript:alert(1)');
+const res1 = inspectURL('javascript:alert(1)');
 /* => {
         input: 'javascript:alert(1)',
         valid: false
       } */
 
-const res2 = await inspectURL('https://www.example.com/?foo=bar#baz');
+const res2 = inspectURL('https://www.example.com/?foo=bar#baz');
 /* => {
         input: 'https://www.example.com/?foo=bar#baz',
         valid: true,
@@ -274,7 +271,7 @@ const res2 = await inspectURL('https://www.example.com/?foo=bar#baz');
       } */
 
 // base64 encoded SVG '<svg><g onclick="alert(1)"/></svg>'
-const res3 = await inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
+const res3 = inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
 /* => {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
@@ -291,7 +288,7 @@ const res3 = await inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJ
       } */
 
 // base64 encoded PNG
-const res4 = await inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
+const res4 = inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
 /* => {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -312,7 +309,7 @@ const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
 const url5 = URL.createObjectURL(blob5);
-const res5 = await inspectURL(url5);
+const res5 = inspectURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
@@ -324,12 +321,6 @@ const res5 = await inspectURL(url5);
         ...
       } */
 ```
-
-### inspectURLSync(url)
-
-**Note:** `parseURLSync()` is deprecated. Please use `inspectURLSync()` instead.
-
-Synchronous version of `inspectURL()`.
 
 ### isURI(uri)
 
@@ -343,34 +334,31 @@ Specifically, it verifies that the input has a correct URI syntax, is not a deni
 
 * uri **string** URI input.
 
-**Returns** **Promise&lt;boolean&gt;** `true` if the URI is syntactically valid and uses an allowed/registered scheme; otherwise `false`.
+**Returns** **boolean** `true` if the URI is syntactically valid and uses an allowed/registered scheme; otherwise `false`.
+`isURI()` is a synchronous function since v5.x.
 
 * Always `true` for valid `web+*` and `ext+*` schemes (except `web+javascript`, `web+vbscript`, `ext+javascript`, and `ext+vbscript`).
 * Always `false` for `javascript` and `vbscript` schemes, or any unknown/unregistered schemes (e.g., `foo:`).
 
 ``` javascript
-const res1 = await isURI('https://example.com/foo');
+const res1 = isURI('https://example.com/foo');
 // => true
 
-const res2 = await isURI('javascript:alert(1)');
+const res2 = isURI('javascript:alert(1)');
 // => false
 
-const res3 = await isURI('mailto:foo@example.com');
+const res3 = isURI('mailto:foo@example.com');
 // => true
 
-const res4 = await isURI('foo:bar');
+const res4 = isURI('foo:bar');
 // => false
 
-const res5 = await isURI('web+foo:bar');
+const res5 = isURI('web+foo:bar');
 // => true
 
-const res6 = await isURI('web+javascript:alert(1)');
+const res6 = isURI('web+javascript:alert(1)');
 // => false
 ```
-
-### isURISync(uri)
-
-Synchronous version of `isURI()`.
 
 ### urlSanitizer
 
