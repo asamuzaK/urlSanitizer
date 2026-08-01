@@ -82,6 +82,119 @@ describe('sanitizer', () => {
     });
   });
 
+  describe('SanitizeContext', () => {
+    const { SanitizeContext } = mjs;
+
+    it('initializes properties correctly with default options', () => {
+      const mockDomPurify = {};
+      const ctx = new SanitizeContext(undefined, mockDomPurify);
+      assert.strictEqual(ctx.debug, false, 'debug should be false by default');
+      assert.strictEqual(
+        ctx.domPurify,
+        mockDomPurify,
+        'domPurify instance should match'
+      );
+      assert.strictEqual(ctx.nest, 0, 'nest should start at 0');
+      assert.strictEqual(
+        ctx.recurse instanceof Set,
+        true,
+        'recurse should be a Set instance'
+      );
+      assert.strictEqual(
+        ctx.recurse.size,
+        0,
+        'recurse should be empty initially'
+      );
+      assert.strictEqual(
+        ctx.schemeMap.get('blob'),
+        false,
+        'schemeMap should contain default schemes'
+      );
+    });
+
+    it('initializes debug property correctly when opt.debug is true', () => {
+      const ctx = new SanitizeContext({ debug: true }, {});
+      assert.strictEqual(ctx.debug, true, 'debug should be true');
+    });
+
+    describe('enter() and leave()', () => {
+      let warnStub;
+      beforeEach(() => {
+        warnStub = sinon.stub(console, 'warn');
+      });
+      afterEach(() => {
+        warnStub.restore();
+      });
+
+      it('returns true, increments nest, and tracks URL on valid enter', () => {
+        const ctx = new SanitizeContext({}, {});
+        const url = 'data:text/html,test';
+        const res = ctx.enter(url);
+        assert.strictEqual(res, true, 'should return true for a new URL');
+        assert.strictEqual(ctx.nest, 1, 'nest should be incremented to 1');
+        assert.strictEqual(
+          ctx.recurse.has(url),
+          true,
+          'URL should be tracked in recurse Set'
+        );
+      });
+
+      it('returns false and logs debug message on circular reference', () => {
+        const ctx = new SanitizeContext({ debug: true }, {});
+        const url = 'data:text/html,loop';
+        // First enter
+        ctx.enter(url);
+        // Second enter with the same URL (circular reference)
+        const res = ctx.enter(url);
+        assert.strictEqual(
+          res,
+          false,
+          'should return false to block circular reference'
+        );
+        assert.strictEqual(
+          ctx.nest,
+          1,
+          'nest should not be incremented further'
+        );
+        assert.strictEqual(
+          warnStub.calledOnce,
+          true,
+          'console.warn should be called in debug mode'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[0],
+          '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop',
+          'should output the correct circular warning message'
+        );
+      });
+
+      it('does not log debug message on circular reference if debug is false', () => {
+        const ctx = new SanitizeContext({ debug: false }, {});
+        const url = 'data:text/html,loop';
+        ctx.enter(url);
+        ctx.enter(url);
+        assert.strictEqual(
+          warnStub.called,
+          false,
+          'console.warn should not be called when debug is false'
+        );
+      });
+
+      it('decrements nest and removes URL from tracking on leave', () => {
+        const ctx = new SanitizeContext({}, {});
+        const url = 'data:text/html,test';
+        ctx.enter(url);
+        ctx.leave(url);
+        assert.strictEqual(ctx.nest, 0, 'nest should be decremented back to 0');
+        assert.strictEqual(
+          ctx.recurse.has(url),
+          false,
+          'URL should be removed from the recurse Set'
+        );
+      });
+    });
+  });
+
   describe('URL sanitizer', () => {
     const { URLSanitizer } = mjs;
 
