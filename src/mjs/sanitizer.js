@@ -689,6 +689,7 @@ export class URLSanitizer extends URISchemes {
           }
         }
       } else {
+        // Fallback for the valid relative URL without a base URL.
         inspectedURL.data = null;
         inspectedURL.href = sanitizedUrl;
       }
