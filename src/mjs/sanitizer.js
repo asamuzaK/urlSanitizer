@@ -747,6 +747,22 @@ export class URLSanitizer extends URISchemes {
 const urlSanitizer = new URLSanitizer();
 
 /**
+ * Helper function to parse a URL and extract its scheme.
+ * @private
+ * @param {string} url - The URL string to parse.
+ * @param {boolean} isDebug - Flag to enable debug output.
+ * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
+ */
+const getURLScheme = (url, isDebug) => {
+  const parsedUrl = URL.parse(url);
+  if (parsedUrl) {
+    return parsedUrl.protocol.replace(/:$/, '');
+  }
+  logDebug(isDebug, `Invalid URL input format: ${url}`);
+  return undefined;
+};
+
+/**
  * Asynchronously sanitizes the given URL.
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
@@ -774,62 +790,59 @@ export const sanitizeURL = async (
     maxBlobSize: MAX_BLOB_SIZE
   }
 ) => {
-  const isDebug = !!opt?.debug;
-  const maxBlobSize =
-    Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
-      ? opt.maxBlobSize
-      : MAX_BLOB_SIZE;
-  let res;
-  if (url && isString(url)) {
-    let scheme;
-    const parsedUrl = URL.parse(url);
-    if (parsedUrl) {
-      scheme = parsedUrl.protocol.replace(/:$/, '');
-    } else {
-      logDebug(isDebug, `Invalid URL input format: ${url}`);
-    }
-    if (scheme === 'blob') {
-      const { allow, deny, only } = opt;
-      if (
-        (Array.isArray(allow) &&
-          allow.includes('blob') &&
-          !(Array.isArray(deny) && deny.includes('blob'))) ||
-        (Array.isArray(only) && only.includes('blob'))
-      ) {
-        let data;
-        try {
-          data = await fetch(url)
-            .then(r => r.blob())
-            .then(b => convertBlobToDataURL(b, maxBlobSize));
-        } catch (e) {
-          const msg = `Failed to fetch and convert blob URL: ${url}`;
-          logDebug(isDebug, msg, e);
-        }
-        if (data) {
-          const options = { ...opt };
-          if (Array.isArray(opt.only)) {
-            options.only = opt.only.includes('data')
-              ? opt.only
-              : [...opt.only, 'data'];
-          } else if (Array.isArray(opt.allow)) {
-            options.allow = opt.allow.includes('data')
-              ? opt.allow
-              : [...opt.allow, 'data'];
-            if (Array.isArray(opt.deny)) {
-              options.deny = opt.deny.filter(scheme => scheme !== 'data');
-            }
-          }
-          res = urlSanitizer.sanitize(data, options);
-        }
-      }
-      if (opt?.revokeObjectURL) {
-        URL.revokeObjectURL(url);
-      }
-    } else if (scheme || opt.allowRelative) {
-      res = urlSanitizer.sanitize(url, opt);
-    }
+  if (!url || !isString(url)) {
+    return null;
   }
-  return res || null;
+  const isDebug = !!opt?.debug;
+  const scheme = getURLScheme(url, isDebug);
+  if (scheme === 'blob') {
+    let res = null;
+    const { allow, deny, only } = opt;
+    if (
+      (Array.isArray(allow) &&
+        allow.includes('blob') &&
+        !(Array.isArray(deny) && deny.includes('blob'))) ||
+      (Array.isArray(only) && only.includes('blob'))
+    ) {
+      const maxBlobSize =
+        Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
+          ? opt.maxBlobSize
+          : MAX_BLOB_SIZE;
+      let data;
+      try {
+        data = await fetch(url)
+          .then(r => r.blob())
+          .then(b => convertBlobToDataURL(b, maxBlobSize));
+      } catch (e) {
+        const msg = `Failed to fetch and convert blob URL: ${url}`;
+        logDebug(isDebug, msg, e);
+      }
+      if (data) {
+        const options = { ...opt };
+        if (Array.isArray(opt.only)) {
+          options.only = opt.only.includes('data')
+            ? opt.only
+            : [...opt.only, 'data'];
+        } else if (Array.isArray(opt.allow)) {
+          options.allow = opt.allow.includes('data')
+            ? opt.allow
+            : [...opt.allow, 'data'];
+          if (Array.isArray(opt.deny)) {
+            options.deny = opt.deny.filter(s => s !== 'data');
+          }
+        }
+        res = urlSanitizer.sanitize(data, options);
+      }
+    }
+    if (opt?.revokeObjectURL) {
+      URL.revokeObjectURL(url);
+    }
+    return res;
+  }
+  if (scheme !== undefined || opt.allowRelative) {
+    return urlSanitizer.sanitize(url, opt) || null;
+  }
+  return null;
 };
 
 /**
@@ -858,26 +871,21 @@ export const sanitizeURLSync = (
     revokeObjectURL: false
   }
 ) => {
-  const isDebug = !!opt?.debug;
-  let res;
-  if (url && isString(url)) {
-    let scheme;
-    const parsedUrl = URL.parse(url);
-    if (parsedUrl) {
-      scheme = parsedUrl.protocol.replace(/:$/, '');
-    } else {
-      logDebug(isDebug, `Invalid URL input format: ${url}`);
-    }
-    if (scheme === 'blob') {
-      if (opt?.revokeObjectURL) {
-        URL.revokeObjectURL(url);
-      }
-      return null;
-    } else if (scheme || opt.allowRelative) {
-      res = urlSanitizer.sanitize(url, opt);
-    }
+  if (!url || !isString(url)) {
+    return null;
   }
-  return res || null;
+  const isDebug = !!opt?.debug;
+  const scheme = getURLScheme(url, isDebug);
+  if (scheme === 'blob') {
+    if (opt?.revokeObjectURL) {
+      URL.revokeObjectURL(url);
+    }
+    return null;
+  }
+  if (scheme !== undefined || opt.allowRelative) {
+    return urlSanitizer.sanitize(url, opt) || null;
+  }
+  return null;
 };
 
 /**
