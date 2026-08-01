@@ -402,7 +402,7 @@ export class URLSanitizer extends URISchemes {
         urlToSanitize: relativeParsedPath
       };
     }
-    const scheme = urlObj.protocol.replace(/:$/, '').normalize('NFKC');
+    const scheme = urlObj.protocol.replace(/:$/, '');
     const schemeParts = scheme.split('+');
     return {
       isRelative,
@@ -625,7 +625,7 @@ export class URLSanitizer extends URISchemes {
         try {
           // Utilize the private execute method to relay the parsed object
           sanitizedUrl = this.#executeSanitize(
-            url,
+            normalizedUrl,
             opt ?? { allow: ['data'] },
             parsedUrl
           );
