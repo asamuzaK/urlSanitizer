@@ -6,7 +6,7 @@
 [![release](https://img.shields.io/github/v/release/asamuzaK/urlSanitizer)](https://github.com/asamuzaK/urlSanitizer/releases)
 
 A robust URL sanitizer for Node.js, browsers, and websites.
-It sanitizes not only regular URLs but also deeply inspects `data` URLs and `blob` URLs.
+It sanitizes regular URLs and performs deep inspection of data and blob URLs.
 It also provides built-in utilities to inspect URLs and verify URI schemes.
 
 ## Table of Contents
@@ -30,6 +30,7 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
 * **Deep Data URL Inspection**: Parses, decodes (including base64), and sanitizes nested data URLs.
 * **Blob URL Support**: Fetches the underlying blob content, purifies nested XSS vectors via DOMPurify, and outputs a safe data URL (async).
 * **Relative & Absolute Path Support**: Safely allows root-relative paths (e.g., `/foo`) and relative paths (e.g., `./foo`) via an opt-in parameter.
+* **URL Inspection API**: Returns parsed URL components after sanitization.
 
 ## Install
 
@@ -221,7 +222,7 @@ Synchronous version of `sanitizeURL()`.
 
 ### inspectURL(url)
 
-Inspects, parses, and sanitizes the given URL.
+Sanitizes the given URL and returns its parsed components.
 
 * **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
 * **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
@@ -229,9 +230,9 @@ Inspects, parses, and sanitizes the given URL.
 
 #### Parameters
 
-* url **string** URL input.
+* url **string** The URL string to sanitize and inspect.
 
-**Returns** **InspectedURLResult** Result.
+**Returns** **InspectedURLResult** The parsed components of the sanitized URL.
 `inspectURL()` is a synchronous function since v5.x.
 
 #### InspectedURLResult
@@ -419,7 +420,7 @@ Because `url-sanitizer` performs **Deep Data URL Inspection** — decoding the p
 
 ### Neutralizing Hallucinated Schemes
 LLMs generate URLs based on statistical linguistic patterns rather than factual databases.
-As a result, they frequently hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
+As a result, they may generate hallucinate plausible-looking but non-existent or hazardous URI schemes (e.g., `ai-agent://`, `host-settings:`).
 By operating on a whitelist approach, `url-sanitizer` automatically denies any unrecognized or unregistered protocols.
 This strict blocking prevents non-existent or hallucinated schemes from inadvertently triggering application-specific or OS-level protocol hijacking.
 

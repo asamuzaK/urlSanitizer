@@ -919,8 +919,8 @@ export const sanitizeURLSync = (
 };
 
 /**
- * Inspects, parses, and sanitizes the given URL.
- * @param {string} url - The URL string to inspect.
+ * Sanitizes the given URL and returns its parsed components.
+ * @param {string} url - The URL string to sanitize and inspect.
  * @returns {InspectedURLResult} The inspected URL result.
  */
 export const inspectURL = url => urlSanitizer.inspect(url);
