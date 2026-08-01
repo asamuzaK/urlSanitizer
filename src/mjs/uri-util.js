@@ -285,7 +285,15 @@ const convertFromBuffer = async blob => {
 const convertFromFileReader = blob =>
   new Promise((resolve, reject) => {
     const reader = new globalThis.FileReader();
-    reader.addEventListener('error', () => reject(reader.error));
+    reader.addEventListener('error', () => {
+      const error =
+        reader.error ||
+        new DOMException(
+          'Failed to read Blob via FileReader.',
+          'NotReadableError'
+        );
+      reject(error);
+    });
     reader.addEventListener('abort', () => resolve(null));
     reader.addEventListener('load', () => resolve(reader.result));
     reader.readAsDataURL(blob);
