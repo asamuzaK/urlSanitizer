@@ -564,7 +564,7 @@ describe('uri-util', () => {
     });
   });
 
-  describe('Trim trailing empty query and hash', () => {
+  describe('trim trailing empty query and hash', () => {
     const func = mjs.trimTrailingEmptyQueryAndHash;
 
     it('removes trailing empty hash fragments', () => {
