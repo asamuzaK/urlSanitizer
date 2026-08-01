@@ -1714,7 +1714,7 @@ describe('sanitizer', () => {
       assert.strictEqual(typeof mjs.isURI, 'function');
     });
 
-    describe('sanitize URL async', () => {
+    describe('sanitize URL', () => {
       const func = mjs.sanitizeURL;
 
       it('returns null for missing input', async () => {
@@ -1743,6 +1743,54 @@ describe('sanitizer', () => {
         });
         assert.strictEqual(urlSanitizer.has('foo'), false, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('rejects blob URL if blob size exceeds maxBlobSize', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: 10
+        });
+        URL.revokeObjectURL(url);
+        assert.deepEqual(
+          res,
+          null,
+          'result should be null due to exceeding maxBlobSize'
+        );
+      });
+
+      it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: -1
+        });
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+      });
+
+      it('allows blob URL if blob size is exactly at or below maxBlobSize', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: 100
+        });
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
       });
 
       it('blocks blob: scheme and does NOT revoke blob by default', async () => {
