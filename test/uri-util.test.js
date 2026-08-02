@@ -543,9 +543,11 @@ describe('uri-util', () => {
             this.listeners = {};
             // this.error is undefined
           }
+
           addEventListener(type, callback) {
             this.listeners[type] = callback;
           }
+
           readAsDataURL() {
             setTimeout(() => {
               if (this.listeners.error) {
@@ -767,6 +769,44 @@ describe('uri-util', () => {
         const schemes = new URISchemes();
         const res = schemes.has('web+foo');
         assert.strictEqual(res, false, 'result');
+      });
+    });
+
+    describe('normalize scheme', () => {
+      it('returns null if scheme is not a string', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(schemes.normalize(123), null, 'result for number');
+        assert.strictEqual(schemes.normalize(null), null, 'result for null');
+        assert.strictEqual(
+          schemes.normalize(undefined),
+          null,
+          'result for undefined'
+        );
+        assert.strictEqual(schemes.normalize({}), null, 'result for object');
+      });
+
+      it('returns the same string for already normalized schemes', () => {
+        const schemes = new URISchemes();
+        const res = schemes.normalize('https');
+        assert.strictEqual(res, 'https', 'result');
+      });
+
+      it('converts uppercase characters to lowercase', () => {
+        const schemes = new URISchemes();
+        const res = schemes.normalize('HTTPS');
+        assert.strictEqual(res, 'https', 'result');
+      });
+
+      it('trims leading and trailing whitespaces', () => {
+        const schemes = new URISchemes();
+        const res = schemes.normalize('  http  ');
+        assert.strictEqual(res, 'http', 'result');
+      });
+
+      it('trims whitespaces and converts to lowercase simultaneously', () => {
+        const schemes = new URISchemes();
+        const res = schemes.normalize('  Moz-Extension  ');
+        assert.strictEqual(res, 'moz-extension', 'result');
       });
     });
 

@@ -716,10 +716,11 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    if (!isString(scheme)) {
-      return false;
+    const normalizedScheme = this.normalize(scheme);
+    if (normalizedScheme) {
+      return this.#allowedSchemes.has(normalizedScheme);
     }
-    return this.#allowedSchemes.has(scheme.trim().toLowerCase());
+    return false;
   }
 
   /**
@@ -728,18 +729,16 @@ export class URLSanitizer extends URISchemes {
    * @returns {string[]} The updated array of registered schemes.
    */
   add(scheme) {
-    let loweredScheme;
-    if (isString(scheme)) {
-      loweredScheme = scheme.trim().toLowerCase();
-    } else {
+    if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const schemeParts = loweredScheme.split('+');
+    const normalizedScheme = this.normalize(scheme);
+    const schemeParts = normalizedScheme.split('+');
     const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(loweredScheme)) {
+    if (isScript || !REG_SCHEME.test(normalizedScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
-    this.#allowedSchemes.add(loweredScheme);
+    this.#allowedSchemes.add(normalizedScheme);
     return [...this.#allowedSchemes];
   }
 
