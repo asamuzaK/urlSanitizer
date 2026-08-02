@@ -76,10 +76,23 @@ export class URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    if (!isString(scheme)) {
-      return false;
+    const normalizedScheme = this.normalize(scheme);
+    if (normalizedScheme) {
+      return this.#schemes.has(normalizedScheme);
     }
-    return this.#schemes.has(scheme.trim().toLowerCase());
+    return false;
+  }
+
+  /**
+   * Normalizes the specified URI scheme.
+   * @param {string} scheme - The URI scheme to normalize.
+   * @returns {string|null} The normalized scheme string, or null.
+   */
+  normalize(scheme) {
+    if (!isString(scheme)) {
+      return null;
+    }
+    return scheme.trim().toLowerCase();
   }
 
   /**
