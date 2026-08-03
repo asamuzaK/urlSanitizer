@@ -920,17 +920,27 @@ export const sanitizeURLSync = (
 
 /**
  * Sanitizes the given URL and returns its parsed components.
- * @param {string} url - The URL string to sanitize and inspect.
- * @returns {InspectedURLResult} The inspected URL result.
+ * @param {string} url - The URL string to inspect.
+ * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
-export const inspectURL = url => urlSanitizer.inspect(url);
+export const inspectURL = async url => {
+  const res = urlSanitizer.inspect(url);
+  return res;
+};
 
 /**
  * Checks if the given string is a valid URI and is registered.
  * @param {string} uri - The URI string to verify.
  * @returns {boolean} True if valid and registered, false otherwise.
  */
-export const isURI = uri => urlSanitizer.verify(uri);
+export const isValidURI = uri => urlSanitizer.verify(uri);
+
+/**
+ * @deprecated Use {@link isValidURI} instead.
+ * @param {string} uri - The URI string to verify.
+ * @returns {boolean} True if valid and registered, false otherwise.
+ */
+export const isURISync = uri => isValidURI(uri);
 
 /* export instance */
 export default urlSanitizer;
