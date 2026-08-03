@@ -9,7 +9,8 @@
 export {
   default,
   inspectURL,
-  isURI,
+  isURISync,
+  isValidURI,
   sanitizeURL,
   sanitizeURLSync
 } from './mjs/sanitizer.js';

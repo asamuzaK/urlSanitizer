@@ -222,7 +222,7 @@ Synchronous version of `sanitizeURL()`.
 
 ### inspectURL(url)
 
-Sanitizes the given URL and returns its parsed components.
+Sanitizes the given URL and returns its parsed components asynchronously.
 
 * **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
 * **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
@@ -232,8 +232,8 @@ Sanitizes the given URL and returns its parsed components.
 
 * url **string** The URL string to sanitize and inspect.
 
-**Returns** **InspectedURLResult** The parsed components of the sanitized URL.
-`inspectURL()` is a synchronous function since v5.x.
+
+**Returns** **Promise&lt;InspectedURLResult&gt;** The parsed components of the sanitized URL.
 
 #### InspectedURLResult
 
@@ -250,13 +250,13 @@ The properties except for `input` and `valid` are omitted from the object for in
 * `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string | undefined]** Properties identical to the standard URL API (omitted if the URL is invalid).
 
 ``` javascript
-const res1 = inspectURL('javascript:alert(1)');
+const res1 = await inspectURL('javascript:alert(1)');
 /* => {
         input: 'javascript:alert(1)',
         valid: false
       } */
 
-const res2 = inspectURL('https://www.example.com/?foo=bar#baz');
+const res2 = await inspectURL('https://www.example.com/?foo=bar#baz');
 /* => {
         input: 'https://www.example.com/?foo=bar#baz',
         valid: true,
@@ -272,7 +272,7 @@ const res2 = inspectURL('https://www.example.com/?foo=bar#baz');
       } */
 
 // base64 encoded SVG '<svg><g onclick="alert(1)"/></svg>'
-const res3 = inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
+const res3 = await inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==');
 /* => {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
@@ -289,7 +289,7 @@ const res3 = inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVyd
       } */
 
 // base64 encoded PNG
-const res4 = inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
+const res4 = await inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==');
 /* => {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
@@ -310,7 +310,7 @@ const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
 const url5 = URL.createObjectURL(blob5);
-const res5 = inspectURL(url5);
+const res5 = await inspectURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
@@ -323,7 +323,7 @@ const res5 = inspectURL(url5);
       } */
 ```
 
-### isURI(uri)
+### isValidURI(uri)
 
 Checks if the given string is a valid URI and whether its scheme is registered in the allowed list.
 
@@ -331,12 +331,13 @@ Specifically, it verifies that the input has a correct URI syntax, is not a deni
 * The scheme is registered in the default list (e.g., IANA registered schemes, `https`, `mailto`).
 * The scheme has a custom prefix like `web+` or `ext+` (which are always allowed for web applications).
 
+**Note:** `isURISync()` is deprecated. Please use `isValidURI()` instead.
+
 #### Parameters
 
 * uri **string** URI input.
 
 **Returns** **boolean** `true` if the URI is syntactically valid and uses an allowed/registered scheme; otherwise `false`.
-`isURI()` is a synchronous function since v5.x.
 
 * Always `true` for valid `web+*` and `ext+*` schemes (except `web+javascript`, `web+vbscript`, `ext+javascript`, and `ext+vbscript`).
 * Always `false` for `javascript` and `vbscript` schemes, or any unknown/unregistered schemes (e.g., `foo:`).
