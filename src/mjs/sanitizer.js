@@ -751,7 +751,8 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       return false;
     }
-    return this.#allowedSchemes.delete(scheme.trim().toLowerCase());
+    const normalizedScheme = this.normalize(scheme);
+    return this.#allowedSchemes.delete(normalizedScheme);
   }
 
   /**
