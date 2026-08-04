@@ -328,15 +328,22 @@ const convertFromBtoa = async blob => {
 };
 
 /**
- * Converts a Blob to a data URL.
- * @param {Blob} blob - The target Blob object.
- * @param {number} [maxSize] - The maximum allowed blob size.
- * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ * Fetches a blob URL and converts it to a data URL.
+ * @param {string} url - The blob URL to fetch.
+ * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
+ * @returns {Promise<string>} A promise resolving to the data URL.
  */
-export const convertBlobToDataURL = async (blob, maxSize = MAX_BLOB_SIZE) => {
-  if (!Number.isInteger(blob?.size)) {
+export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  if (!blob) {
     return null;
-  } else if (Number.isInteger(maxSize) && blob.size > maxSize) {
+  }
+  let maxSize = MAX_BLOB_SIZE;
+  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
+    maxSize = maxBlobSize;
+  }
+  if (blob.size > maxSize) {
     const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }

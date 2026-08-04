@@ -331,315 +331,6 @@ describe('uri-util', () => {
     });
   });
 
-  describe('convert blob to data URL', () => {
-    const func = mjs.convertBlobToDataURL;
-
-    it('returns null if input is undefined', async () => {
-      const res = await func();
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('returns null if input is an empty string', async () => {
-      const res = await func('');
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('returns null if input is a standard URL string', async () => {
-      const res = await func('https://example.com');
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('returns data URL for valid Blob', async () => {
-      const data = '<p>Hello, world!</p>';
-      const base64Data = btoa(data);
-      const blob = new Blob([data], {
-        type: 'text/html'
-      });
-      const res = await func(blob);
-      assert.strictEqual(res, `data:text/html;base64,${base64Data}`, 'result');
-    });
-
-    it('returns null if input is an object URL', async () => {
-      const data = '<p>Hello, world!</p>';
-      const blob = new Blob([data], {
-        type: 'text/html'
-      });
-      const url = URL.createObjectURL(blob);
-      const res = await func(url);
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('rejects with NotReadableError if Blob size exceeds maxSize', async () => {
-      const data = 'a'.repeat(100);
-      const blob = new Blob([data], { type: 'text/plain' });
-      const maxSize = 50;
-      await assert.rejects(
-        async () => {
-          await func(blob, maxSize);
-        },
-        err => {
-          assert.strictEqual(err.name, 'NotReadableError', 'error name');
-          assert.strictEqual(
-            err.message,
-            `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
-            'error message'
-          );
-          return true;
-        }
-      );
-    });
-
-    it('converts Blob to data URL using Buffer in Node.js', async () => {
-      assert.ok(
-        globalThis.Buffer,
-        'Buffer should be available in this environment'
-      );
-      const data = 'Hello, Node.js Buffer!';
-      const blob = new Blob([data], {
-        type: 'text/plain'
-      });
-      const base64 = globalThis.Buffer.from(data).toString('base64');
-      const url = `data:text/plain;base64,${base64}`;
-      const res = await func(blob);
-      assert.strictEqual(res, url, 'result using convertFromBuffer');
-    });
-
-    it('handles Blob without MIME type using Buffer', async () => {
-      assert.ok(
-        globalThis.Buffer,
-        'Buffer should be available in this environment'
-      );
-      const data = 'No MIME type text';
-      const blob = new Blob([data]);
-      const base64 = globalThis.Buffer.from(data).toString('base64');
-      const url = `data:base64,${base64}`;
-      const res = await func(blob);
-      assert.strictEqual(res, url, 'result without MIME type');
-    });
-
-    describe('convert blob to data URL via FileReader path', () => {
-      let originalBuffer;
-      let originalFileReader;
-
-      beforeEach(() => {
-        originalBuffer = globalThis.Buffer;
-        Object.defineProperty(globalThis, 'Buffer', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
-        originalFileReader = globalThis.FileReader;
-      });
-
-      afterEach(() => {
-        Object.defineProperty(globalThis, 'Buffer', {
-          value: originalBuffer,
-          writable: true,
-          configurable: true
-        });
-        globalThis.FileReader = originalFileReader;
-      });
-
-      it('converts Blob to data URL using FileReader fallback', async () => {
-        const sampleDataURL =
-          'data:text/html;base64,PHA+SGVsbG8sIHdvcmxkITwvcD4=';
-        globalThis.FileReader = class {
-          constructor() {
-            this.listeners = {};
-          }
-
-          addEventListener(type, callback) {
-            this.listeners[type] = callback;
-          }
-
-          readAsDataURL(blob) {
-            setTimeout(() => {
-              this.result = sampleDataURL;
-              if (this.listeners.load) {
-                this.listeners.load();
-              }
-            }, 0);
-          }
-        };
-        const blob = new Blob(['<p>Hello, world!</p>'], { type: 'text/html' });
-        const res = await func(blob);
-        assert.strictEqual(res, sampleDataURL, 'should return data URL');
-      });
-
-      it('rejects when FileReader encounters an error', async () => {
-        const mockError = new Error('Mock FileReader Read Error');
-        globalThis.FileReader = class {
-          constructor() {
-            this.listeners = {};
-            this.error = mockError;
-          }
-
-          addEventListener(type, callback) {
-            this.listeners[type] = callback;
-          }
-
-          readAsDataURL(blob) {
-            setTimeout(() => {
-              if (this.listeners.error) {
-                this.listeners.error();
-              }
-            }, 0);
-          }
-        };
-        const blob = new Blob(['test'], { type: 'text/plain' });
-        await assert.rejects(
-          async () => {
-            await func(blob);
-          },
-          err => {
-            assert.strictEqual(err.message, 'Mock FileReader Read Error');
-            return true;
-          },
-          'should reject with error'
-        );
-      });
-
-      it('falls back to default DOMException when FileReader error is null', async () => {
-        globalThis.FileReader = class {
-          constructor() {
-            this.listeners = {};
-            this.error = null;
-          }
-
-          addEventListener(type, callback) {
-            this.listeners[type] = callback;
-          }
-
-          readAsDataURL() {
-            setTimeout(() => {
-              if (this.listeners.error) {
-                this.listeners.error();
-              }
-            }, 0);
-          }
-        };
-        const blob = new Blob(['test'], { type: 'text/plain' });
-        await assert.rejects(
-          async () => {
-            await func(blob);
-          },
-          err => {
-            assert.ok(err instanceof DOMException, 'should be DOMException');
-            assert.strictEqual(err.name, 'NotReadableError', 'error name');
-            assert.strictEqual(
-              err.message,
-              'Failed to read Blob via FileReader.',
-              'error message'
-            );
-            return true;
-          },
-          'should reject with fallback DOMException when error is null'
-        );
-      });
-
-      it('falls back to default DOMException when FileReader error is undefined', async () => {
-        globalThis.FileReader = class {
-          constructor() {
-            this.listeners = {};
-            // this.error is undefined
-          }
-
-          addEventListener(type, callback) {
-            this.listeners[type] = callback;
-          }
-
-          readAsDataURL() {
-            setTimeout(() => {
-              if (this.listeners.error) {
-                this.listeners.error();
-              }
-            }, 0);
-          }
-        };
-        const blob = new Blob(['test'], { type: 'text/plain' });
-        await assert.rejects(
-          async () => {
-            await func(blob);
-          },
-          err => {
-            assert.ok(err instanceof DOMException, 'should be DOMException');
-            assert.strictEqual(err.name, 'NotReadableError', 'error name');
-            assert.strictEqual(
-              err.message,
-              'Failed to read Blob via FileReader.',
-              'error message'
-            );
-            return true;
-          },
-          'should reject with fallback DOMException when error is undefined'
-        );
-      });
-    });
-
-    describe('convert blob to data URL via btoa path', () => {
-      let originalBuffer;
-      let originalFileReader;
-
-      beforeEach(() => {
-        originalBuffer = globalThis.Buffer;
-        originalFileReader = globalThis.FileReader;
-        Object.defineProperty(globalThis, 'Buffer', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
-        Object.defineProperty(globalThis, 'FileReader', {
-          value: undefined,
-          writable: true,
-          configurable: true
-        });
-      });
-
-      afterEach(() => {
-        Object.defineProperty(globalThis, 'Buffer', {
-          value: originalBuffer,
-          writable: true,
-          configurable: true
-        });
-        Object.defineProperty(globalThis, 'FileReader', {
-          value: originalFileReader,
-          writable: true,
-          configurable: true
-        });
-      });
-
-      it('converts Blob to data URL using btoa fallback', async () => {
-        assert.strictEqual(
-          globalThis.Buffer,
-          undefined,
-          'Buffer should be hidden'
-        );
-        assert.strictEqual(
-          globalThis.FileReader,
-          undefined,
-          'FileReader should be hidden'
-        );
-        const data = 'Hello, btoa fallback!';
-        const blob = new Blob([data], {
-          type: 'text/plain'
-        });
-        const base64 = btoa(data);
-        const url = `data:text/plain;base64,${base64}`;
-        const res = await func(blob);
-        assert.strictEqual(res, url, 'result');
-      });
-
-      it('handles Blob without MIME type using btoa fallback', async () => {
-        const data = 'No MIME type text for btoa';
-        const blob = new Blob([data]);
-        const base64 = btoa(data);
-        const url = `data:base64,${base64}`;
-        const res = await func(blob);
-        assert.strictEqual(res, url, 'result without MIME type');
-      });
-    });
-  });
-
   describe('trim trailing empty query and hash', () => {
     const func = mjs.trimTrailingEmptyQueryAndHash;
 
@@ -1008,6 +699,341 @@ describe('uri-util', () => {
           schemes.verify('baz:test', customSchemes),
           false,
           'custom false'
+        );
+      });
+    });
+  });
+
+  describe('fetch blob as data URL', () => {
+    const func = mjs.fetchBlobAsDataURL;
+    let originalFetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('returns null if the fetched blob is falsy', async () => {
+      globalThis.fetch = async () => {
+        return {
+          blob: async () => null
+        };
+      };
+      const res = await func('blob:https://example.com/null-blob');
+      assert.strictEqual(res, null, 'result should be null');
+    });
+
+    it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid or 0', async () => {
+      const data = 'a'.repeat(10);
+      const blob = new Blob([data], { type: 'text/plain' });
+      globalThis.fetch = async () => {
+        return {
+          blob: async () => blob
+        };
+      };
+      const res1 = await func('blob:https://example.com/test', 0);
+      const res2 = await func('blob:https://example.com/test', -50);
+      const res3 = await func('blob:https://example.com/test', 'invalid');
+      assert.ok(res1.startsWith('data:'), 'should process normally with 0');
+      assert.ok(
+        res2.startsWith('data:'),
+        'should process normally with negative value'
+      );
+      assert.ok(
+        res3.startsWith('data:'),
+        'should process normally with non-number'
+      );
+    });
+
+    it('fetches a URL and successfully converts it to a data URL', async () => {
+      const data = 'Hello, blob!';
+      const blob = new Blob([data], { type: 'text/plain' });
+      globalThis.fetch = async url => {
+        return {
+          blob: async () => blob
+        };
+      };
+      const res = await func('blob:https://example.com/mock-uuid');
+      const base64 = globalThis.Buffer.from(data).toString('base64');
+      const expectedUrl = `data:text/plain;base64,${base64}`;
+      assert.strictEqual(res, expectedUrl, 'result');
+    });
+
+    it('rejects if the fetch request fails', async () => {
+      globalThis.fetch = async () => {
+        throw new TypeError('Network error');
+      };
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/error-uuid');
+        },
+        TypeError,
+        'Network error'
+      );
+    });
+
+    it('rejects if the fetched blob size exceeds maxSize', async () => {
+      const data = 'a'.repeat(100);
+      const blob = new Blob([data], { type: 'text/plain' });
+      globalThis.fetch = async url => {
+        return {
+          blob: async () => blob
+        };
+      };
+      const maxSize = 50;
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/large-blob', maxSize);
+        },
+        err => {
+          assert.strictEqual(err.name, 'NotReadableError', 'error name');
+          assert.strictEqual(
+            err.message,
+            `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('handles Blob without MIME type using Buffer (blob.type is falsy)', async () => {
+      const data = 'No MIME type text';
+      const blob = new Blob([data]);
+      globalThis.fetch = async () => {
+        return {
+          blob: async () => blob
+        };
+      };
+      const res = await func('blob:https://example.com/no-mime-buffer');
+      const base64 = globalThis.Buffer.from(data).toString('base64');
+      assert.strictEqual(
+        res,
+        `data:base64,${base64}`,
+        'should omit MIME type in data URL'
+      );
+    });
+
+    describe('environment specific paths inside fetchBlobAsDataURL', () => {
+      let envBuffer;
+      let envFileReader;
+
+      beforeEach(() => {
+        envBuffer = globalThis.Buffer;
+        envFileReader = globalThis.FileReader;
+      });
+
+      afterEach(() => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: envBuffer,
+          writable: true,
+          configurable: true
+        });
+        Object.defineProperty(globalThis, 'FileReader', {
+          value: envFileReader,
+          writable: true,
+          configurable: true
+        });
+      });
+
+      it('uses FileReader fallback if Buffer is unavailable', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+
+        const sampleDataURL = 'data:text/plain;base64,RmlsZVJlYWRlciE=';
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+          }
+
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+
+          readAsDataURL() {
+            setTimeout(() => {
+              this.result = sampleDataURL;
+              if (this.listeners.load) {
+                this.listeners.load();
+              }
+            }, 0);
+          }
+        };
+        globalThis.fetch = async () => ({
+          blob: async () => new Blob(['FileReader!'], { type: 'text/plain' })
+        });
+        const res = await func('blob:https://example.com/filereader-mock');
+        assert.strictEqual(res, sampleDataURL, 'result using FileReader');
+      });
+
+      it('uses btoa fallback if Buffer and FileReader are both unavailable', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        Object.defineProperty(globalThis, 'FileReader', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        const data = 'btoa environment fallback!';
+        globalThis.fetch = async () => ({
+          blob: async () => new Blob([data], { type: 'text/plain' })
+        });
+        const res = await func('blob:https://example.com/btoa-mock');
+        const expectedBase64 = btoa(data);
+        assert.strictEqual(
+          res,
+          `data:text/plain;base64,${expectedBase64}`,
+          'result using btoa'
+        );
+      });
+
+      it('rejects when FileReader emits an error event', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        const mockError = new Error('Mock FileReader Error');
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+            this.error = mockError;
+          }
+
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+
+          readAsDataURL() {
+            setTimeout(() => {
+              if (this.listeners.error) {
+                this.listeners.error();
+              }
+            }, 0);
+          }
+        };
+        globalThis.fetch = async () => ({
+          blob: async () => new Blob(['test'], { type: 'text/plain' })
+        });
+        await assert.rejects(
+          async () => {
+            await func('blob:https://example.com/error-mock');
+          },
+          err => {
+            assert.strictEqual(
+              err.message,
+              'Mock FileReader Error',
+              'error message'
+            );
+            return true;
+          }
+        );
+      });
+
+      it('rejects with default DOMException when FileReader error is missing/falsy', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+            this.error = null;
+          }
+
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+
+          readAsDataURL() {
+            setTimeout(() => {
+              if (this.listeners.error) {
+                this.listeners.error();
+              }
+            }, 0);
+          }
+        };
+        globalThis.fetch = async () => ({
+          blob: async () => new Blob(['test'], { type: 'text/plain' })
+        });
+        await assert.rejects(
+          async () => {
+            await func('blob:https://example.com/fallback-error-mock');
+          },
+          err => {
+            assert.ok(err instanceof DOMException, 'should be DOMException');
+            assert.strictEqual(err.name, 'NotReadableError', 'error name');
+            assert.strictEqual(
+              err.message,
+              'Failed to read Blob via FileReader.',
+              'error message'
+            );
+            return true;
+          }
+        );
+      });
+
+      it('resolves with null when FileReader emits an abort event', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        globalThis.FileReader = class {
+          constructor() {
+            this.listeners = {};
+          }
+
+          addEventListener(type, callback) {
+            this.listeners[type] = callback;
+          }
+
+          readAsDataURL() {
+            setTimeout(() => {
+              if (this.listeners.abort) {
+                this.listeners.abort();
+              }
+            }, 0);
+          }
+        };
+        globalThis.fetch = async () => ({
+          blob: async () => new Blob(['test'], { type: 'text/plain' })
+        });
+        const res = await func('blob:https://example.com/abort-mock');
+        assert.strictEqual(res, null, 'should return null on abort');
+      });
+
+      it('handles Blob without MIME type using btoa fallback', async () => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        Object.defineProperty(globalThis, 'FileReader', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        const data = 'No MIME type text for btoa';
+        const blob = new Blob([data]);
+        globalThis.fetch = async () => ({
+          blob: async () => blob
+        });
+        const res = await func('blob:https://example.com/no-mime-btoa');
+        const expectedBase64 = btoa(data);
+        assert.strictEqual(
+          res,
+          `data:base64,${expectedBase64}`,
+          'should omit MIME type in data URL'
         );
       });
     });

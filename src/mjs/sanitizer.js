@@ -7,8 +7,8 @@ import { domPurify } from './dompurify.js';
 import { getType, isString } from './common.js';
 import {
   URISchemes,
-  convertBlobToDataURL,
   escapeURLEncodedHTMLChars,
+  fetchBlobAsDataURL,
   parseBase64,
   parseURLEncodedNumCharRef,
   trimTrailingEmptyQueryAndHash
@@ -840,9 +840,7 @@ export const sanitizeURL = async (
           : MAX_BLOB_SIZE;
       let data;
       try {
-        data = await fetch(url)
-          .then(r => r.blob())
-          .then(b => convertBlobToDataURL(b, maxBlobSize));
+        data = await fetchBlobAsDataURL(url, maxBlobSize);
       } catch (e) {
         const msg = `Failed to fetch and convert blob URL: ${url}`;
         logDebug(isDebug, msg, e);
