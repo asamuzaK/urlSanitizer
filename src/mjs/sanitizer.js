@@ -545,13 +545,12 @@ export class URLSanitizer extends URISchemes {
    */
   #sanitizeStandardURL(urlToSanitize) {
     let sanitized = urlToSanitize;
-    if (REG_TAG_QUOT.test(sanitized)) {
-      const { index } = REG_TAG_QUOT.exec(sanitized);
-      sanitized = sanitized.substring(0, index).replace(/[?&]$/, '');
-    }
-    if (REG_AMP_ENC.test(sanitized)) {
-      const { index } = REG_AMP_ENC.exec(sanitized);
-      sanitized = sanitized.substring(0, index).replace(/[?&]$/, '');
+    const patterns = [REG_TAG_QUOT, REG_AMP_ENC];
+    for (const pattern of patterns) {
+      const match = pattern.exec(sanitized);
+      if (match) {
+        sanitized = sanitized.substring(0, match.index).replace(/[?&]$/, '');
+      }
     }
     return sanitized;
   }
