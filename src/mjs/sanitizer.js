@@ -62,7 +62,7 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
  * The properties except for input and valid are omitted for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
- * @property {boolean} valid - Indicates whether the URI is valid.
+ * @property {boolean} valid - Indicates whether the URL passed sanitization rules.
  * @property {string} [reason] - The reason why the URL is invalid.
  * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
  * @property {string} [href] - The sanitized URL input.
@@ -814,7 +814,8 @@ export const sanitizeURL = async (
       try {
         data = await fetchBlobAsDataURL(url, maxBlobSize);
       } catch (e) {
-        const msg = `Failed to fetch and convert blob URL: ${url}`;
+        const msg =
+          `Failed to fetch and convert blob URL: ${truncateURL(url)}`;
         logDebug(isDebug, msg, e);
       }
       if (data) {
