@@ -28,7 +28,7 @@ export const REG_MIME_DOM =
 export const REG_MIME_TEXT = /^text\/[\w#&.;-]+/;
 
 /**
- * Matches a numeric character reference.
+ * Matches numeric character references in the byte range (0x00–0xFF).
  * @type {RegExp}
  */
 export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
@@ -66,7 +66,7 @@ export const REG_SCRIPT = /^(?:java|vb)script$/i;
 export const REG_SCRIPT_BLOB = /^(?:(?:java|vb)script|blob)$/i;
 
 /**
- * Matches HTML tags, quotes, and their encoded or character reference variants.
+ * Matches HTML-sensitive characters and their encoded variants.
  * @type {RegExp}
  */
 export const REG_TAG_QUOT =
@@ -91,7 +91,7 @@ export const REG_PCT_ENC = /(?:%[\dA-F]{2})+/gi;
 export const REG_AMP = /&amp;/gi;
 
 /**
- * Matches HTML-encoded characters (&foo).
+ * Matches ampersand that may begin an HTML entity reference.
  * @type {RegExp}
  */
 export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
