@@ -7,7 +7,7 @@ import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { HEX } from './constant.js';
 
 /**
- * The total number of 8-bit byte values (256, covering 0x00–0xFF).
+ * The total number of 8-bit byte values (0x00–0xFF).
  * @type {number}
  */
 const BYTE_RANGE = 256;
