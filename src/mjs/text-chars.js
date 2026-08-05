@@ -7,10 +7,10 @@ import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { HEX } from './constant.js';
 
 /**
- * The last index of ASCII character codes.
+ * The total number of 8-bit byte values (256, covering 0x00–0xFF).
  * @type {number}
  */
-const ASCII_LAST_INDEX = 256;
+const BYTE_RANGE = 256;
 
 /**
  * A set of valid text character codes.
@@ -59,7 +59,7 @@ export const WINDOWS1252_TO_UNICODE = new Map([
  */
 const generateCtrlCharCodes = () => {
   const charCodes = new Map();
-  for (let i = 0; i < ASCII_LAST_INDEX; i++) {
+  for (let i = 0; i < BYTE_RANGE; i++) {
     if (!TEXT_CHAR_CODES.has(i) && !WINDOWS1252_TO_UNICODE.has(i)) {
       charCodes.set(i, `\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
     }
