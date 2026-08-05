@@ -92,6 +92,31 @@ describe('uri-util', () => {
     });
   });
 
+  describe('truncate URL', () => {
+    const func = mjs.truncateURL;
+
+    it('returns the same string when string length is equal to or less than TRUNCATE_LENGTH', () => {
+      const exact64Chars = 'a'.repeat(64);
+      assert.strictEqual(func(exact64Chars), exact64Chars);
+      const shortString = 'https://example.com/short';
+      assert.strictEqual(func(shortString), shortString);
+    });
+
+    it('truncates the string and appends "..." when length exceeds TRUNCATE_LENGTH', () => {
+      const longString = 'a'.repeat(65);
+      const expected = `${'a'.repeat(64)}...`;
+      assert.strictEqual(func(longString), expected);
+    });
+
+    it('converts non-string input to string before truncating', () => {
+      const num = 12345;
+      assert.strictEqual(func(num), '12345');
+      const longArrayString = String(new Array(30).fill('abc'));
+      const expected = `${longArrayString.slice(0, 64)}...`;
+      assert.strictEqual(func(longArrayString), expected);
+    });
+  });
+
   describe('parse base64 encoded data', () => {
     const func = mjs.parseBase64;
 

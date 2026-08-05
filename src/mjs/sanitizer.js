@@ -14,7 +14,8 @@ import {
   getURLScheme,
   parseBase64,
   parseURLEncodedNumCharRef,
-  trimTrailingEmptyQueryAndHash
+  trimTrailingEmptyQueryAndHash,
+  truncateURL
 } from './uri-util.js';
 
 /* constants */
@@ -120,7 +121,10 @@ export class SanitizeContext {
    */
   enter(url) {
     if (this.recurse.has(url)) {
-      logDebug(this.debug, `Circular Data URL detected and skipped: ${url}`);
+      logDebug(
+        this.debug,
+        `Circular Data URL detected and skipped: ${truncateURL(url)}`
+      );
       return false;
     }
     this.nest++;
@@ -619,7 +623,7 @@ export class URLSanitizer extends URISchemes {
       valid: false
     };
     if (!isString(url)) {
-      inspectedURL.reason = `Invalid URL input: ${url}`;
+      inspectedURL.reason = `Invalid URL input: ${truncateURL(url)}`;
       return inspectedURL;
     }
     let sanitizedUrl;
@@ -790,7 +794,7 @@ export const sanitizeURL = async (
     if (opt.allowRelative) {
       return urlSanitizer.sanitize(url, opt);
     }
-    logDebug(isDebug, `Invalid URL input format: ${url}`);
+    logDebug(isDebug, `Invalid URL input format: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
@@ -873,7 +877,7 @@ export const sanitizeURLSync = (
     if (opt.allowRelative) {
       return urlSanitizer.sanitize(url, opt);
     }
-    logDebug(isDebug, `Invalid URL input format: ${url}`);
+    logDebug(isDebug, `Invalid URL input format: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
@@ -894,10 +898,10 @@ export const sanitizeURLSync = (
 export const inspectURL = async url => {
   const invalidResult = {
     input: url,
-    valid: false,
-    reason: `Invalid URL input: ${url}`
+    valid: false
   };
   if (!isString(url)) {
+    invalidResult.reason = `Invalid URL input: ${truncateURL(url)}`;
     return invalidResult;
   }
   const parsedUrl = URL.parse(url);
@@ -915,6 +919,7 @@ export const inspectURL = async url => {
     }
     return urlSanitizer.inspect(url);
   }
+  invalidResult.reason = `Invalid URL input: ${truncateURL(url)}`;
   return invalidResult;
 };
 

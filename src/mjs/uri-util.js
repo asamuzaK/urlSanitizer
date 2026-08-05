@@ -7,7 +7,14 @@ import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */
-import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
+import {
+  CHUNK_SIZE,
+  DECI,
+  HEX,
+  MAX_BLOB_SIZE,
+  MAX_NEST,
+  TRUNCATE_LENGTH
+} from './constant.js';
 import {
   REG_AMP,
   REG_HASH,
@@ -163,6 +170,18 @@ export const escapeURLEncodedHTMLChars = ch => {
 };
 
 /**
+ * Truncate URL string.
+ * @param {string|unknown} url - A URL string
+ * @returns {string} - The truncated string
+ */
+export const truncateURL = url => {
+  const str = isString(url) ? url : String(url);
+  const truncated =
+    str.length > TRUNCATE_LENGTH ? `${str.slice(0, TRUNCATE_LENGTH)}...` : str;
+  return truncated;
+};
+
+/**
  * Parses base64-encoded data.
  * @param {string} data - The base64-encoded string.
  * @returns {string} The parsed text, or the original base64 if binary.
@@ -176,7 +195,7 @@ export const parseBase64 = data => {
   try {
     binStr = atob(cleanData);
   } catch {
-    throw new Error(`Invalid base64 data: ${data}`);
+    throw new Error(`Invalid base64 data: ${truncateURL(data)}`);
   }
   let bytes;
   if (IS_NODE && globalThis.Buffer) {
