@@ -745,8 +745,8 @@ export class URLSanitizer extends URISchemes {
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
-  verify(uri, schemes = this.#allowedSchemes) {
-    return super.verify(uri, schemes);
+  verify(uri, schemes) {
+    return super.verify(uri, schemes ?? this.#allowedSchemes);
   }
 }
 
