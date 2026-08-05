@@ -1365,13 +1365,14 @@ describe('sanitizer', () => {
     });
 
     describe('inspect sanitized URL', () => {
-      it('throws TypeError for missing arguments', () => {
+      it('returns invalid object with syntax reason for missing arguments', () => {
         const sanitizer = new URLSanitizer();
-        assert.throws(
-          () => sanitizer.inspect(),
-          TypeError,
-          'Expected String but got Undefined.'
-        );
+        const res = sanitizer.inspect();
+        assert.deepEqual(res, {
+          input: undefined,
+          valid: false,
+          reason: 'Invalid URL input: undefined'
+        });
       });
 
       it('returns invalid object with syntax reason for unregistered schemes', () => {
@@ -1550,24 +1551,18 @@ describe('sanitizer', () => {
         assert.deepEqual(res, items, 'result');
       });
 
-      it('safely handles blob URLs during inspection', () => {
+      it('treats blob URLs as invalid during inspection', () => {
         const sanitizer = new URLSanitizer();
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], {
           type: 'image/svg+xml'
         });
         const url = URL.createObjectURL(blob);
-        const obj = new URL(url);
-        const items = {};
-        for (const key in obj) {
-          const value = obj[key];
-          if (isString(value)) {
-            items[key] = value;
-          }
-        }
-        items.input = url;
-        items.valid = true;
-        items.data = null;
+        const items = {
+          input: url,
+          valid: false,
+          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+        };
         const res = sanitizer.inspect(url);
         assert.deepEqual(res, items, 'result');
       });
@@ -2604,7 +2599,72 @@ describe('sanitizer', () => {
     describe('inspect URL', () => {
       const func = mjs.inspectURL;
 
-      it('returns inspected URL object correctly', async () => {
+      it('returns invalid URL result for undefined input', async () => {
+        const res = await func();
+        assert.deepEqual(
+          res,
+          {
+            input: undefined,
+            valid: false,
+            reason: 'Invalid URL input: undefined'
+          },
+          'result'
+        );
+      });
+
+      it('returns invalid URL result for empty string input', async () => {
+        const res = await func('');
+        assert.deepEqual(
+          res,
+          {
+            input: '',
+            valid: false,
+            reason: 'Invalid URL input: '
+          },
+          'result'
+        );
+      });
+
+      it('returns invalid URL result for invalid blob URL', async () => {
+        const msg = await fetch('blob:').catch(e => e.message);
+        const res = await func('blob:');
+        assert.deepEqual(
+          res,
+          {
+            input: 'blob:',
+            valid: false,
+            reason: msg
+          },
+          'result'
+        );
+      });
+
+      it('returns inspected URL result correctly for blob URL', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const obj = new URL(
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+        );
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          base64: false,
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          mime: 'image/svg+xml'
+        };
+        const res = await func(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('returns inspected URL result correctly', async () => {
         const url = 'https://example.com';
         const obj = new URL(url);
         const items = {};

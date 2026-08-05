@@ -1,7 +1,6 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
-import { isString } from '../scripts/common.js';
 
 /* test */
 import urlSanitizer, {
@@ -413,20 +412,32 @@ describe('URL Sanitizer', () => {
         type: 'image/svg+xml'
       });
       const url = URL.createObjectURL(blob);
-      const obj = new URL(url);
-      const items = {};
-      for (const key in obj) {
-        const value = obj[key];
-        if (isString(value)) {
-          items[key] = value;
-        }
-      }
-      items.input = url;
-      items.valid = true;
-      items.data = null;
       const res = await inspectURL(url);
       URL.revokeObjectURL(url);
-      assert.deepEqual(res, items, 'result');
+      assert.deepEqual(
+        res,
+        {
+          input: url,
+          valid: true,
+          data: {
+            mime: 'image/svg+xml',
+            base64: false,
+            data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+          },
+          href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          origin: 'null',
+          protocol: 'data:',
+          username: '',
+          password: '',
+          host: '',
+          port: '',
+          hostname: '',
+          pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          search: '',
+          hash: ''
+        },
+        'result'
+      );
     });
   });
 

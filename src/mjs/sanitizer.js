@@ -282,10 +282,9 @@ export class URLSanitizer extends URISchemes {
    * @param {string} url - The URL string to sanitize.
    * @param {object} rules - Normalized sanitization rules.
    * @param {SanitizeContext} ctx - Internal context for state.
-   * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object to avoid redundant parsing.
    * @returns {string|null} The sanitized URL, or null.
    */
-  #process(url, rules, ctx, parsedUrl = null) {
+  #process(url, rules, ctx) {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
@@ -301,13 +300,7 @@ export class URLSanitizer extends URISchemes {
       schemeParts,
       urlObj,
       urlToSanitize
-    } = this.#parseAndVerifyURL(
-      url,
-      rules.allowRelative,
-      allowedSchemes,
-      ctx,
-      parsedUrl
-    );
+    } = this.#parseAndVerifyURL(url, rules.allowRelative, allowedSchemes, ctx);
     if (!isVerified) {
       return null;
     }
@@ -396,19 +389,11 @@ export class URLSanitizer extends URISchemes {
    * @param {boolean} allowRelative - If relative URLs are OK.
    * @param {Set<string>} allowedSchemes - Permitted schemes.
    * @param {SanitizeContext} ctx - Context for logging and state.
-   * @param {URL|null} [parsedUrl] - An optional pre-parsed URL object.
    * @returns {object} Parsed URL properties and flags.
    */
-  #parseAndVerifyURL(
-    url,
-    allowRelative,
-    allowedSchemes,
-    ctx,
-    parsedUrl = null
-  ) {
+  #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
     const normalizedUrl = url.normalize('NFKC');
-    // Reuse parsedUrl if available, otherwise parse anew.
-    const urlObj = parsedUrl || URL.parse(normalizedUrl);
+    const urlObj = URL.parse(normalizedUrl);
     let isVerified = this.verifyParsed(urlObj, allowedSchemes);
     let isRelative = false;
     let relativeParsedPath = '';
@@ -560,10 +545,9 @@ export class URLSanitizer extends URISchemes {
    * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} [opt] - Sanitization options.
-   * @param {URL|null} [parsedUrl] - The pre-parsed URL object, if available.
    * @returns {string|null} The sanitized URL, or null.
    */
-  #executeSanitize(url, opt, parsedUrl = null) {
+  #executeSanitize(url, opt) {
     if (!url || !isString(url)) {
       return null;
     }
@@ -585,8 +569,7 @@ export class URLSanitizer extends URISchemes {
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      // Reuse parsedUrl if available.
-      const urlObj = parsedUrl || URL.parse(url);
+      const urlObj = URL.parse(url);
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       } else {
@@ -601,7 +584,7 @@ export class URLSanitizer extends URISchemes {
       allowRelative: !!opt?.allowRelative
     };
     const ctx = new SanitizeContext(opt, domPurify);
-    return this.#process(url, rules, ctx, parsedUrl);
+    return this.#process(url, rules, ctx);
   }
 
   /**
@@ -623,39 +606,31 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * Inspects, parses, and sanitizes the given URL.
-   * NOTE: blob URLs are simply parsed, but neither decoded nor sanitized.
    * @param {string} url - The URL string to parse.
    * @returns {InspectedURLResult} The result of an inspected URL.
    */
   inspect(url) {
-    if (!isString(url)) {
-      throw new TypeError(`Expected String but got ${getType(url)}.`);
-    }
     const inspectedURL = {
       input: url,
       valid: false
     };
+    if (!isString(url)) {
+      inspectedURL.reason = `Invalid URL input: ${url}`;
+      return inspectedURL;
+    }
     let sanitizedUrl;
     let invalidReason = null;
-    const normalizedUrl = url.normalize('NFKC');
-    const parsedUrl = URL.parse(normalizedUrl);
-    const protocol = parsedUrl ? parsedUrl.protocol : '';
-    if (protocol === 'blob:') {
-      sanitizedUrl = url;
-    } else {
-      try {
-        sanitizedUrl = this.#executeSanitize(
-          normalizedUrl,
-          { allow: ['data'], allowRelative: true },
-          parsedUrl
-        );
-        if (!sanitizedUrl) {
-          invalidReason =
-            'Sanitization failed (blocked by allowed schemes or rules).';
-        }
-      } catch (e) {
-        invalidReason = e.message;
+    try {
+      sanitizedUrl = this.#executeSanitize(url, {
+        allow: ['data'],
+        allowRelative: true
+      });
+      if (!sanitizedUrl) {
+        invalidReason =
+          'Sanitization failed (blocked by allowed schemes or rules).';
       }
+    } catch (e) {
+      invalidReason = e.message;
     }
     if (sanitizedUrl) {
       // Reparse the sanitized string to safely extract updated properties.
@@ -694,9 +669,7 @@ export class URLSanitizer extends URISchemes {
       }
     } else {
       inspectedURL.valid = false;
-      if (invalidReason) {
-        inspectedURL.reason = invalidReason;
-      }
+      inspectedURL.reason = invalidReason;
     }
     return inspectedURL;
   }
@@ -918,12 +891,35 @@ export const sanitizeURLSync = (
 
 /**
  * Sanitizes the given URL and returns its parsed components.
+ * NOTE: blob URLs are not revoked after inspection.
  * @param {string} url - The URL string to inspect.
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const inspectURL = async url => {
-  const res = urlSanitizer.inspect(url);
-  return res;
+  const invalidResult = {
+    input: url,
+    valid: false,
+    reason: `Invalid URL input: ${url}`
+  };
+  if (!isString(url)) {
+    return invalidResult;
+  }
+  const parsedUrl = URL.parse(url);
+  if (parsedUrl) {
+    if (parsedUrl.protocol === 'blob:') {
+      try {
+        const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
+        const inspectedURLResult = urlSanitizer.inspect(dataUrl);
+        inspectedURLResult.input = url;
+        return inspectedURLResult;
+      } catch (e) {
+        invalidResult.reason = e.message;
+        return invalidResult;
+      }
+    }
+    return urlSanitizer.inspect(url);
+  }
+  return invalidResult;
 };
 
 /**

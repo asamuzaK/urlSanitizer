@@ -17,7 +17,7 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
   * [sanitizeURL(url, opt)](#sanitizeurlurl-opt)
   * [sanitizeURLSync(url, opt)](#sanitizeurlsyncurl-opt)
   * [inspectURL(url)](#inspecturlurl)
-  * [isURI(uri)](#isuriuri)
+  * [isValidURI(uri)](#isvaliduriuri)
   * [urlSanitizer Instance](#urlsanitizer)
 * [Threat Model](#threat-model)
 * [AI / LLM Application Security](#ai--llm-application-security)
@@ -76,7 +76,7 @@ If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPu
 
 ``` javascript
 import urlSanitizer, {
-  isURI, isURISync, inspectURL, inspectURLSync, sanitizeURL, sanitizeURLSync
+  inspectURL, isValidURI, sanitizeURL, sanitizeURLSync
 } from 'url-sanitizer';
 ```
 
@@ -222,16 +222,14 @@ Synchronous version of `sanitizeURL()`.
 
 ### inspectURL(url)
 
-Sanitizes the given URL and returns its parsed components asynchronously.
+Sanitizes the given URL and returns its parsed components.
 
 * **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
-* **Blob URLs:** Simply parsed, but **neither decoded nor sanitized** at this stage.
-  To process and sanitize the content of a blob URL, use [sanitizeURL()](#sanitizeurlurl-opt).
+* **Blob URLs:** Blob URLs are verified after being converted to data URLs. Note that blob URLs are not revoked.
 
 #### Parameters
 
 * url **string** The URL string to sanitize and inspect.
-
 
 **Returns** **Promise&lt;InspectedURLResult&gt;** The parsed components of the sanitized URL.
 
@@ -305,7 +303,6 @@ const res4 = await inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAU
         ...
       } */
 
-// Note that blob URLs are parsed but not yet sanitized
 const blob5 = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
   type: 'image/svg+xml'
 });
@@ -314,11 +311,15 @@ const res5 = await inspectURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
-        data: null,
-        href: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
+        data: {
+          mime: 'image/svg+xml',
+          base64: false,
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+        },
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
-        protocol: 'blob:',
-        pathname: 'nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
+        protocol: 'data:',
+        pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         ...
       } */
 ```
