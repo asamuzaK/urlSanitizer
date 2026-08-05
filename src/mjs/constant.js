@@ -33,6 +33,12 @@ export const MAX_BLOB_SIZE = 16 * 1024 * 1024;
 export const MAX_NEST = 16;
 
 /**
+ * Length used for truncating string.
+ * @type {number}
+ */
+export const TRUNCATE_LENGTH = 64;
+
+/**
  * Start index used to extract the type name from Object.prototype.toString().
  * (e.g. removes "[object " prefix)
  * @type {number}
