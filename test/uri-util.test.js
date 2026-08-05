@@ -715,16 +715,6 @@ describe('uri-util', () => {
       globalThis.fetch = originalFetch;
     });
 
-    it('returns null if the fetched blob is falsy', async () => {
-      globalThis.fetch = async () => {
-        return {
-          blob: async () => null
-        };
-      };
-      const res = await func('blob:https://example.com/null-blob');
-      assert.strictEqual(res, null, 'result should be null');
-    });
-
     it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid or 0', async () => {
       const data = 'a'.repeat(10);
       const blob = new Blob([data], { type: 'text/plain' });

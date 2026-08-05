@@ -99,7 +99,7 @@ export class URISchemes {
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the parsed URL is syntactically valid and permitted.
    */
-  verifyParsed(parsedUrl, schemes = this.#schemes) {
+  verifyParsed(parsedUrl, schemes) {
     if (!parsedUrl || !parsedUrl.protocol) {
       return false;
     }
@@ -108,6 +108,9 @@ export class URISchemes {
     const isScript = parts.some(s => REG_SCRIPT.test(s));
     if (isScript) {
       return false;
+    }
+    if (!schemes) {
+      schemes = this.#schemes;
     }
     return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
   }
@@ -118,7 +121,7 @@ export class URISchemes {
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
-  verify(uri, schemes = this.#schemes) {
+  verify(uri, schemes) {
     if (!isString(uri)) {
       return false;
     }
@@ -336,9 +339,6 @@ const convertFromBtoa = async blob => {
 export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   const response = await fetch(url);
   const blob = await response.blob();
-  if (!blob) {
-    return null;
-  }
   let maxSize = MAX_BLOB_SIZE;
   if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
     maxSize = maxBlobSize;
