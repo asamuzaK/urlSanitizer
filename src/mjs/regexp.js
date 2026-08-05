@@ -28,7 +28,7 @@ export const REG_MIME_DOM =
 export const REG_MIME_TEXT = /^text\/[\w#&.;-]+/;
 
 /**
- * Matches numeric character reference.
+ * Matches a numeric character reference.
  * @type {RegExp}
  */
 export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
@@ -79,16 +79,22 @@ export const REG_TAG_QUOT =
 export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
 
 /**
- * Matches an ampersand-encoded character (&foo).
- * @type {RegExp}
- */
-export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
-
-/**
- * Match one or more consecutive URL percent-encoded sequences (%20, %E3%81%82).
+ * Matches one or more consecutive percent-encoded sequences (%20, %E3%81%82).
  * @type {RegExp}
  */
 export const REG_PCT_ENC = /(?:%[\dA-F]{2})+/gi;
+
+/**
+ * Matches HTML-encoded ampersands.
+ * @type {RegExp}
+ */
+export const REG_AMP = /&amp;/gi;
+
+/**
+ * Matches HTML-encoded characters (&foo).
+ * @type {RegExp}
+ */
+export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
 
 /**
  * Validates relative URLs and flags invalid patterns.
