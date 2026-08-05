@@ -9,6 +9,7 @@ import { getType, isString } from './common.js';
 /* constants */
 import { CHUNK_SIZE, DECI, HEX, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
+  REG_AMP,
   REG_HASH,
   REG_NUM_REF,
   REG_PCT_ENC,
@@ -266,7 +267,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   for (; depth + nest <= MAX_NEST; depth++) {
     const previousRes = res;
     // Decode '&amp;' before decoding numeric references.
-    res = res.replace(/&amp;/gi, '&').replace(REG_NUM_REF, replaceNumCharRef);
+    res = res.replace(REG_AMP, '&').replace(REG_NUM_REF, replaceNumCharRef);
     if (res === previousRes) {
       break;
     }
