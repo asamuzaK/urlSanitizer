@@ -97,7 +97,7 @@ export const REG_AMP = /&amp;/gi;
 export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
 
 /**
- * Validates relative URLs and flags invalid patterns.
+ * Matches invalid relative URL patterns.
  * @type {RegExp}
  */
 export const REG_VERIFY_RELATIVE = /^(?:\/{2,}|\\|[a-z][a-z\d+\-.]*:[^/])/i;
