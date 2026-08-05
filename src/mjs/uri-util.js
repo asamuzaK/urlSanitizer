@@ -43,7 +43,8 @@ const HEX_TABLE = Array.from(
 );
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const CTRL_CHARS_PATTERN = `[${[...CTRL_CHAR_CODES.values()].join('')}]`;
-const REG_CTRL_CHARS = new RegExp(CTRL_CHARS_PATTERN, 'g');
+const REG_CTRL_CHARS = new RegExp(CTRL_CHARS_PATTERN);
+const REG_CTRL_CHARS_G = new RegExp(CTRL_CHARS_PATTERN, 'g');
 
 /* encoder / decoder */
 const encoder = new TextEncoder();
@@ -257,7 +258,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
       }
     });
   }
-  res = res.replace(REG_CTRL_CHARS, '');
+  res = res.replace(REG_CTRL_CHARS_G, '');
   let depth = 0;
   for (; depth + nest <= MAX_NEST; depth++) {
     const previousRes = res;
