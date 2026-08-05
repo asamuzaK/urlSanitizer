@@ -354,3 +354,46 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   }
   return convertFromBtoa(blob);
 };
+
+/**
+ * Extracts an array of schemes by removing the trailing colon from the protocol string and splitting it by '+'.
+ * @param {string} protocol - The URL protocol (e.g., "data:", "blob:http:").
+ * @returns {string[]} An array of scheme parts.
+ */
+export const getSchemeParts = protocol => {
+  if (!isString(protocol)) {
+    return [];
+  }
+  return protocol.replace(/:$/, '').split('+');
+};
+
+/**
+ * Parses a URL string and extracts the scheme.
+ * @param {string} url - The URL string to parse.
+ * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
+ */
+export const getURLScheme = url => {
+  if (!isString(url)) {
+    return undefined;
+  }
+  const parsedUrl = URL.parse(url);
+  return parsedUrl ? parsedUrl.protocol.replace(/:$/, '') : undefined;
+};
+
+/**
+ * Extracts the components of a parsed Data URL.
+ * @param {string} pathname - The pathname of the URL.
+ * @param {string} [search] - The search (query) string of the URL.
+ * @param {string} [hash] - The hash (fragment) of the URL.
+ * @returns {object} An object containing the media type, parsed media types array, data string, and a boolean indicating if it is base64-encoded.
+ */
+export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
+  if (!isString(pathname)) {
+    return { mediaType: '', mediaTypes: [], data: '', isBase64: false };
+  }
+  const [mediaType, ...dataParts] = pathname.split(',');
+  const data = `${dataParts.join(',')}${search}${hash}`;
+  const mediaTypes = mediaType.split(';');
+  const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+  return { mediaType, mediaTypes, data, isBase64 };
+};

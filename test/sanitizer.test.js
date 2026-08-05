@@ -2201,6 +2201,37 @@ describe('sanitizer', () => {
         assert.deepEqual(res2, null, 'result should be null for failing atob');
       });
 
+      it('allows and sanitizes relative URLs', async () => {
+        const url = '/path/to/resource?query=1#hash';
+        const res = await func(url, { allowRelative: true });
+        assert.strictEqual(
+          res,
+          url,
+          'result should be the sanitized relative URL'
+        );
+      });
+
+      it('logs debug message and returns null for relative URLs', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const url = '/path/to/resource';
+          const res = await func(url, { debug: true, allowRelative: false });
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            warnStub.calledOnce,
+            true,
+            'console.warn should be called'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[0],
+            `[URLSanitizer Debug] Invalid URL input format: ${url}`,
+            'should output the correct debug message'
+          );
+        } finally {
+          warnStub.restore();
+        }
+      });
+
       describe('DOMPurify hook edge cases', () => {
         it('returns early if active context is missing', async () => {
           const { domPurify } = await import('../src/mjs/dompurify.js');
@@ -2593,6 +2624,21 @@ describe('sanitizer', () => {
         } finally {
           warnStub.restore();
         }
+      });
+
+      it('allows and sanitizes relative URLs', () => {
+        const url = '/path/to/resource?query=1#hash';
+        const res = func(url, { allowRelative: true });
+        assert.strictEqual(
+          res,
+          url,
+          'result should be the sanitized relative URL'
+        );
+      });
+
+      it('returns null for relative URLs when allowRelative is false', () => {
+        const res = func('/path/to/resource', { allowRelative: false });
+        assert.deepEqual(res, null, 'result should be null');
       });
     });
 

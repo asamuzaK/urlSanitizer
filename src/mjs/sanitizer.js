@@ -8,7 +8,10 @@ import { getType, isString } from './common.js';
 import {
   URISchemes,
   escapeURLEncodedHTMLChars,
+  extractDataUrlComponents,
   fetchBlobAsDataURL,
+  getSchemeParts,
+  getURLScheme,
   parseBase64,
   parseURLEncodedNumCharRef,
   trimTrailingEmptyQueryAndHash
@@ -478,10 +481,11 @@ export class URLSanitizer extends URISchemes {
    * @returns {string|null} Sanitized data URL or null.
    */
   #sanitizeDataURL(urlObj, scheme, ctx) {
-    const [mediaType, ...dataParts] = urlObj.pathname.split(',');
-    const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
-    const mediaTypes = mediaType.split(';');
-    const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+    const { mediaType, mediaTypes, data, isBase64 } = extractDataUrlComponents(
+      urlObj.pathname,
+      urlObj.search,
+      urlObj.hash
+    );
     let parsedData = data;
     if (isBase64) {
       try {
@@ -501,7 +505,7 @@ export class URLSanitizer extends URISchemes {
         return null;
       }
       const dataScheme = parsedUrl.protocol;
-      const dataSchemeParts = dataScheme.replace(/:$/, '').split('+');
+      const dataSchemeParts = getSchemeParts(dataScheme);
       if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
         return null;
       }
@@ -638,7 +642,7 @@ export class URLSanitizer extends URISchemes {
       inspectedURL.valid = true;
       if (urlObj) {
         const { pathname, protocol } = urlObj;
-        const schemeParts = protocol.replace(/:$/, '').split('+');
+        const schemeParts = getSchemeParts(protocol);
         const isDataUrl = schemeParts.includes('data');
         if (isDataUrl) {
           const [mediaType, ...dataParts] = pathname.split(',');
@@ -750,22 +754,6 @@ export class URLSanitizer extends URISchemes {
 const urlSanitizer = new URLSanitizer();
 
 /**
- * Helper function to parse a URL and extract its scheme.
- * @private
- * @param {string} url - The URL string to parse.
- * @param {boolean} isDebug - Flag to enable debug output.
- * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
- */
-const getURLScheme = (url, isDebug) => {
-  const parsedUrl = URL.parse(url);
-  if (parsedUrl) {
-    return parsedUrl.protocol.replace(/:$/, '');
-  }
-  logDebug(isDebug, `Invalid URL input format: ${url}`);
-  return undefined;
-};
-
-/**
  * Asynchronously sanitizes the given URL.
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
@@ -797,7 +785,14 @@ export const sanitizeURL = async (
     return null;
   }
   const isDebug = !!opt?.debug;
-  const scheme = getURLScheme(url, isDebug);
+  const scheme = getURLScheme(url);
+  if (scheme === undefined) {
+    if (opt.allowRelative) {
+      return urlSanitizer.sanitize(url, opt);
+    }
+    logDebug(isDebug, `Invalid URL input format: ${url}`);
+    return null;
+  }
   if (scheme === 'blob') {
     let res = null;
     const { allow, deny, only } = opt;
@@ -840,10 +835,7 @@ export const sanitizeURL = async (
     }
     return res;
   }
-  if (scheme !== undefined || opt.allowRelative) {
-    return urlSanitizer.sanitize(url, opt) || null;
-  }
-  return null;
+  return urlSanitizer.sanitize(url, opt);
 };
 
 /**
@@ -876,17 +868,21 @@ export const sanitizeURLSync = (
     return null;
   }
   const isDebug = !!opt?.debug;
-  const scheme = getURLScheme(url, isDebug);
+  const scheme = getURLScheme(url);
+  if (scheme === undefined) {
+    if (opt.allowRelative) {
+      return urlSanitizer.sanitize(url, opt);
+    }
+    logDebug(isDebug, `Invalid URL input format: ${url}`);
+    return null;
+  }
   if (scheme === 'blob') {
     if (opt?.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
     return null;
   }
-  if (scheme !== undefined || opt.allowRelative) {
-    return urlSanitizer.sanitize(url, opt) || null;
-  }
-  return null;
+  return urlSanitizer.sanitize(url, opt);
 };
 
 /**

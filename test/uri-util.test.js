@@ -1038,4 +1038,99 @@ describe('uri-util', () => {
       });
     });
   });
+
+  describe('get scheme parts', () => {
+    const func = mjs.getSchemeParts;
+
+    it('returns empty array if argument is not a string', () => {
+      assert.deepEqual(func(), [], 'result for undefined');
+      assert.deepEqual(func(123), [], 'result for number');
+      assert.deepEqual(func(null), [], 'result for null');
+    });
+
+    it('returns a single part for a simple protocol', () => {
+      assert.deepEqual(func('https:'), ['https'], 'result');
+    });
+
+    it('returns multiple parts for a compound protocol', () => {
+      assert.deepEqual(func('git+http:'), ['git', 'http'], 'result');
+    });
+
+    it('handles string without trailing colon', () => {
+      assert.deepEqual(func('data'), ['data'], 'result');
+    });
+  });
+
+  describe('get URL scheme', () => {
+    const func = mjs.getURLScheme;
+
+    it('returns undefined if argument is not a string', () => {
+      assert.strictEqual(func(), undefined, 'result for undefined');
+      assert.strictEqual(func(123), undefined, 'result for number');
+      assert.strictEqual(func(null), undefined, 'result for null');
+    });
+
+    it('returns undefined for invalid URL string', () => {
+      assert.strictEqual(func('foo'), undefined, 'result');
+    });
+
+    it('returns the scheme without trailing colon for a valid URL', () => {
+      assert.strictEqual(func('https://example.com'), 'https', 'result');
+    });
+
+    it('returns the scheme for a data URL', () => {
+      assert.strictEqual(func('data:text/plain,foo'), 'data', 'result');
+    });
+  });
+
+  describe('extract Data URL components', () => {
+    const func = mjs.extractDataUrlComponents;
+
+    it('returns default object if pathname is not a string', () => {
+      const expected = {
+        mediaType: '',
+        mediaTypes: [],
+        data: '',
+        isBase64: false
+      };
+      assert.deepEqual(func(), expected, 'result for undefined');
+      assert.deepEqual(func(123), expected, 'result for number');
+      assert.deepEqual(func(null), expected, 'result for null');
+    });
+
+    it('extracts components for a standard data URL without base64', () => {
+      const res = func('text/html,<div>Hello</div>');
+      assert.strictEqual(res.mediaType, 'text/html', 'mediaType');
+      assert.deepEqual(res.mediaTypes, ['text/html'], 'mediaTypes');
+      assert.strictEqual(res.data, '<div>Hello</div>', 'data');
+      assert.strictEqual(res.isBase64, false, 'isBase64');
+    });
+
+    it('extracts components for a base64 encoded data URL', () => {
+      const res = func('image/png;base64,iVBORw0KGgo=');
+      assert.strictEqual(res.mediaType, 'image/png;base64', 'mediaType');
+      assert.deepEqual(res.mediaTypes, ['image/png', 'base64'], 'mediaTypes');
+      assert.strictEqual(res.data, 'iVBORw0KGgo=', 'data');
+      assert.strictEqual(res.isBase64, true, 'isBase64');
+    });
+
+    it('appends search and hash to the extracted data', () => {
+      const res = func('text/plain,hello', '?foo=bar', '#baz');
+      assert.strictEqual(res.data, 'hello?foo=bar#baz', 'data');
+    });
+
+    it('handles missing search and hash components correctly', () => {
+      const res = func('text/plain,hello');
+      assert.strictEqual(res.data, 'hello', 'data with default parameters');
+    });
+
+    it('handles multiple commas correctly by preserving data parts', () => {
+      const res = func('text/plain,hello,world,test');
+      assert.strictEqual(
+        res.data,
+        'hello,world,test',
+        'data with multiple commas'
+      );
+    });
+  });
 });
