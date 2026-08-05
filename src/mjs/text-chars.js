@@ -7,6 +7,12 @@ import textChars from '../lib/file/text-chars.json' with { type: 'json' };
 import { HEX } from './constant.js';
 
 /**
+ * The last index of ASCII character codes.
+ * @type {number}
+ */
+const ASCII_LAST_INDEX = 256;
+
+/**
  * A set of valid text character codes.
  * @type {Set<number>}
  */
@@ -53,7 +59,7 @@ export const WINDOWS1252_TO_UNICODE = new Map([
  */
 const generateCtrlCharCodes = () => {
   const charCodes = new Map();
-  for (let i = 0; i < HEX * HEX; i++) {
+  for (let i = 0; i < ASCII_LAST_INDEX; i++) {
     if (!TEXT_CHAR_CODES.has(i) && !WINDOWS1252_TO_UNICODE.has(i)) {
       charCodes.set(i, `\\x${i.toString(HEX).padStart(2, '0').toUpperCase()}`);
     }
