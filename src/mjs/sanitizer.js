@@ -47,6 +47,22 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
   RETURN_DOM_FRAGMENT: false,
   RETURN_TRUSTED_TYPE: false
 });
+const DEFAULT_SCHEMES = Object.freeze([
+  Object.freeze(['blob', false]),
+  Object.freeze(['data', false]),
+  Object.freeze(['file', false]),
+  Object.freeze(['javascript', false]),
+  Object.freeze(['vbscript', false])
+]);
+const DEFAULT_OPTS = Object.freeze({
+  allow: Object.freeze([]),
+  deny: Object.freeze([]),
+  only: Object.freeze([]),
+  allowRelative: false,
+  debug: false,
+  revokeObjectURL: false,
+  maxBlobSize: MAX_BLOB_SIZE
+});
 
 /* typedef */
 /**
@@ -104,13 +120,7 @@ export class SanitizeContext {
     this.domPurify = domPurifyInstance;
     this.nest = 0;
     this.recurse = new Set();
-    this.schemeMap = new Map([
-      ['blob', false],
-      ['data', false],
-      ['file', false],
-      ['javascript', false],
-      ['vbscript', false]
-    ]);
+    this.schemeMap = new Map(DEFAULT_SCHEMES);
   }
 
   /**
@@ -287,17 +297,21 @@ export class URLSanitizer extends URISchemes {
    * Internal recursive method for sanitization.
    * @private
    * @param {string} url - The URL string to sanitize.
-   * @param {object} rules - Normalized sanitization rules.
+   * @param {object} rules - The sanitization rules.
+   * @param {string[]} rules.allow - Allowed schemes.
+   * @param {boolean} rules.allowRelative - Allow relative URLs.
+   * @param {string[]} rules.deny - Denied schemes.
+   * @param {string[]} rules.only - Exclusively allowed schemes.
    * @param {SanitizeContext} ctx - Internal context for state.
    * @returns {string|null} The sanitized URL, or null.
    */
-  #process(url, rules, ctx) {
+  #process(url, { allow, allowRelative, deny, only }, ctx) {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
     // Resolve allowed/denied schemes
     const { allowedSchemes, restrictScheme, schemeMap } =
-      this.#resolveSchemeRules(rules, ctx);
+      this.#resolveSchemeRules({ allow, deny, only }, ctx);
     // Parse and verify the URL
     const {
       isDataUrl,
@@ -307,7 +321,7 @@ export class URLSanitizer extends URISchemes {
       schemeParts,
       urlObj,
       urlToSanitize
-    } = this.#parseAndVerifyURL(url, rules.allowRelative, allowedSchemes, ctx);
+    } = this.#parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx);
     if (!isVerified) {
       return null;
     }
@@ -393,7 +407,7 @@ export class URLSanitizer extends URISchemes {
    * Parses and verifies absolute and relative URLs.
    * @private
    * @param {string} url - The URL to parse.
-   * @param {boolean} allowRelative - If relative URLs are OK.
+   * @param {boolean} allowRelative - Allow relative URLs.
    * @param {Set<string>} allowedSchemes - Permitted schemes.
    * @param {SanitizeContext} ctx - Context for logging and state.
    * @returns {object} Parsed URL properties and flags.
@@ -552,24 +566,19 @@ export class URLSanitizer extends URISchemes {
    * Executes the core sanitization logic.
    * @private
    * @param {string} url - The URL string to sanitize.
-   * @param {object} [opt] - Sanitization options.
+   * @param {object} opt - Sanitization options.
    * @returns {string|null} The sanitized URL, or null.
    */
   #executeSanitize(url, opt) {
     if (!url || !isString(url)) {
       return null;
     }
-    const maxLength =
-      Number.isInteger(opt?.maxLength) && opt.maxLength ? opt.maxLength : 0;
+    const { allow, allowRelative, debug, deny, maxLength, only } = opt;
     if (maxLength && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
       throw new RangeError(msg);
     }
-    const hasRestrictiveRules =
-      opt &&
-      ((Array.isArray(opt.deny) && opt.deny.length > 0) ||
-        (Array.isArray(opt.only) && opt.only.length > 0) ||
-        opt.allowRelative);
+    const hasRestrictiveRules = deny.length || only.length || allowRelative;
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
       !hasRestrictiveRules &&
@@ -581,18 +590,12 @@ export class URLSanitizer extends URISchemes {
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       } else {
-        logDebug(opt?.debug, `Failed to parse URL.`);
+        logDebug(debug, `Failed to parse URL.`);
         return null;
       }
     }
-    const rules = {
-      allow: Array.isArray(opt?.allow) ? opt.allow : [],
-      deny: Array.isArray(opt?.deny) ? opt.deny : [],
-      only: Array.isArray(opt?.only) ? opt.only : [],
-      allowRelative: !!opt?.allowRelative
-    };
     const ctx = new SanitizeContext(opt, domPurify);
-    return this.#process(url, rules, ctx);
+    return this.#process(url, { allow, allowRelative, deny, only }, ctx);
   }
 
   /**
@@ -602,14 +605,18 @@ export class URLSanitizer extends URISchemes {
    * @param {string[]} [opt.allow] - An array of schemes to allow.
    * @param {string[]} [opt.deny] - An array of schemes to deny.
    * @param {string[]} [opt.only] - An array of specific schemes to allow.
-   * @param {boolean} [opt.allowRelative] - Flag to safely allow relative URLs.
+   * @param {boolean} [opt.allowRelative] - Allow relative URLs.
    * @param {boolean} [opt.debug] - Flag to enable debug mode.
    * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
    * @param {number} [opt.maxLength] - The maximum allowed URL length.
    * @returns {string|null} The sanitized URL, or null.
    */
-  sanitize(url, opt) {
-    return this.#executeSanitize(url, opt);
+  sanitize(url, opt = {}) {
+    const options = {
+      ...DEFAULT_OPTS,
+      ...opt
+    };
+    return this.#executeSanitize(url, options);
   }
 
   /**
@@ -634,6 +641,7 @@ export class URLSanitizer extends URISchemes {
     let invalidReason = null;
     try {
       sanitizedUrl = this.#executeSanitize(url, {
+        ...DEFAULT_OPTS,
         allow: ['data'],
         allowRelative: true
       });
@@ -777,74 +785,56 @@ const urlSanitizer = new URLSanitizer();
  * @param {number} [opt.maxLength] - The maximum allowed URL length
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
-export const sanitizeURL = async (
-  url,
-  opt = {
-    allow: [],
-    deny: [],
-    only: [],
-    allowRelative: false,
-    debug: false,
-    revokeObjectURL: false,
-    maxBlobSize: MAX_BLOB_SIZE
-  }
-) => {
+export const sanitizeURL = async (url, opt = {}) => {
   if (!url || !isString(url)) {
     return null;
   }
-  const isDebug = !!opt?.debug;
+  const options = {
+    ...DEFAULT_OPTS,
+    ...opt
+  };
   const scheme = getURLScheme(url);
   if (scheme === undefined) {
-    if (opt.allowRelative) {
-      return urlSanitizer.sanitize(url, opt);
+    if (options.allowRelative) {
+      return urlSanitizer.sanitize(url, options);
     }
-    logDebug(isDebug, `Invalid URL input: ${truncateURL(url)}`);
+    logDebug(options.debug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
+    const { allow, deny, only } = options;
     let res = null;
-    const { allow, deny, only } = opt;
     if (
-      (Array.isArray(allow) &&
-        allow.includes('blob') &&
-        !(Array.isArray(deny) && deny.includes('blob'))) ||
-      (Array.isArray(only) && only.includes('blob'))
+      (allow.includes('blob') && !deny.includes('blob')) ||
+      only.includes('blob')
     ) {
-      const maxBlobSize =
-        Number.isInteger(opt?.maxBlobSize) && opt.maxBlobSize > 0
-          ? opt.maxBlobSize
-          : MAX_BLOB_SIZE;
       let data;
       try {
-        data = await fetchBlobAsDataURL(url, maxBlobSize);
+        data = await fetchBlobAsDataURL(url, options.maxBlobSize);
       } catch (e) {
-        const msg =
-          `Failed to fetch and convert blob URL: ${truncateURL(url)}`;
-        logDebug(isDebug, msg, e);
+        const msg = `Failed to fetch and convert blob URL: ${truncateURL(url)}`;
+        logDebug(options.debug, msg, e);
       }
       if (data) {
-        const options = { ...opt };
-        if (Array.isArray(opt.only)) {
-          options.only = opt.only.includes('data')
-            ? opt.only
-            : [...opt.only, 'data'];
-        } else if (Array.isArray(opt.allow)) {
-          options.allow = opt.allow.includes('data')
-            ? opt.allow
-            : [...opt.allow, 'data'];
-          if (Array.isArray(opt.deny)) {
-            options.deny = opt.deny.filter(s => s !== 'data');
+        if (only.length) {
+          if (!only.includes('data')) {
+            options.only = [...only, 'data'];
           }
+        } else {
+          if (!allow.includes('data')) {
+            options.allow = [...allow, 'data'];
+          }
+          options.deny = options.deny.filter(s => s !== 'data');
         }
         res = urlSanitizer.sanitize(data, options);
       }
     }
-    if (opt?.revokeObjectURL) {
+    if (options.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
     return res;
   }
-  return urlSanitizer.sanitize(url, opt);
+  return urlSanitizer.sanitize(url, options);
 };
 
 /**
@@ -862,36 +852,29 @@ export const sanitizeURL = async (
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
-export const sanitizeURLSync = (
-  url,
-  opt = {
-    allow: [],
-    deny: [],
-    only: [],
-    allowRelative: false,
-    debug: false,
-    revokeObjectURL: false
-  }
-) => {
+export const sanitizeURLSync = (url, opt = {}) => {
   if (!url || !isString(url)) {
     return null;
   }
-  const isDebug = !!opt?.debug;
+  const options = {
+    ...DEFAULT_OPTS,
+    ...opt
+  };
   const scheme = getURLScheme(url);
   if (scheme === undefined) {
-    if (opt.allowRelative) {
-      return urlSanitizer.sanitize(url, opt);
+    if (options.allowRelative) {
+      return urlSanitizer.sanitize(url, options);
     }
-    logDebug(isDebug, `Invalid URL input: ${truncateURL(url)}`);
+    logDebug(options.debug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
-    if (opt?.revokeObjectURL) {
+    if (options.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
     return null;
   }
-  return urlSanitizer.sanitize(url, opt);
+  return urlSanitizer.sanitize(url, options);
 };
 
 /**
