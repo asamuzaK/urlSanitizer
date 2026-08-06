@@ -2665,7 +2665,7 @@ describe('sanitizer', () => {
           {
             input: '',
             valid: false,
-            reason: 'Invalid URL input: '
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
           },
           'result'
         );
