@@ -773,22 +773,19 @@ const urlSanitizer = new URLSanitizer();
  * @param {number} [opt.maxLength] - The maximum allowed URL length
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
-export const sanitizeURL = async (
-  url,
-  opt = {
-    allow: [],
-    deny: [],
-    only: [],
-    allowRelative: false,
-    debug: false,
-    revokeObjectURL: false,
-    maxBlobSize: MAX_BLOB_SIZE
-  }
-) => {
+export const sanitizeURL = async (url, opt = {}) => {
   if (!url || !isString(url)) {
     return null;
-  }
-  const isDebug = !!opt?.debug;
+  }  
+  const {
+    allow = [],
+    deny = [],
+    only = [],
+    allowRelative = false,
+    debug: isDebug = false,
+    revokeObjectURL = false,
+    maxBlobSize = MAX_BLOB_SIZE
+  } = opt;
   const scheme = getURLScheme(url);
   if (scheme === undefined) {
     if (opt.allowRelative) {
