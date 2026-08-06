@@ -626,6 +626,10 @@ export class URLSanitizer extends URISchemes {
       inspectedURL.reason = `Invalid URL input: ${truncateURL(url)}`;
       return inspectedURL;
     }
+    if (url === '') {
+      inspectedURL.reason = 'Invalid URL input: (empty string)';
+      return inspectedURL;
+    }
     let sanitizedUrl;
     let invalidReason = null;
     try {
@@ -897,22 +901,17 @@ export const sanitizeURLSync = (
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const inspectURL = async url => {
-  if (!isString(url)) {
-    return {
-      input: url,
-      valid: false,
-      reason: `Invalid URL input: ${truncateURL(url)}`
-    };
-  }
-  const parsedUrl = URL.parse(url);
-  if (parsedUrl?.protocol === 'blob:') {
-    try {
-      const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
-      const inspectedURLResult = urlSanitizer.inspect(dataUrl);
-      inspectedURLResult.input = url;
-      return inspectedURLResult;
-    } catch (e) {
-      return { input: url, valid: false, reason: e.message };
+  if (isString(url)) {
+    const parsedUrl = URL.parse(url);
+    if (parsedUrl?.protocol === 'blob:') {
+      try {
+        const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
+        const inspectedURLResult = urlSanitizer.inspect(dataUrl);
+        inspectedURLResult.input = url;
+        return inspectedURLResult;
+      } catch (e) {
+        return { input: url, valid: false, reason: e.message };
+      }
     }
   }
   return urlSanitizer.inspect(url);

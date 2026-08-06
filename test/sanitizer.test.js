@@ -1365,7 +1365,7 @@ describe('sanitizer', () => {
     });
 
     describe('inspect sanitized URL', () => {
-      it('returns invalid object with syntax reason for missing arguments', () => {
+      it('returns invalid URL result for missing arguments', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.inspect();
         assert.deepEqual(res, {
@@ -1375,7 +1375,21 @@ describe('sanitizer', () => {
         });
       });
 
-      it('returns invalid object with syntax reason for unregistered schemes', () => {
+      it('returns invalid URL result for empty string input', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.inspect('');
+        assert.deepEqual(
+          res,
+          {
+            input: '',
+            valid: false,
+            reason: 'Invalid URL input: (empty string)'
+          },
+          'result'
+        );
+      });
+
+      it('returns invalid URL result for unregistered schemes', () => {
         const sanitizer = new URLSanitizer();
         const url = 'javascript:alert(1)';
         const res = sanitizer.inspect(url);
@@ -2665,7 +2679,7 @@ describe('sanitizer', () => {
           {
             input: '',
             valid: false,
-            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+            reason: 'Invalid URL input: (empty string)'
           },
           'result'
         );
