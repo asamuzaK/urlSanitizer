@@ -2238,7 +2238,7 @@ describe('sanitizer', () => {
           );
           assert.strictEqual(
             warnStub.firstCall.args[0],
-            `[URLSanitizer Debug] Invalid URL input format: ${url}`,
+            `[URLSanitizer Debug] Invalid URL input: ${url}`,
             'should output the correct debug message'
           );
         } finally {
@@ -2613,7 +2613,7 @@ describe('sanitizer', () => {
             true,
             'console.warn should be called once'
           );
-          const expectedPrefix = `[URLSanitizer Debug] Invalid URL input format: ${invalidUrl}`;
+          const expectedPrefix = `[URLSanitizer Debug] Invalid URL input: ${invalidUrl}`;
           assert.strictEqual(
             warnStub.firstCall.args[0],
             expectedPrefix,

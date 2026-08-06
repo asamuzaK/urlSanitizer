@@ -798,7 +798,7 @@ export const sanitizeURL = async (
     if (opt.allowRelative) {
       return urlSanitizer.sanitize(url, opt);
     }
-    logDebug(isDebug, `Invalid URL input format: ${truncateURL(url)}`);
+    logDebug(isDebug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
@@ -882,7 +882,7 @@ export const sanitizeURLSync = (
     if (opt.allowRelative) {
       return urlSanitizer.sanitize(url, opt);
     }
-    logDebug(isDebug, `Invalid URL input format: ${truncateURL(url)}`);
+    logDebug(isDebug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
