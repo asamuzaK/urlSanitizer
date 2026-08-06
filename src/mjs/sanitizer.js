@@ -897,31 +897,25 @@ export const sanitizeURLSync = (
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const inspectURL = async url => {
-  const invalidResult = {
-    input: url,
-    valid: false
-  };
   if (!isString(url)) {
-    invalidResult.reason = `Invalid URL input: ${truncateURL(url)}`;
-    return invalidResult;
+    return {
+      input: url,
+      valid: false,
+      reason: `Invalid URL input: ${truncateURL(url)}`
+    };
   }
   const parsedUrl = URL.parse(url);
-  if (parsedUrl) {
-    if (parsedUrl.protocol === 'blob:') {
-      try {
-        const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
-        const inspectedURLResult = urlSanitizer.inspect(dataUrl);
-        inspectedURLResult.input = url;
-        return inspectedURLResult;
-      } catch (e) {
-        invalidResult.reason = e.message;
-        return invalidResult;
-      }
+  if (parsedUrl?.protocol === 'blob:') {
+    try {
+      const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
+      const inspectedURLResult = urlSanitizer.inspect(dataUrl);
+      inspectedURLResult.input = url;
+      return inspectedURLResult;
+    } catch (e) {
+      return { input: url, valid: false, reason: e.message };
     }
-    return urlSanitizer.inspect(url);
   }
-  invalidResult.reason = `Invalid URL input: ${truncateURL(url)}`;
-  return invalidResult;
+  return urlSanitizer.inspect(url);
 };
 
 /**
