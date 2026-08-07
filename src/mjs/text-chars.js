@@ -53,7 +53,7 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 ]);
 
 /**
- * Generates control character codes in hex.
+ * Generates hexadecimal escape strings for control characters.
  * @private
  * @returns {Map<number, string>} Generated control char codes.
  */
