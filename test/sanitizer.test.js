@@ -1112,6 +1112,14 @@ describe('sanitizer', () => {
           null,
           'should reject double backslash bypass'
         );
+        const resMix = sanitizer.sanitize('/\\evil.com', {
+          allowRelative: true
+        });
+        assert.strictEqual(
+          resDouble,
+          null,
+          'should reject mixed backslash bypass'
+        );
       });
 
       it('handles scheme-prefixed URLs without slashes safely', () => {
