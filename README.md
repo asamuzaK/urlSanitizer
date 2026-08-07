@@ -442,14 +442,16 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 ### Characteristics & Trade-offs
 
 * **Optimized for Standard Routing & XSS Rejection**
-  * For **Normal HTTP URLs** and **XSS URLs**, `url-sanitizer` achieves high performance by leveraging the native `URL` API and optimized early-return logic.
+  * For **normal HTTP(S) URLs** and URLs containing common XSS patterns, `url-sanitizer` achieves low latency by leveraging the native `URL` API and applying optimized early-return paths when strict inspection is unnecessary.
 * **Exceptional Invalid URL Handling (Fail-Fast)**
-  * For **Invalid URLs** (e.g., malformed schemes or unparseable formats), `url-sanitizer` utilizes a fail-fast architecture via `URL.parse()`.
+  * For **invalid URLs** (such as malformed schemes or unparseable formats), `url-sanitizer` uses a fail-fast architecture based on `URL.parse()`, avoiding unnecessary sanitization steps after validation failure.
 * **Deep Inspection for High-Risk Payloads**
-  * For **Complex Data URLs**, `url-sanitizer` prioritizes security over execution speed. The following steps are taken to perform sanitization:
-    1. Decodes the Base64 payload.
-    2. Runs `DOMPurify` to construct and clean the DOM tree.
-    3. Re-encodes the purified content back into a safe URL.
+  * For **complex Data URLs**, `url-sanitizer` prioritizes security over raw execution speed. The following inspection pipeline is applied:
+    1. Parses and normalizes the Data URL structure.
+    2. Decodes Base64 payloads when present.
+    3. Decodes URL-encoded content and numeric character references.
+    4. Sanitizes embedded HTML/SVG content using `DOMPurify`.
+    5. Re-encodes the purified payload into a safe URL representation.
 
 ## Acknowledgments
 
