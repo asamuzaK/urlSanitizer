@@ -414,8 +414,17 @@ export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
   if (!isString(pathname)) {
     return { mediaType: '', mediaTypes: [], data: '', isBase64: false };
   }
-  const [mediaType, ...dataParts] = pathname.split(',');
-  const data = `${dataParts.join(',')}${search}${hash}`;
+  const comma = pathname.indexOf(',');
+  if (comma === -1) {
+    return {
+        mediaType: pathname,
+        mediaTypes: pathname.split(';'),
+        data: '',
+        isBase64: false
+    };
+  }
+  const mediaType = pathname.slice(0, comma);
+  const data = `${pathname.slice(comma + 1)}${search}${hash}`;
   const mediaTypes = mediaType.split(';');
   const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
   return { mediaType, mediaTypes, data, isBase64 };
