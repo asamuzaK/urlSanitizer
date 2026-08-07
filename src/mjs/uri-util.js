@@ -227,18 +227,21 @@ export const parseBase64 = data => {
  * @returns {string} The resolved character or the original match.
  */
 export const replaceNumCharRef = (match, value) => {
-  const num = /x/i.test(value[0])
-    ? parseInt(value.substring(1), HEX)
-    : parseInt(value, DECI);
-  if (Number.isInteger(num)) {
-    if (TEXT_CHAR_CODES.has(num)) {
-      return String.fromCharCode(num);
-    } else if (WINDOWS1252_TO_UNICODE.has(num)) {
-      const codePoint = WINDOWS1252_TO_UNICODE.get(num);
-      return String.fromCodePoint(codePoint);
-    } else if (CTRL_CHAR_CODES.has(num)) {
-      return '';
-    }
+  const num = /^[xX]/.test(value)
+    ? Number.parseInt(value.slice(1), HEX)
+    : Number.parseInt(value, DECI);
+  if (Number.isNaN(num)) {
+    return match;
+  }
+  if (CTRL_CHAR_CODES.has(num)) {
+    return '';
+  }
+  if (TEXT_CHAR_CODES.has(num)) {
+    return String.fromCharCode(num);
+  }
+  const codePoint = WINDOWS1252_TO_UNICODE.get(num);
+  if (codePoint !== undefined) {
+    return String.fromCodePoint(codePoint);
   }
   return match;
 };
