@@ -1116,7 +1116,7 @@ describe('sanitizer', () => {
           allowRelative: true
         });
         assert.strictEqual(
-          resDouble,
+          resMix,
           null,
           'should reject mixed backslash bypass'
         );
