@@ -47,13 +47,6 @@ const INTERNAL_PURIFY_CONFIG = Object.freeze({
   RETURN_DOM_FRAGMENT: false,
   RETURN_TRUSTED_TYPE: false
 });
-const DEFAULT_SCHEMES = Object.freeze([
-  Object.freeze(['blob', false]),
-  Object.freeze(['data', false]),
-  Object.freeze(['file', false]),
-  Object.freeze(['javascript', false]),
-  Object.freeze(['vbscript', false])
-]);
 const DEFAULT_OPTS = Object.freeze({
   allow: Object.freeze([]),
   deny: Object.freeze([]),
@@ -120,7 +113,13 @@ export class SanitizeContext {
     this.domPurify = domPurifyInstance;
     this.nest = 0;
     this.recurse = new Set();
-    this.schemeMap = new Map(DEFAULT_SCHEMES);
+    this.schemeMap = new Map([
+      ['blob', false],
+      ['data', false],
+      ['file', false],
+      ['javascript', false],
+      ['vbscript', false]
+    ]);
   }
 
   /**
