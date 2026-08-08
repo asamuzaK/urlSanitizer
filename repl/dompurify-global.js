@@ -12,7 +12,7 @@ const PROPERTIES = Object.freeze([
 
 const hookQueue = [];
 export const domPurify = new Proxy({}, {
-  get(target, prop) {
+  get(target, prop, receiver) {
     const purifier = globalThis.DOMPurify || globalThis.window?.DOMPurify;
     if (purifier) {
       if (hookQueue.length) {
@@ -29,9 +29,10 @@ export const domPurify = new Proxy({}, {
     return (...args) => {
       if (PROPERTIES.includes(prop)) {
         hookQueue.push({ prop, args });
-        return target;
+        return receiver; // Proxy 自身を返してチェーン可能に保つ
       }
       throw new Error('DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).');
     };
   }
 });
+
