@@ -357,7 +357,7 @@ export class URLSanitizer extends URISchemes {
     let allowedSchemes = this.#allowedSchemes;
     let restrictScheme = false;
     const schemeMap = new Map(ctx.schemeMap);
-    if (only.length) {
+    if (Array.isArray(only) && only.length) {
       allowedSchemes = new Set();
       for (const item of only) {
         if (isString(item)) {
@@ -374,7 +374,7 @@ export class URLSanitizer extends URISchemes {
         }
       }
     } else {
-      if (allow.length) {
+      if (Array.isArray(allow) && allow.length) {
         allowedSchemes = new Set(this.#allowedSchemes);
         for (const item of allow) {
           if (isString(item)) {
@@ -388,7 +388,7 @@ export class URLSanitizer extends URISchemes {
           }
         }
       }
-      if (deny.length) {
+      if (Array.isArray(deny) && deny.length) {
         for (let item of deny) {
           if (isString(item)) {
             item = item.trim();
@@ -577,7 +577,7 @@ export class URLSanitizer extends URISchemes {
       const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
       throw new RangeError(msg);
     }
-    const hasRestrictiveRules = deny.length || only.length || allowRelative;
+    const hasRestrictiveRules = (Array.isArray(deny) && deny.length) || (Array.isArray(only) && only.length) || allowRelative;
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
       !hasRestrictiveRules &&
