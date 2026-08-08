@@ -380,7 +380,7 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
 
 /**
  * Extracts an array of schemes by removing the trailing colon from the protocol string and splitting it by '+'.
- * @param {string} protocol - The URL protocol (e.g., "data:", "blob:http:").
+ * @param {string} protocol - The URL protocol (e.g., "data:", "git+https:").
  * @returns {string[]} An array of scheme parts.
  */
 export const getSchemeParts = protocol => {
