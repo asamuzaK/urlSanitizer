@@ -25,10 +25,10 @@ export const REG_MIME_DOM =
  * Matches general text MIME types.
  * @type {RegExp}
  */
-export const REG_MIME_TEXT = /^text\/[\w#&.;+-]+/;
+export const REG_MIME_TEXT = /^text\/[\w#&.;+-]+/i;
 
 /**
- * Matches numeric character references in the byte range (0x00–0xFF).
+ * Matches numeric character references (hex or decimal).
  * @type {RegExp}
  */
 export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
