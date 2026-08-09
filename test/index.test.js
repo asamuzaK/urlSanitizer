@@ -161,6 +161,29 @@ describe('URL Sanitizer', () => {
       );
     });
 
+    it('should get sanitized value', async () => {
+      const data =
+        '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
+      const blob = new Blob([data], {
+        type: 'text/html'
+      });
+      const url = URL.createObjectURL(blob);
+      const res = await sanitizeURL(url, {
+        allow: ['blob']
+      });
+      URL.revokeObjectURL(url);
+      assert.strictEqual(
+        res,
+        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E',
+        'result'
+      );
+      assert.strictEqual(
+        decodeURIComponent(res),
+        'data:text/html,<div></div><p></p>',
+        'decoded'
+      );
+    });
+
     it('should get null', async () => {
       const res = await sanitizeURL('web+foo://example.com', {
         deny: ['web+foo']

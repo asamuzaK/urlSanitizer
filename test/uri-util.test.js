@@ -900,9 +900,7 @@ describe('uri-util', () => {
       globalThis.fetch = async url => ({
         ok: true,
         headers: {
-          get: key => {
-            return null;
-          }
+          get: key => null
         },
         blob: async () => blob
       });
@@ -945,6 +943,129 @@ describe('uri-util', () => {
         `data:base64,${base64}`,
         'should omit MIME type in data URL'
       );
+    });
+
+    describe('fetch using response.body (Streams API)', () => {
+      it('fetches a URL and convert to a data URL using stream reader', async () => {
+        const chunksData = ['Hello, ', 'stream!'];
+        const encoder = new TextEncoder();
+        const chunks = chunksData.map(str => encoder.encode(str));
+        let chunkIndex = 0;
+
+        // Mock ReadableStreamDefaultReader
+        const mockReader = {
+          read: async () => {
+            if (chunkIndex < chunks.length) {
+              return { done: false, value: chunks[chunkIndex++] };
+            }
+            return { done: true, value: undefined };
+          },
+          releaseLock: () => {}
+        };
+
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-type') {
+                return 'text/plain';
+              }
+              return null;
+            }
+          },
+          body: {
+            getReader: () => mockReader
+          }
+        });
+        const res = await func('blob:https://example.com/stream-mock');
+        const base64 =
+          globalThis.Buffer.from('Hello, stream!').toString('base64');
+        const expectedUrl = `data:text/plain;base64,${base64}`;
+        assert.strictEqual(res, expectedUrl, 'result using stream');
+      });
+
+      it('fetches a URL and convert to a data URL without content-type', async () => {
+        const chunksData = ['Hello, ', 'stream!'];
+        const encoder = new TextEncoder();
+        const chunks = chunksData.map(str => encoder.encode(str));
+        let chunkIndex = 0;
+
+        // Mock ReadableStreamDefaultReader
+        const mockReader = {
+          read: async () => {
+            if (chunkIndex < chunks.length) {
+              return { done: false, value: chunks[chunkIndex++] };
+            }
+            return { done: true, value: undefined };
+          },
+          releaseLock: () => {}
+        };
+
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => null
+          },
+          body: {
+            getReader: () => mockReader
+          }
+        });
+        const res = await func('blob:https://example.com/stream-mock');
+        const base64 =
+          globalThis.Buffer.from('Hello, stream!').toString('base64');
+        const expectedUrl = `data:base64,${base64}`;
+        assert.strictEqual(res, expectedUrl, 'result using stream');
+      });
+
+      it('rejects if the stream chunks exceed maxSize and cancels the reader', async () => {
+        const encoder = new TextEncoder();
+        const chunk = encoder.encode('a'.repeat(30));
+        let chunkIndex = 0;
+        let isCanceled = false;
+
+        // Mock ReadableStreamDefaultReader
+        const mockReader = {
+          read: async () => {
+            chunkIndex++;
+            return { done: false, value: chunk };
+          },
+          releaseLock: () => {},
+          cancel: reason => {
+            isCanceled = true;
+            assert.strictEqual(reason, 'Size limit exceeded', 'cancel reason');
+          }
+        };
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => null
+          },
+          body: {
+            getReader: () => mockReader
+          }
+        });
+        const maxSize = 50;
+        await assert.rejects(
+          async () => {
+            await func('blob:https://example.com/large-stream', maxSize);
+          },
+          err => {
+            assert.strictEqual(err.name, 'NotReadableError', 'error name');
+            assert.strictEqual(
+              err.message,
+              `Blob size (60 bytes) exceeds max (${maxSize} bytes).`,
+              'error message'
+            );
+            return true;
+          }
+        );
+        assert.strictEqual(isCanceled, true, 'reader.cancel should be called');
+        assert.strictEqual(
+          chunkIndex,
+          2,
+          'should only read 2 chunks before throwing'
+        );
+      });
     });
 
     describe('environment specific paths inside fetchBlobAsDataURL', () => {
