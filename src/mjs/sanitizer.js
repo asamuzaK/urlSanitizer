@@ -11,7 +11,6 @@ import {
   extractDataUrlComponents,
   fetchBlobAsDataURL,
   getSchemeParts,
-  getURLScheme,
   parseBase64,
   parseURLEncodedNumCharRef,
   trimTrailingEmptyQueryAndHash,
@@ -412,24 +411,22 @@ export class URLSanitizer extends URISchemes {
    * @returns {object} Parsed URL properties and flags.
    */
   #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
-    const normalizedUrl = url.normalize('NFKC');
-    const urlObj = URL.parse(normalizedUrl);
+    const urlObj = this.parse(url);
     let isVerified = this.verifyParsed(urlObj, allowedSchemes);
     let isRelative = false;
-    let relativeParsedPath = '';
+    let relativePath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const dummyUrl = URL.parse(url, 'http://dummy.local');
-      const dummyUrlNormalized = URL.parse(normalizedUrl, 'http://dummy.local');
-      if (dummyUrl && dummyUrlNormalized) {
+      const dummy = 'http://dummy.local';
+      const dummyUrl = this.parse(url, dummy);
+      if (dummyUrl) {
         if (
           dummyUrl.protocol === 'http:' &&
-          dummyUrl.hostname === 'dummy.local' &&
-          dummyUrlNormalized.protocol === 'http:'
+          dummyUrl.hostname === 'dummy.local'
         ) {
           isVerified = true;
           isRelative = true;
-          relativeParsedPath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
+          relativePath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
         }
       } else {
         logDebug(ctx.debug, 'Failed to parse relative URL.');
@@ -446,7 +443,7 @@ export class URLSanitizer extends URISchemes {
         isDataUrl: false,
         scheme: '',
         schemeParts: [],
-        urlToSanitize: relativeParsedPath
+        urlToSanitize: relativePath
       };
     }
     const scheme = urlObj.protocol.replace(/:$/, '');
@@ -514,9 +511,8 @@ export class URLSanitizer extends URISchemes {
     }
     try {
       const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-      const normalizedData = decodedData.normalize('NFKC');
       const dummy = 'http://dummy.local';
-      const parsedUrl = URL.parse(normalizedData, dummy);
+      const parsedUrl = this.parse(decodedData, dummy);
       if (!parsedUrl) {
         logDebug(ctx.debug, 'Failed to parse inner data URL protocol.');
         return null;
@@ -795,7 +791,7 @@ export const sanitizeURL = async (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = getURLScheme(url);
+  const scheme = urlSanitizer.getScheme(url);
   if (scheme === undefined) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
@@ -862,7 +858,7 @@ export const sanitizeURLSync = (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = getURLScheme(url);
+  const scheme = urlSanitizer.getScheme(url);
   if (scheme === undefined) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);

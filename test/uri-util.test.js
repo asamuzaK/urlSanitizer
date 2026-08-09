@@ -452,6 +452,73 @@ describe('uri-util', () => {
       });
     });
 
+    describe('get scheme', () => {
+      it('returns undefined if uri is not a string', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(
+          schemes.getScheme(123),
+          undefined,
+          'result for number'
+        );
+        assert.strictEqual(
+          schemes.getScheme(null),
+          undefined,
+          'result for null'
+        );
+        assert.strictEqual(
+          schemes.getScheme(undefined),
+          undefined,
+          'result for undefined'
+        );
+        assert.strictEqual(
+          schemes.getScheme({}),
+          undefined,
+          'result for object'
+        );
+      });
+
+      it('returns undefined for an invalid URI string', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(
+          schemes.getScheme('invalid-uri-without-scheme'),
+          undefined,
+          'result'
+        );
+      });
+
+      it('returns the scheme without trailing colon for a valid standard URI', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(
+          schemes.getScheme('https://example.com'),
+          'https',
+          'result for https'
+        );
+        assert.strictEqual(
+          schemes.getScheme('file:///C:/Users/Foo/'),
+          'file',
+          'result for file'
+        );
+      });
+
+      it('returns the scheme for a valid compound custom URI', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(
+          schemes.getScheme('git+ssh://example.com/repo.git'),
+          'git+ssh',
+          'result for git+ssh'
+        );
+      });
+
+      it('returns the scheme for a data URI', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(
+          schemes.getScheme('data:text/plain;base64,SGVsbG8='),
+          'data',
+          'result for data'
+        );
+      });
+    });
+
     describe('has scheme', () => {
       it('returns false if scheme is not a string', () => {
         const schemes = new URISchemes();
@@ -523,6 +590,56 @@ describe('uri-util', () => {
         const schemes = new URISchemes();
         const res = schemes.normalize('  Moz-Extension  ');
         assert.strictEqual(res, 'moz-extension', 'result');
+      });
+    });
+
+    describe('parse URL', () => {
+      it('returns null if url is not a string', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(schemes.parse(123), null, 'result for number');
+        assert.strictEqual(schemes.parse(null), null, 'result for null');
+        assert.strictEqual(
+          schemes.parse(undefined),
+          null,
+          'result for undefined'
+        );
+      });
+
+      it('returns null for an invalid URL string', () => {
+        const schemes = new URISchemes();
+        assert.strictEqual(schemes.parse('not-a-valid-url'), null, 'result');
+      });
+
+      it('returns a parsed URL object for a relative URL with base URL', () => {
+        const schemes = new URISchemes();
+        const res = schemes.parse('/path?query=1#hash', 'https://example.com');
+        assert.ok(res instanceof URL, 'returns a URL instance');
+        assert.strictEqual(res.protocol, 'https:', 'protocol');
+        assert.strictEqual(res.hostname, 'example.com', 'hostname');
+        assert.strictEqual(res.pathname, '/path', 'pathname');
+      });
+
+      it('returns a parsed URL object for a valid URL', () => {
+        const schemes = new URISchemes();
+        const res = schemes.parse('https://example.com/path?query=1#hash');
+        assert.ok(res instanceof URL, 'returns a URL instance');
+        assert.strictEqual(res.protocol, 'https:', 'protocol');
+        assert.strictEqual(res.hostname, 'example.com', 'hostname');
+        assert.strictEqual(res.pathname, '/path', 'pathname');
+      });
+
+      it('normalizes the URL string using NFKC before parsing', () => {
+        const schemes = new URISchemes();
+        // Fullwidth string: 'ｈｔｔｐｓ：／／ｅｘａｍｐｌｅ．ｃｏｍ'
+        const fullwidthUrl =
+          '\uFF48\uFF54\uFF54\uFF50\uFF53\uFF1A\uFF0F\uFF0F\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D';
+        const res = schemes.parse(fullwidthUrl);
+        assert.ok(
+          res instanceof URL,
+          'returns a URL instance after normalization'
+        );
+        assert.strictEqual(res.protocol, 'https:', 'protocol');
+        assert.strictEqual(res.hostname, 'example.com', 'hostname');
       });
     });
 
@@ -1369,28 +1486,6 @@ describe('uri-util', () => {
 
     it('handles string without trailing colon', () => {
       assert.deepEqual(func('data'), ['data'], 'result');
-    });
-  });
-
-  describe('get URL scheme', () => {
-    const func = mjs.getURLScheme;
-
-    it('returns undefined if argument is not a string', () => {
-      assert.strictEqual(func(), undefined, 'result for undefined');
-      assert.strictEqual(func(123), undefined, 'result for number');
-      assert.strictEqual(func(null), undefined, 'result for null');
-    });
-
-    it('returns undefined for invalid URL string', () => {
-      assert.strictEqual(func('foo'), undefined, 'result');
-    });
-
-    it('returns the scheme without trailing colon for a valid URL', () => {
-      assert.strictEqual(func('https://example.com'), 'https', 'result');
-    });
-
-    it('returns the scheme for a data URL', () => {
-      assert.strictEqual(func('data:text/plain,foo'), 'data', 'result');
     });
   });
 
