@@ -526,7 +526,7 @@ describe('uri-util', () => {
       });
     });
 
-    describe('is URI', () => {
+    describe('verify scheme', () => {
       it('returns false for missing input', () => {
         const schemes = new URISchemes();
         const res = schemes.verify();
@@ -740,14 +740,94 @@ describe('uri-util', () => {
       globalThis.fetch = originalFetch;
     });
 
+    it('rejects if the fetch request fails', async () => {
+      globalThis.fetch = async () => {
+        throw new TypeError('Network error');
+      };
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/error-uuid');
+        },
+        TypeError,
+        'Network error'
+      );
+    });
+
+    it('rejects if the response is not ok', async () => {
+      globalThis.fetch = async url => ({
+        ok: false
+      });
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/some-uuid');
+        },
+        err => {
+          assert.strictEqual(
+            err.message,
+            'Failed to fetch blob:https://example.com/some-uuid',
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('rejects with status if the response is not ok', async () => {
+      globalThis.fetch = async url => ({
+        ok: false,
+        status: 404
+      });
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/some-uuid');
+        },
+        err => {
+          assert.strictEqual(
+            err.message,
+            'Failed to fetch blob:https://example.com/some-uuid: 404',
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('rejects with status text if the response is not ok', async () => {
+      globalThis.fetch = async url => ({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      });
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/some-uuid');
+        },
+        err => {
+          assert.strictEqual(
+            err.message,
+            'Failed to fetch blob:https://example.com/some-uuid: 404 Not Found',
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
+
     it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid or 0', async () => {
       const data = 'a'.repeat(10);
       const blob = new Blob([data], { type: 'text/plain' });
-      globalThis.fetch = async () => {
-        return {
-          blob: async () => blob
-        };
-      };
+      globalThis.fetch = async () => ({
+        ok: true,
+        headers: {
+          get: key => {
+            if (key === 'content-length') {
+              return blob.size;
+            }
+            return null;
+          }
+        },
+        blob: async () => blob
+      });
       const res1 = await func('blob:https://example.com/test', 0);
       const res2 = await func('blob:https://example.com/test', -50);
       const res3 = await func('blob:https://example.com/test', 'invalid');
@@ -765,45 +845,38 @@ describe('uri-util', () => {
     it('fetches a URL and successfully converts it to a data URL', async () => {
       const data = 'Hello, blob!';
       const blob = new Blob([data], { type: 'text/plain' });
-      globalThis.fetch = async url => {
-        return {
-          blob: async () => blob
-        };
-      };
+      globalThis.fetch = async url => ({
+        ok: true,
+        headers: {
+          get: key => {
+            if (key === 'content-length') {
+              return blob.size;
+            }
+            return null;
+          }
+        },
+        blob: async () => blob
+      });
       const res = await func('blob:https://example.com/mock-uuid');
       const base64 = globalThis.Buffer.from(data).toString('base64');
       const expectedUrl = `data:text/plain;base64,${base64}`;
       assert.strictEqual(res, expectedUrl, 'result');
     });
 
-    it('rejects if the fetch request fails', async () => {
-      globalThis.fetch = async () => {
-        throw new TypeError('Network error');
-      };
-      await assert.rejects(
-        async () => {
-          await func('blob:https://example.com/error-uuid');
-        },
-        TypeError,
-        'Network error'
-      );
-    });
-
     it('rejects if the content length exceeds maxSize', async () => {
       const data = 'a'.repeat(100);
       const blob = new Blob([data], { type: 'text/plain' });
-      globalThis.fetch = async url => {
-        return {
-          headers: {
-            get: key => {
-              if (key === 'content-length') {
-                return blob.size;
-              }
-              return null;
+      globalThis.fetch = async url => ({
+        ok: true,
+        headers: {
+          get: key => {
+            if (key === 'content-length') {
+              return blob.size;
             }
+            return null;
           }
-        };
-      };
+        }
+      });
       const maxSize = 50;
       await assert.rejects(
         async () => {
@@ -824,11 +897,15 @@ describe('uri-util', () => {
     it('rejects if the fetched blob size exceeds maxSize', async () => {
       const data = 'a'.repeat(100);
       const blob = new Blob([data], { type: 'text/plain' });
-      globalThis.fetch = async url => {
-        return {
-          blob: async () => blob
-        };
-      };
+      globalThis.fetch = async url => ({
+        ok: true,
+        headers: {
+          get: key => {
+            return null;
+          }
+        },
+        blob: async () => blob
+      });
       const maxSize = 50;
       await assert.rejects(
         async () => {
@@ -849,11 +926,18 @@ describe('uri-util', () => {
     it('handles Blob without MIME type using Buffer (blob.type is falsy)', async () => {
       const data = 'No MIME type text';
       const blob = new Blob([data]);
-      globalThis.fetch = async () => {
-        return {
-          blob: async () => blob
-        };
-      };
+      globalThis.fetch = async () => ({
+        ok: true,
+        headers: {
+          get: key => {
+            if (key === 'content-length') {
+              return blob.size;
+            }
+            return null;
+          }
+        },
+        blob: async () => blob
+      });
       const res = await func('blob:https://example.com/no-mime-buffer');
       const base64 = globalThis.Buffer.from(data).toString('base64');
       assert.strictEqual(
@@ -911,8 +995,18 @@ describe('uri-util', () => {
             }, 0);
           }
         };
+        const blob = new Blob(['FileReader!'], { type: 'text/plain' });
         globalThis.fetch = async () => ({
-          blob: async () => new Blob(['FileReader!'], { type: 'text/plain' })
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
+          blob: async () => blob
         });
         const res = await func('blob:https://example.com/filereader-mock');
         assert.strictEqual(res, sampleDataURL, 'result using FileReader');
@@ -930,8 +1024,18 @@ describe('uri-util', () => {
           configurable: true
         });
         const data = 'btoa environment fallback!';
+        const blob = new Blob([data], { type: 'text/plain' });
         globalThis.fetch = async () => ({
-          blob: async () => new Blob([data], { type: 'text/plain' })
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
+          blob: async () => blob
         });
         const res = await func('blob:https://example.com/btoa-mock');
         const expectedBase64 = btoa(data);
@@ -967,8 +1071,18 @@ describe('uri-util', () => {
             }, 0);
           }
         };
+        const blob = new Blob(['test'], { type: 'text/plain' });
         globalThis.fetch = async () => ({
-          blob: async () => new Blob(['test'], { type: 'text/plain' })
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
+          blob: async () => blob
         });
         await assert.rejects(
           async () => {
@@ -1009,8 +1123,18 @@ describe('uri-util', () => {
             }, 0);
           }
         };
+        const blob = new Blob(['test'], { type: 'text/plain' });
         globalThis.fetch = async () => ({
-          blob: async () => new Blob(['test'], { type: 'text/plain' })
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
+          blob: async () => blob
         });
         await assert.rejects(
           async () => {
@@ -1052,8 +1176,18 @@ describe('uri-util', () => {
             }, 0);
           }
         };
+        const blob = new Blob(['test'], { type: 'text/plain' });
         globalThis.fetch = async () => ({
-          blob: async () => new Blob(['test'], { type: 'text/plain' })
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
+          blob: async () => blob
         });
         const res = await func('blob:https://example.com/abort-mock');
         assert.strictEqual(res, null, 'should return null on abort');
@@ -1073,6 +1207,15 @@ describe('uri-util', () => {
         const data = 'No MIME type text for btoa';
         const blob = new Blob([data]);
         globalThis.fetch = async () => ({
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          },
           blob: async () => blob
         });
         const res = await func('blob:https://example.com/no-mime-btoa');
