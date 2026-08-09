@@ -47,13 +47,13 @@ const ESCAPE_MAP = {
   [ENC_APOS]: `${ENC_AMP}${ENC_NUM}39;`
 };
 const HEX_TABLE = Array.from(
-  { length: HEX * HEX },
+  { length: BYTE_RANGE },
   (_, i) => `%${i.toString(HEX).padStart(2, '0').toUpperCase()}`
 );
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
-const CTRL_CHARS_PATTERN = `[${[...NON_TEXT_CHAR_CODES.values()].join('')}]`;
-const REG_CTRL_CHARS = new RegExp(CTRL_CHARS_PATTERN);
-const REG_CTRL_CHARS_G = new RegExp(CTRL_CHARS_PATTERN, 'g');
+const NON_TEXT_PATTERN = `[${[...NON_TEXT_CHAR_CODES.values()].join('')}]`;
+const REG_NON_TEXT = new RegExp(NON_TEXT_PATTERN);
+const REG_NON_TEXT_G = new RegExp(NON_TEXT_PATTERN, 'g');
 
 /* encoder / decoder */
 const encoder = new TextEncoder();
@@ -141,6 +141,31 @@ export class URISchemes {
 }
 
 /**
+ * Parses a URL string and extracts the scheme.
+ * @param {string} url - The URL string to parse.
+ * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
+ */
+export const getURLScheme = url => {
+  if (!isString(url)) {
+    return undefined;
+  }
+  const parsedUrl = URL.parse(url);
+  return parsedUrl ? parsedUrl.protocol.replace(/:$/, '') : undefined;
+};
+
+/**
+ * Extracts an array of schemes.
+ * @param {string} protocol - The URL protocol (e.g., "data:", "git+https:").
+ * @returns {string[]} An array of scheme parts.
+ */
+export const getSchemeParts = protocol => {
+  if (!isString(protocol)) {
+    return [];
+  }
+  return protocol.replace(/:$/, '').split('+');
+};
+
+/**
  * Gets the URL-encoded representation of a given string.
  * @param {string} str - The target string.
  * @returns {string} The URL-encoded string.
@@ -195,45 +220,6 @@ export const trimTrailingEmptyQueryAndHash = url => {
 };
 
 /**
- * Parses base64-encoded data.
- * @param {string} data - The base64-encoded string.
- * @returns {string} The parsed text, or the original base64 if binary.
- */
-export const parseBase64 = data => {
-  if (!isString(data)) {
-    throw new TypeError(`Expected String but got ${getType(data)}.`);
-  }
-  const cleanData = data.replace(/\s/g, '');
-  let binStr;
-  try {
-    binStr = atob(cleanData);
-  } catch {
-    throw new Error(`Invalid base64 data: ${truncateURL(data)}`);
-  }
-  let bytes;
-  if (IS_NODE && globalThis.Buffer) {
-    // Use 'latin1' to correctly map the binary string directly to bytes.
-    // @see https://nodejs.org/docs/latest/api/buffer.html#buffers-and-character-encodings
-    bytes = globalThis.Buffer.from(binStr, 'latin1');
-  } else {
-    const len = binStr.length;
-    bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binStr.charCodeAt(i);
-    }
-  }
-  try {
-    const text = decoder.decode(bytes);
-    if (REG_CTRL_CHARS.test(text)) {
-      return cleanData;
-    }
-    return text;
-  } catch {
-    return cleanData;
-  }
-};
-
-/**
  * Replaces URL-encoded numeric character references.
  * @param {string} match - The matched substring.
  * @param {string} value - The captured numeric value.
@@ -282,7 +268,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
       }
     });
   }
-  res = res.replace(REG_CTRL_CHARS_G, '');
+  res = res.replace(REG_NON_TEXT_G, '');
   let depth = 0;
   for (; depth + nest <= MAX_NEST; depth++) {
     const previousRes = res;
@@ -296,6 +282,72 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
     throw new Error('Character references nested too deeply.');
   }
   return res;
+};
+
+/**
+ * Extracts the components of a parsed Data URL.
+ * @param {string} pathname - The pathname of the URL.
+ * @param {string} [search] - The search (query) string of the URL.
+ * @param {string} [hash] - The hash (fragment) of the URL.
+ * @returns {object} An object containing the media type, parsed media types array, data string, and a boolean indicating if it is base64-encoded.
+ */
+export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
+  if (!isString(pathname)) {
+    return { mediaType: '', mediaTypes: [], data: '', isBase64: false };
+  }
+  const comma = pathname.indexOf(',');
+  if (comma === -1) {
+    return {
+      mediaType: pathname,
+      mediaTypes: pathname.split(';'),
+      data: '',
+      isBase64: false
+    };
+  }
+  const mediaType = pathname.slice(0, comma);
+  const data = `${pathname.slice(comma + 1)}${search}${hash}`;
+  const mediaTypes = mediaType.split(';');
+  const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+  return { mediaType, mediaTypes, data, isBase64 };
+};
+
+/**
+ * Parses base64-encoded data.
+ * @param {string} data - The base64-encoded string.
+ * @returns {string} The parsed text, or the original base64 if binary.
+ */
+export const parseBase64 = data => {
+  if (!isString(data)) {
+    throw new TypeError(`Expected String but got ${getType(data)}.`);
+  }
+  const cleanData = data.replace(/\s/g, '');
+  let binStr;
+  try {
+    binStr = atob(cleanData);
+  } catch {
+    throw new Error(`Invalid base64 data: ${truncateURL(data)}`);
+  }
+  let bytes;
+  if (IS_NODE && globalThis.Buffer) {
+    // Use 'latin1' to correctly map the binary string directly to bytes.
+    // @see https://nodejs.org/docs/latest/api/buffer.html#buffers-and-character-encodings
+    bytes = globalThis.Buffer.from(binStr, 'latin1');
+  } else {
+    const len = binStr.length;
+    bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binStr.charCodeAt(i);
+    }
+  }
+  try {
+    const text = decoder.decode(bytes);
+    if (REG_NON_TEXT.test(text)) {
+      return cleanData;
+    }
+    return text;
+  } catch {
+    return cleanData;
+  }
 };
 
 /**
@@ -363,9 +415,21 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
     maxSize = maxBlobSize;
   }
   const response = await fetch(url);
+  if (!response.ok) {
+    const truncatedUrl = truncateURL(url);
+    let msg = `Failed to fetch ${truncatedUrl}`;
+    if (Number.isInteger(response.status)) {
+      if (response.statusText) {
+        msg += `: ${response.status} ${response.statusText}`;
+      } else {
+        msg += `: ${response.status}`;
+      }
+    }
+    throw new Error(msg);
+  }
   // Check content length if available.
-  const contentLength = response?.headers?.get('content-length');
-  if (contentLength && Number.parseInt(contentLength, 10) > maxSize) {
+  const contentLength = response.headers.get('content-length');
+  if (contentLength && Number.parseInt(contentLength, DECI) > maxSize) {
     const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
@@ -380,56 +444,4 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
     return convertFromFileReader(blob);
   }
   return convertFromBtoa(blob);
-};
-
-/**
- * Extracts an array of schemes by removing the trailing colon from the protocol string and splitting it by '+'.
- * @param {string} protocol - The URL protocol (e.g., "data:", "git+https:").
- * @returns {string[]} An array of scheme parts.
- */
-export const getSchemeParts = protocol => {
-  if (!isString(protocol)) {
-    return [];
-  }
-  return protocol.replace(/:$/, '').split('+');
-};
-
-/**
- * Parses a URL string and extracts the scheme.
- * @param {string} url - The URL string to parse.
- * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
- */
-export const getURLScheme = url => {
-  if (!isString(url)) {
-    return undefined;
-  }
-  const parsedUrl = URL.parse(url);
-  return parsedUrl ? parsedUrl.protocol.replace(/:$/, '') : undefined;
-};
-
-/**
- * Extracts the components of a parsed Data URL.
- * @param {string} pathname - The pathname of the URL.
- * @param {string} [search] - The search (query) string of the URL.
- * @param {string} [hash] - The hash (fragment) of the URL.
- * @returns {object} An object containing the media type, parsed media types array, data string, and a boolean indicating if it is base64-encoded.
- */
-export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
-  if (!isString(pathname)) {
-    return { mediaType: '', mediaTypes: [], data: '', isBase64: false };
-  }
-  const comma = pathname.indexOf(',');
-  if (comma === -1) {
-    return {
-      mediaType: pathname,
-      mediaTypes: pathname.split(';'),
-      data: '',
-      isBase64: false
-    };
-  }
-  const mediaType = pathname.slice(0, comma);
-  const data = `${pathname.slice(comma + 1)}${search}${hash}`;
-  const mediaTypes = mediaType.split(';');
-  const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
-  return { mediaType, mediaTypes, data, isBase64 };
 };
