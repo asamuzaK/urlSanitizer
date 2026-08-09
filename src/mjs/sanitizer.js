@@ -577,7 +577,10 @@ export class URLSanitizer extends URISchemes {
       const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
       throw new RangeError(msg);
     }
-    const hasRestrictiveRules = (Array.isArray(deny) && deny.length) || (Array.isArray(only) && only.length) || allowRelative;
+    const hasRestrictiveRules =
+      (Array.isArray(deny) && deny.length) ||
+      (Array.isArray(only) && only.length) ||
+      allowRelative;
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
       !hasRestrictiveRules &&
