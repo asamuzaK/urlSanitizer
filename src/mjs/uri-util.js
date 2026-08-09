@@ -78,6 +78,19 @@ export class URISchemes {
   }
 
   /**
+   * Extracts the scheme from URI.
+   * @param {string} uri - The URI string.
+   * @returns {string|undefined} The extracted scheme, or undefined.
+   */
+  getScheme(uri) {
+    if (!isString(uri)) {
+      return undefined;
+    }
+    const parsed = this.parse(uri);
+    return parsed ? parsed.protocol.replace(/:$/, '') : undefined;
+  }
+
+  /**
    * Checks if the specified scheme is currently registered.
    * @param {string} scheme - The target scheme.
    * @returns {boolean} True if the scheme is registered.
@@ -103,10 +116,40 @@ export class URISchemes {
   }
 
   /**
+   * Parse URL
+   * @param {string} url - The URL.
+   * @param {string} [base] - The base URL.
+   * @returns {string|null} The parsed URL, or null.
+   */
+  parse(url, base) {
+    if (!isString(url)) {
+      return null;
+    }
+    if (base && isString(base)) {
+      return URL.parse(url.normalize('NFKC'), base.normalize('NFKC'));
+    }
+    return URL.parse(url.normalize('NFKC'));
+  }
+
+  /**
+   * Verifies if the given URI is valid and its scheme is allowed.
+   * @param {string} uri - The URI string to verify.
+   * @param {Set<string>} [schemes] - The set of allowed schemes.
+   * @returns {boolean} True if the URI is valid and permitted.
+   */
+  verify(uri, schemes) {
+    if (!isString(uri)) {
+      return false;
+    }
+    const parsedUrl = this.parse(uri);
+    return this.verifyParsed(parsedUrl, schemes);
+  }
+
+  /**
    * Verifies if the pre-parsed URL object is valid and its scheme is allowed.
    * @param {URL} parsedUrl - The parsed URL object to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @returns {boolean} True if the parsed URL is syntactically valid and permitted.
+   * @returns {boolean} True if the parsed URL is valid and permitted.
    */
   verifyParsed(parsedUrl, schemes) {
     if (!parsedUrl || !parsedUrl.protocol) {
@@ -123,35 +166,7 @@ export class URISchemes {
     }
     return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
   }
-
-  /**
-   * Verifies if the given URI is valid and its scheme is allowed.
-   * @param {string} uri - The URI string to verify.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @returns {boolean} True if the URI is syntactically valid and permitted.
-   */
-  verify(uri, schemes) {
-    if (!isString(uri)) {
-      return false;
-    }
-    const normalizedUri = uri.normalize('NFKC');
-    const parsedUrl = URL.parse(normalizedUri);
-    return this.verifyParsed(parsedUrl, schemes);
-  }
 }
-
-/**
- * Parses a URL string and extracts the scheme.
- * @param {string} url - The URL string to parse.
- * @returns {string|undefined} The extracted scheme, or undefined if parsing fails.
- */
-export const getURLScheme = url => {
-  if (!isString(url)) {
-    return undefined;
-  }
-  const parsedUrl = URL.parse(url);
-  return parsedUrl ? parsedUrl.protocol.replace(/:$/, '') : undefined;
-};
 
 /**
  * Extracts an array of schemes.
@@ -307,7 +322,7 @@ export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
   const mediaType = pathname.slice(0, comma);
   const data = `${pathname.slice(comma + 1)}${search}${hash}`;
   const mediaTypes = mediaType.split(';');
-  const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+  const isBase64 = /^base64$/i.test(mediaTypes.at(-1));
   return { mediaType, mediaTypes, data, isBase64 };
 };
 
@@ -424,7 +439,7 @@ const readStreamInChunks = async (
   }
   const newSize = accumulatedSize + value.byteLength;
   if (newSize > maxSize) {
-    reader.cancel('Size limit exceeded');
+    await reader.cancel('Size limit exceeded');
     const msg = `Blob size (${newSize} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
@@ -458,9 +473,12 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   }
   // Check content length if available.
   const contentLength = response.headers.get('content-length');
-  if (contentLength && Number.parseInt(contentLength, DECI) > maxSize) {
-    const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
-    throw new DOMException(msg, 'NotReadableError');
+  if (contentLength) {
+    const parsedLength = Number.parseInt(contentLength, DECI);
+    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
+      const msg = `Blob size (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
   }
   let blob;
   // Use ReadableStream.
