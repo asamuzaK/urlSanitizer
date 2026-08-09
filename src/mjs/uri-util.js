@@ -227,7 +227,7 @@ export const parseBase64 = data => {
  * @returns {string} The resolved character or the original match.
  */
 export const replaceNumCharRef = (match, value) => {
-  const num = /^[xX]/.test(value)
+  const num = /^x/i.test(value)
     ? Number.parseInt(value.slice(1), HEX)
     : Number.parseInt(value, DECI);
   if (Number.isNaN(num)) {
@@ -360,12 +360,19 @@ const convertFromBtoa = async blob => {
  * @returns {Promise<string>} A promise resolving to the data URL.
  */
 export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
-  const response = await fetch(url);
-  const blob = await response.blob();
   let maxSize = MAX_BLOB_SIZE;
   if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
     maxSize = maxBlobSize;
   }
+  const response = await fetch(url);
+  if (response.headers) {
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && Number.parseInt(contentLength, 10) > maxSize) {
+      const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
+  }
+  const blob = await response.blob();
   if (blob.size > maxSize) {
     const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
@@ -417,10 +424,10 @@ export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
   const comma = pathname.indexOf(',');
   if (comma === -1) {
     return {
-        mediaType: pathname,
-        mediaTypes: pathname.split(';'),
-        data: '',
-        isBase64: false
+      mediaType: pathname,
+      mediaTypes: pathname.split(';'),
+      data: '',
+      isBase64: false
     };
   }
   const mediaType = pathname.slice(0, comma);
