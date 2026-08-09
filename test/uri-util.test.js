@@ -789,6 +789,38 @@ describe('uri-util', () => {
       );
     });
 
+    it('rejects if the content length exceeds maxSize', async () => {
+      const data = 'a'.repeat(100);
+      const blob = new Blob([data], { type: 'text/plain' });
+      globalThis.fetch = async url => {
+        return {
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return blob.size;
+              }
+              return null;
+            }
+          }
+        };
+      };
+      const maxSize = 50;
+      await assert.rejects(
+        async () => {
+          await func('blob:https://example.com/large-blob', maxSize);
+        },
+        err => {
+          assert.strictEqual(err.name, 'NotReadableError', 'error name');
+          assert.strictEqual(
+            err.message,
+            `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+            'error message'
+          );
+          return true;
+        }
+      );
+    });
+
     it('rejects if the fetched blob size exceeds maxSize', async () => {
       const data = 'a'.repeat(100);
       const blob = new Blob([data], { type: 'text/plain' });

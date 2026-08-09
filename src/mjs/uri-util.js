@@ -365,12 +365,11 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
     maxSize = maxBlobSize;
   }
   const response = await fetch(url);
-  if (response.headers) {
-    const contentLength = response.headers.get('content-length');
-    if (contentLength && Number.parseInt(contentLength, 10) > maxSize) {
-      const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
-      throw new DOMException(msg, 'NotReadableError');
-    }
+  // Check content length if available.
+  const contentLength = response?.headers?.get('content-length');
+  if (contentLength && Number.parseInt(contentLength, 10) > maxSize) {
+    const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
+    throw new DOMException(msg, 'NotReadableError');
   }
   const blob = await response.blob();
   if (blob.size > maxSize) {
