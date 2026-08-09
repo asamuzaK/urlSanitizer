@@ -404,6 +404,35 @@ const convertFromBtoa = async blob => {
 };
 
 /**
+ * Reads a stream in chunks and validates its size.
+ * @private
+ * @param {ReadableStreamDefaultReader} reader - The stream reader.
+ * @param {number} maxSize - The maximum allowed size in bytes.
+ * @param {Uint8Array[]} chunks - The array to store chunks.
+ * @param {number} [accumulatedSize] - The currently accumulated size.
+ * @returns {Promise<void>}
+ */
+const readStreamInChunks = async (
+  reader,
+  maxSize,
+  chunks,
+  accumulatedSize = 0
+) => {
+  const { done, value } = await reader.read();
+  if (done) {
+    return;
+  }
+  const newSize = accumulatedSize + value.byteLength;
+  if (newSize > maxSize) {
+    reader.cancel('Size limit exceeded');
+    const msg = `Blob size (${newSize} bytes) exceeds max (${maxSize} bytes).`;
+    throw new DOMException(msg, 'NotReadableError');
+  }
+  chunks.push(value);
+  await readStreamInChunks(reader, maxSize, chunks, newSize);
+};
+
+/**
  * Fetches a blob URL and converts it to a data URL.
  * @param {string} url - The blob URL to fetch.
  * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
@@ -433,10 +462,28 @@ export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
     const msg = `Blob size (${contentLength} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
-  const blob = await response.blob();
-  if (blob.size > maxSize) {
-    const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
-    throw new DOMException(msg, 'NotReadableError');
+  let blob;
+  // Use ReadableStream.
+  if (response.body) {
+    const reader = response.body.getReader();
+    const chunks = [];
+    try {
+      await readStreamInChunks(reader, maxSize, chunks, 0);
+    } finally {
+      reader.releaseLock();
+    }
+    const type = response.headers.get('content-type');
+    if (type) {
+      blob = new Blob(chunks, { type });
+    } else {
+      blob = new Blob(chunks);
+    }
+  } else {
+    blob = await response.blob();
+    if (blob.size > maxSize) {
+      const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
   }
   if (IS_NODE && globalThis.Buffer) {
     return convertFromBuffer(blob);

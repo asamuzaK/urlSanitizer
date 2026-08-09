@@ -6,14 +6,16 @@ import { run, bench, group } from 'mitata';
 /* sanitizers */
 import { sanitizeUrl as braintreeSanitize } from '@braintree/sanitize-url';
 import { sanitizeUrl as strictUrlSanitise } from 'strict-url-sanitise';
-import { sanitizeURLSync } from '../src/mjs/sanitizer.js'; 
+import { sanitizeURL, sanitizeURLSync } from '../src/mjs/sanitizer.js';
 
 const normalUrl = 'https://www.example.com/path/to/page?query=1#top';
 const xssUrl = 'javascript:alert("XSS")';
-const complexDataUrl = 'data:text/html;base64,PGRpdj48c2NyaXB0PmFsZXJ0KDEpOzwvc2NyaXB0PjwvZGl2PjxwIG9uY2xpY2s9ImFsZXJ0KDIpIj48L3A+';
+const xssHtml = '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
+const dataUrl = `data:text/html;base64,${btoa(xssHtml)}`;
+const blobUrl = URL.createObjectURL(new Blob([xssHtml], { type: 'text/html' }));
 const invalidUrl = 'http://[::1';
 
-const sanitizeOpt = { allow: ['data'] };
+const sanitizeOpt = { allow: ['blob', 'data'] };
 
 group('1. Normal HTTP URL', () => {
   bench('url-sanitizer', () => sanitizeURLSync(normalUrl, sanitizeOpt));
@@ -29,15 +31,23 @@ group('2. XSS URL', () => {
   });
 });
 
-group('3. Complex Data URL', () => {
-  bench('url-sanitizer', () => sanitizeURLSync(complexDataUrl, sanitizeOpt));
-  bench('@braintree/sanitize-url', () => braintreeSanitize(complexDataUrl));
+group('3. Data URL', () => {
+  bench('url-sanitizer', () => sanitizeURLSync(dataUrl, sanitizeOpt));
+  bench('@braintree/sanitize-url', () => braintreeSanitize(dataUrl));
   bench('strict-url-sanitise', () => {
-    try { strictUrlSanitise(complexDataUrl); } catch (e) {}
+    try { strictUrlSanitise(dataUrl); } catch (e) {}
   });
 });
 
-group('4. Invalid URL', () => {
+group('4. Blob URL', () => {
+  bench('url-sanitizer', async () => await sanitizeURL(blobUrl, sanitizeOpt));
+  bench('@braintree/sanitize-url', () => braintreeSanitize(blobUrl));
+  bench('strict-url-sanitise', () => {
+    try { strictUrlSanitise(blobUrl); } catch (e) {}
+  });
+});
+
+group('5. Invalid URL', () => {
   bench('url-sanitizer', () => sanitizeURLSync(invalidUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', () => braintreeSanitize(invalidUrl));
   bench('strict-url-sanitise', () => {
@@ -46,3 +56,5 @@ group('4. Invalid URL', () => {
 });
 
 await run();
+
+URL.revokeObjectURL(blobUrl);

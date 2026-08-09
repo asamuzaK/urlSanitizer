@@ -434,10 +434,11 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :---: | :---: | :---: |
-| **Normal HTTP URL** | ~0.98 µs/iter | ~4.44 µs/iter | ~5.06 µs/iter |
-| **XSS URL** | ~5.33 µs/iter | ~1.50 µs/iter | ~9.67 µs/iter |
-| **Complex Data URL** | ~378.57 µs/iter | ~2.83 µs/iter | ~9.86 µs/iter |
-| **Invalid URL** | ~0.20 µs/iter | ~1.35 µs/iter | ~21.03 µs/iter |
+| **Normal HTTP URL** | ~1.25 µs/iter | ~4.33 µs/iter | ~4.68 µs/iter |
+| **XSS URL** | ~5.68 µs/iter | ~1.63 µs/iter | ~9.44 µs/iter |
+| **Data URL** | ~371.03 µs/iter | ~2.85 µs/iter | ~9.44 µs/iter |
+| **Blob URL** | ~552.58 µs/iter | ~2.18 µs/iter | ~9.11 µs/iter |
+| **Invalid URL** | ~0.28 µs/iter | ~1.35 µs/iter | ~21.22 µs/iter |
 
 ### Characteristics & Trade-offs
 
@@ -446,12 +447,13 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 * **Exceptional Invalid URL Handling (Fail-Fast)**
   * For **invalid URLs** (such as malformed schemes or unparseable formats), `url-sanitizer` uses a fail-fast architecture based on `URL.parse()`, avoiding unnecessary sanitization steps after validation failure.
 * **Deep Inspection for High-Risk Payloads**
-  * For **complex Data URLs**, `url-sanitizer` prioritizes security over raw execution speed. The following inspection pipeline is applied:
-    1. Parses and normalizes the Data URL structure.
-    2. Decodes Base64 payloads when present.
-    3. Decodes URL-encoded content and numeric character references.
-    4. Sanitizes embedded HTML/SVG content using `DOMPurify`.
-    5. Re-encodes the purified payload into a safe URL representation.
+  * For **Data URLs** and **Blob URLs**, `url-sanitizer` prioritizes security over raw execution speed. The following inspection pipeline is applied:
+    1. If Blob URL is given, convert it to a Data URL.
+    2. Parses and normalizes the Data URL structure.
+    3. Decodes Base64 payloads when present.
+    4. Decodes URL-encoded content and numeric character references.
+    5. Sanitizes embedded HTML/SVG content using `DOMPurify`.
+    6. Re-encodes the purified payload into a safe URL representation.
 
 ## Acknowledgments
 
