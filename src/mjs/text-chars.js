@@ -4,13 +4,7 @@
 
 /* shared */
 import textChars from '../lib/file/text-chars.json' with { type: 'json' };
-import { HEX } from './constant.js';
-
-/**
- * The total number of 8-bit byte values (0x00–0xFF).
- * @type {number}
- */
-const BYTE_RANGE = 256;
+import { BYTE_RANGE, HEX } from './constant.js';
 
 /**
  * A set of valid text character codes.
@@ -71,4 +65,4 @@ const generateCtrlCharCodes = () => {
  * A mapping of control character codes to their hexadecimal escape strings.
  * @type {Map<number, string>}
  */
-export const CTRL_CHAR_CODES = generateCtrlCharCodes();
+export const NON_TEXT_CHAR_CODES = generateCtrlCharCodes();

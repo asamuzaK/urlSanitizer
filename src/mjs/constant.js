@@ -3,6 +3,12 @@
  */
 
 /**
+ * The total number of 8-bit byte values (0x00–0xFF).
+ * @type {number}
+ */
+export const BYTE_RANGE = 256;
+
+/**
  * Chunk size (8KB) used when processing byte arrays to avoid stack overflow.
  * @type {number}
  */

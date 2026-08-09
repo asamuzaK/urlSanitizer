@@ -8,6 +8,7 @@ import { getType, isString } from './common.js';
 
 /* constants */
 import {
+  BYTE_RANGE,
   CHUNK_SIZE,
   DECI,
   HEX,
@@ -26,7 +27,7 @@ import {
   REG_URL_ENC
 } from './regexp.js';
 import {
-  CTRL_CHAR_CODES,
+  NON_TEXT_CHAR_CODES,
   TEXT_CHAR_CODES,
   WINDOWS1252_TO_UNICODE
 } from './text-chars.js';
@@ -50,7 +51,7 @@ const HEX_TABLE = Array.from(
   (_, i) => `%${i.toString(HEX).padStart(2, '0').toUpperCase()}`
 );
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
-const CTRL_CHARS_PATTERN = `[${[...CTRL_CHAR_CODES.values()].join('')}]`;
+const CTRL_CHARS_PATTERN = `[${[...NON_TEXT_CHAR_CODES.values()].join('')}]`;
 const REG_CTRL_CHARS = new RegExp(CTRL_CHARS_PATTERN);
 const REG_CTRL_CHARS_G = new RegExp(CTRL_CHARS_PATTERN, 'g');
 
@@ -182,6 +183,18 @@ export const truncateURL = url => {
 };
 
 /**
+ * Removes a trailing empty hash and an empty query string from a URL.
+ * @param {string} url - The target URL string to be cleaned.
+ * @returns {string} The cleaned URL string or the original input.
+ */
+export const trimTrailingEmptyQueryAndHash = url => {
+  if (!isString(url)) {
+    return url;
+  }
+  return url.replace(REG_HASH, '').replace(REG_QUERY, '$1');
+};
+
+/**
  * Parses base64-encoded data.
  * @param {string} data - The base64-encoded string.
  * @returns {string} The parsed text, or the original base64 if binary.
@@ -230,36 +243,21 @@ export const replaceNumCharRef = (match, value) => {
   const num = /^x/i.test(value)
     ? Number.parseInt(value.slice(1), HEX)
     : Number.parseInt(value, DECI);
-  if (Number.isNaN(num)) {
+  if (!Number.isInteger(num) || num < 0 || num >= BYTE_RANGE) {
     return match;
   }
-  if (CTRL_CHAR_CODES.has(num)) {
+  if (NON_TEXT_CHAR_CODES.has(num)) {
     return '';
   }
   if (TEXT_CHAR_CODES.has(num)) {
     return String.fromCharCode(num);
   }
   const codePoint = WINDOWS1252_TO_UNICODE.get(num);
-  if (codePoint !== undefined) {
-    return String.fromCodePoint(codePoint);
-  }
-  return match;
+  return String.fromCodePoint(codePoint);
 };
 
 /**
- * Removes a trailing empty hash and an empty query string from a URL.
- * @param {string} url - The target URL string to be cleaned.
- * @returns {string} The cleaned URL string or the original input.
- */
-export const trimTrailingEmptyQueryAndHash = url => {
-  if (!isString(url)) {
-    return url;
-  }
-  return url.replace(REG_HASH, '').replace(REG_QUERY, '$1');
-};
-
-/**
- * Parses URL-encoded numeric character references in the range 0x00 to 0xFF.
+ * Parses URL-encoded numeric character references.
  * @param {string} str - The target string to parse.
  * @param {number} [nest] - The current nesting depth for recursive parsing.
  * @returns {string} The decoded and parsed string.
