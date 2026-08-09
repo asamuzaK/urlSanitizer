@@ -32,33 +32,33 @@ describe('regexp', () => {
     });
   });
 
-  describe('REG_SCRIPT_BLOB', () => {
-    const { REG_SCRIPT_BLOB } = reg;
+  describe('REG_SCRIPT_OR_BLOB', () => {
+    const { REG_SCRIPT_OR_BLOB } = reg;
 
     it('should match exact script and blob schemes case-insensitively', () => {
       assert.strictEqual(
-        REG_SCRIPT_BLOB.test('javascript'),
+        REG_SCRIPT_OR_BLOB.test('javascript'),
         true,
         'javascript'
       );
       assert.strictEqual(
-        REG_SCRIPT_BLOB.test('JavaScript'),
+        REG_SCRIPT_OR_BLOB.test('JavaScript'),
         true,
         'JavaScript'
       );
-      assert.strictEqual(REG_SCRIPT_BLOB.test('vbscript'), true, 'vbscript');
-      assert.strictEqual(REG_SCRIPT_BLOB.test('blob'), true, 'blob');
-      assert.strictEqual(REG_SCRIPT_BLOB.test('Blob'), true, 'Blob');
+      assert.strictEqual(REG_SCRIPT_OR_BLOB.test('vbscript'), true, 'vbscript');
+      assert.strictEqual(REG_SCRIPT_OR_BLOB.test('blob'), true, 'blob');
+      assert.strictEqual(REG_SCRIPT_OR_BLOB.test('Blob'), true, 'Blob');
     });
 
     it('should NOT match partial or invalid strings', () => {
       assert.strictEqual(
-        REG_SCRIPT_BLOB.test('blob:'),
+        REG_SCRIPT_OR_BLOB.test('blob:'),
         false,
         'trailing colon'
       );
-      assert.strictEqual(REG_SCRIPT_BLOB.test('myblob'), false, 'prefix');
-      assert.strictEqual(REG_SCRIPT_BLOB.test('blobs'), false, 'suffix');
+      assert.strictEqual(REG_SCRIPT_OR_BLOB.test('myblob'), false, 'prefix');
+      assert.strictEqual(REG_SCRIPT_OR_BLOB.test('blobs'), false, 'suffix');
     });
   });
 

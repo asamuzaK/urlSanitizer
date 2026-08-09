@@ -25,7 +25,7 @@ import {
   REG_MIME_DOM,
   REG_SCHEME,
   REG_SCRIPT,
-  REG_SCRIPT_BLOB,
+  REG_SCRIPT_OR_BLOB,
   REG_TAG_QUOT,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
@@ -244,7 +244,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
-    if (REG_SCRIPT_BLOB.test(item)) {
+    if (REG_SCRIPT_OR_BLOB.test(item)) {
       return false;
     }
     const schemeParts = item.split('+');
@@ -523,7 +523,7 @@ export class URLSanitizer extends URISchemes {
       }
       const dataScheme = parsedUrl.protocol;
       const dataSchemeParts = getSchemeParts(dataScheme);
-      if (dataSchemeParts.some(s => REG_SCRIPT_BLOB.test(s))) {
+      if (dataSchemeParts.some(s => REG_SCRIPT_OR_BLOB.test(s))) {
         return null;
       }
     } catch (e) {

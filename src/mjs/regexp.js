@@ -63,7 +63,7 @@ export const REG_SCRIPT = /^(?:java|vb)script$/i;
  * Matches script-executing or data-fetching schemes.
  * @type {RegExp}
  */
-export const REG_SCRIPT_BLOB = /^(?:(?:java|vb)script|blob)$/i;
+export const REG_SCRIPT_OR_BLOB = /^(?:(?:java|vb)script|blob)$/i;
 
 /**
  * Matches HTML-sensitive characters and their encoded variants.
