@@ -455,26 +455,14 @@ describe('uri-util', () => {
     describe('get scheme', () => {
       it('returns null if uri is not a string', () => {
         const schemes = new URISchemes();
-        assert.strictEqual(
-          schemes.getScheme(123),
-          null,
-          'result for number'
-        );
-        assert.strictEqual(
-          schemes.getScheme(null),
-          null,
-          'result for null'
-        );
+        assert.strictEqual(schemes.getScheme(123), null, 'result for number');
+        assert.strictEqual(schemes.getScheme(null), null, 'result for null');
         assert.strictEqual(
           schemes.getScheme(undefined),
           null,
           'result for undefined'
         );
-        assert.strictEqual(
-          schemes.getScheme({}),
-          null,
-          'result for object'
-        );
+        assert.strictEqual(schemes.getScheme({}), null, 'result for object');
       });
 
       it('returns null for an invalid URI string', () => {

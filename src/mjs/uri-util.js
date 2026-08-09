@@ -109,7 +109,7 @@ export class URISchemes {
   /**
    * Normalizes the URI string using NFKC.
    * @param {string} uri - The URL to normalize.
-   * @param {boolean} [isScheme=false] - True if uri is a scheme.
+   * @param {boolean} [isScheme] - True if uri is a scheme.
    * @returns {string|null} The normalized URI string, or null.
    */
   normalize(uri, isScheme = false) {
