@@ -706,7 +706,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    const normalizedScheme = this.normalize(scheme);
+    const normalizedScheme = this.normalize(scheme, true);
     if (normalizedScheme) {
       return this.#allowedSchemes.has(normalizedScheme);
     }
@@ -722,7 +722,7 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const normalizedScheme = this.normalize(scheme);
+    const normalizedScheme = this.normalize(scheme, true);
     const schemeParts = normalizedScheme.split('+');
     const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
     if (isScript || !REG_SCHEME.test(normalizedScheme)) {
@@ -741,7 +741,7 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       return false;
     }
-    const normalizedScheme = this.normalize(scheme);
+    const normalizedScheme = this.normalize(scheme, true);
     return this.#allowedSchemes.delete(normalizedScheme);
   }
 
@@ -791,8 +791,8 @@ export const sanitizeURL = async (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = urlSanitizer.getScheme(url);
-  if (scheme === undefined) {
+  const scheme = urlSanitizer.getScheme(url, true);
+  if (scheme === null) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
     }
@@ -858,8 +858,8 @@ export const sanitizeURLSync = (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = urlSanitizer.getScheme(url);
-  if (scheme === undefined) {
+  const scheme = urlSanitizer.getScheme(url, true);
+  if (scheme === null) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
     }

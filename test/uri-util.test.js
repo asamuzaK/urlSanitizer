@@ -453,35 +453,35 @@ describe('uri-util', () => {
     });
 
     describe('get scheme', () => {
-      it('returns undefined if uri is not a string', () => {
+      it('returns null if uri is not a string', () => {
         const schemes = new URISchemes();
         assert.strictEqual(
           schemes.getScheme(123),
-          undefined,
+          null,
           'result for number'
         );
         assert.strictEqual(
           schemes.getScheme(null),
-          undefined,
+          null,
           'result for null'
         );
         assert.strictEqual(
           schemes.getScheme(undefined),
-          undefined,
+          null,
           'result for undefined'
         );
         assert.strictEqual(
           schemes.getScheme({}),
-          undefined,
+          null,
           'result for object'
         );
       });
 
-      it('returns undefined for an invalid URI string', () => {
+      it('returns null for an invalid URI string', () => {
         const schemes = new URISchemes();
         assert.strictEqual(
           schemes.getScheme('invalid-uri-without-scheme'),
-          undefined,
+          null,
           'result'
         );
       });
@@ -576,20 +576,29 @@ describe('uri-util', () => {
 
       it('converts uppercase characters to lowercase', () => {
         const schemes = new URISchemes();
-        const res = schemes.normalize('HTTPS');
+        const res = schemes.normalize('HTTPS', true);
         assert.strictEqual(res, 'https', 'result');
       });
 
       it('trims leading and trailing whitespaces', () => {
         const schemes = new URISchemes();
-        const res = schemes.normalize('  http  ');
+        const res = schemes.normalize('  http  ', true);
         assert.strictEqual(res, 'http', 'result');
       });
 
       it('trims whitespaces and converts to lowercase simultaneously', () => {
         const schemes = new URISchemes();
-        const res = schemes.normalize('  Moz-Extension  ');
+        const res = schemes.normalize('  Moz-Extension  ', true);
         assert.strictEqual(res, 'moz-extension', 'result');
+      });
+
+      it('normalizes the URL string using NFKC', () => {
+        const schemes = new URISchemes();
+        // Fullwidth string: 'ｈｔｔｐｓ：／／ｅｘａｍｐｌｅ．ｃｏｍ'
+        const fullwidthUrl =
+          '\uFF48\uFF54\uFF54\uFF50\uFF53\uFF1A\uFF0F\uFF0F\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D';
+        const res = schemes.normalize(fullwidthUrl);
+        assert.strictEqual(res, 'https://example.com', 'result');
       });
     });
 
@@ -626,20 +635,6 @@ describe('uri-util', () => {
         assert.strictEqual(res.protocol, 'https:', 'protocol');
         assert.strictEqual(res.hostname, 'example.com', 'hostname');
         assert.strictEqual(res.pathname, '/path', 'pathname');
-      });
-
-      it('normalizes the URL string using NFKC before parsing', () => {
-        const schemes = new URISchemes();
-        // Fullwidth string: 'ｈｔｔｐｓ：／／ｅｘａｍｐｌｅ．ｃｏｍ'
-        const fullwidthUrl =
-          '\uFF48\uFF54\uFF54\uFF50\uFF53\uFF1A\uFF0F\uFF0F\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D';
-        const res = schemes.parse(fullwidthUrl);
-        assert.ok(
-          res instanceof URL,
-          'returns a URL instance after normalization'
-        );
-        assert.strictEqual(res.protocol, 'https:', 'protocol');
-        assert.strictEqual(res.hostname, 'example.com', 'hostname');
       });
     });
 

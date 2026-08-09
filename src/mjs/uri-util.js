@@ -80,14 +80,17 @@ export class URISchemes {
   /**
    * Extracts the scheme from URI.
    * @param {string} uri - The URI string.
-   * @returns {string|undefined} The extracted scheme, or undefined.
+   * @returns {string|null} The extracted scheme, or null.
    */
   getScheme(uri) {
     if (!isString(uri)) {
-      return undefined;
+      return null;
     }
     const parsed = this.parse(uri);
-    return parsed ? parsed.protocol.replace(/:$/, '') : undefined;
+    if (parsed) {
+      return parsed.protocol.replace(/:$/, '');
+    }
+    return null;
   }
 
   /**
@@ -96,39 +99,45 @@ export class URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    const normalizedScheme = this.normalize(scheme);
-    if (normalizedScheme) {
-      return this.#schemes.has(normalizedScheme);
+    const normalized = this.normalize(scheme, true);
+    if (normalized) {
+      return this.#schemes.has(normalized);
     }
     return false;
   }
 
   /**
-   * Normalizes the specified URI scheme.
-   * @param {string} scheme - The URI scheme to normalize.
-   * @returns {string|null} The normalized scheme string, or null.
+   * Normalizes the URI string using NFKC.
+   * @param {string} uri - The URL to normalize.
+   * @param {boolean} [isScheme=false] - True if uri is a scheme.
+   * @returns {string|null} The normalized URI string, or null.
    */
-  normalize(scheme) {
-    if (!isString(scheme)) {
+  normalize(uri, isScheme = false) {
+    if (!isString(uri)) {
       return null;
     }
-    return scheme.trim().toLowerCase();
+    const normalized = uri.normalize('NFKC');
+    if (isScheme) {
+      return normalized.trim().toLowerCase();
+    }
+    return normalized;
   }
 
   /**
-   * Parse URL
-   * @param {string} url - The URL.
-   * @param {string} [base] - The base URL.
-   * @returns {string|null} The parsed URL, or null.
+   * Parse the URI string.
+   * @param {string} uri - The URI string.
+   * @param {string} [base] - The base URI string.
+   * @returns {string|null} The parsed URL object, or null.
    */
-  parse(url, base) {
-    if (!isString(url)) {
+  parse(uri, base) {
+    if (!isString(uri)) {
       return null;
     }
+    const normalized = this.normalize(uri);
     if (base && isString(base)) {
-      return URL.parse(url.normalize('NFKC'), base.normalize('NFKC'));
+      return URL.parse(normalized, this.normalize(base));
     }
-    return URL.parse(url.normalize('NFKC'));
+    return URL.parse(normalized);
   }
 
   /**
