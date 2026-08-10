@@ -932,7 +932,7 @@ export const sanitizeURL = async (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = urlSanitizer.getScheme(url, true);
+  const scheme = urlSanitizer.getScheme(url);
   if (scheme === null) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
@@ -1002,7 +1002,7 @@ export const sanitizeURLSync = (url, opt = {}) => {
     ...DEFAULT_OPTS,
     ...opt
   };
-  const scheme = urlSanitizer.getScheme(url, true);
+  const scheme = urlSanitizer.getScheme(url);
   if (scheme === null) {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
