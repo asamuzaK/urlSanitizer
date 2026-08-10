@@ -127,7 +127,7 @@ export class URISchemes {
    * Parse the URI string.
    * @param {string} uri - The URI string.
    * @param {string} [base] - The base URI string.
-   * @returns {string|null} The parsed URL object, or null.
+   * @returns {URL|null} The parsed URL object, or null.
    */
   parse(uri, base) {
     if (!isString(uri)) {
