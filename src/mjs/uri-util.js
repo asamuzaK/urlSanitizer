@@ -453,7 +453,7 @@ const readStreamInChunks = async (
     throw new DOMException(msg, 'NotReadableError');
   }
   chunks.push(value);
-  await readStreamInChunks(reader, maxSize, chunks, newSize);
+  return readStreamInChunks(reader, maxSize, chunks, newSize);
 };
 
 /**
