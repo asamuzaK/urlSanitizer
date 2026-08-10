@@ -47,11 +47,11 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 ]);
 
 /**
- * Generates hexadecimal escape strings for control characters.
+ * Generates hexadecimal escape strings for none text characters.
  * @private
  * @returns {Map<number, string>} Generated control char codes.
  */
-const generateCtrlCharCodes = () => {
+const generateNoneTextCharCodes = () => {
   const charCodes = new Map();
   for (let i = 0; i < BYTE_RANGE; i++) {
     if (!TEXT_CHAR_CODES.has(i) && !WINDOWS1252_TO_UNICODE.has(i)) {
@@ -62,7 +62,7 @@ const generateCtrlCharCodes = () => {
 };
 
 /**
- * A mapping of control character codes to their hexadecimal escape strings.
+ * A mapping of none text character codes to their hexadecimal escape strings.
  * @type {Map<number, string>}
  */
-export const NON_TEXT_CHAR_CODES = generateCtrlCharCodes();
+export const NON_TEXT_CHAR_CODES = generateNoneTextCharCodes();
