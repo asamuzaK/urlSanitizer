@@ -829,8 +829,8 @@ describe('uri-util', () => {
     });
   });
 
-  describe('fetch blob as data URL', () => {
-    const func = mjs.fetchBlobAsDataURL;
+  describe('fetch as data URL', () => {
+    const func = mjs.fetchAsDataURL;
     let originalFetch;
 
     beforeEach(() => {
@@ -921,7 +921,7 @@ describe('uri-util', () => {
         headers: {
           get: key => {
             if (key === 'content-length') {
-              return blob.size;
+              return `${blob.size}`;
             }
             return null;
           }
@@ -950,7 +950,7 @@ describe('uri-util', () => {
         headers: {
           get: key => {
             if (key === 'content-length') {
-              return blob.size;
+              return `${blob.size}`;
             }
             return null;
           }
@@ -971,7 +971,7 @@ describe('uri-util', () => {
         headers: {
           get: key => {
             if (key === 'content-length') {
-              return blob.size;
+              return `${blob.size}`;
             }
             return null;
           }
@@ -986,7 +986,7 @@ describe('uri-util', () => {
           assert.strictEqual(err.name, 'NotReadableError', 'error name');
           assert.strictEqual(
             err.message,
-            `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+            `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
             'error message'
           );
           return true;
@@ -1013,7 +1013,7 @@ describe('uri-util', () => {
           assert.strictEqual(err.name, 'NotReadableError', 'error name');
           assert.strictEqual(
             err.message,
-            `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+            `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
             'error message'
           );
           return true;
@@ -1029,7 +1029,7 @@ describe('uri-util', () => {
         headers: {
           get: key => {
             if (key === 'content-length') {
-              return blob.size;
+              return `${blob.size}`;
             }
             return null;
           }
@@ -1043,6 +1043,106 @@ describe('uri-util', () => {
         `data:base64,${base64}`,
         'should omit MIME type in data URL'
       );
+    });
+
+    describe('fetch non-blob schemes (http/https) as data URL', () => {
+      const func = mjs.fetchAsDataURL;
+      let originalFetch;
+
+      beforeEach(() => {
+        originalFetch = globalThis.fetch;
+      });
+      afterEach(() => {
+        globalThis.fetch = originalFetch;
+      });
+
+      it('fetches an HTTPS URL and successfully converts it to a data URL', async () => {
+        const data = 'Hello, external world!';
+        const blob = new Blob([data], { type: 'text/plain' });
+        globalThis.fetch = async url => {
+          assert.strictEqual(
+            url,
+            'https://example.com/data.txt',
+            'should fetch the exact URL'
+          );
+          return {
+            ok: true,
+            headers: {
+              get: key => {
+                if (key === 'content-length') {
+                  return `${blob.size}`;
+                }
+                return null;
+              }
+            },
+            blob: async () => blob
+          };
+        };
+        const res = await func('https://example.com/data.txt');
+        const base64 = globalThis.Buffer.from(data).toString('base64');
+        const expectedUrl = `data:text/plain;base64,${base64}`;
+        assert.strictEqual(res, expectedUrl, 'result');
+      });
+
+      it('fetches an HTTP URL with JSON payload and converts to data URL', async () => {
+        const data = '{"key":"value"}';
+        const blob = new Blob([data], { type: 'application/json' });
+        globalThis.fetch = async url => {
+          assert.strictEqual(
+            url,
+            'http://api.example.com/data.json',
+            'should fetch the exact URL'
+          );
+          return {
+            ok: true,
+            headers: {
+              get: key => {
+                if (key === 'content-length') {
+                  return `${blob.size}`;
+                }
+                return null;
+              }
+            },
+            blob: async () => blob
+          };
+        };
+
+        const res = await func('http://api.example.com/data.json');
+        const base64 = globalThis.Buffer.from(data).toString('base64');
+        const expectedUrl = `data:application/json;base64,${base64}`;
+        assert.strictEqual(res, expectedUrl, 'result');
+      });
+
+      it('rejects an HTTPS URL if the Payload exceeds maxSize based on content-length', async () => {
+        const data = 'a'.repeat(100);
+        const blob = new Blob([data], { type: 'text/plain' });
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => {
+              if (key === 'content-length') {
+                return `${blob.size}`;
+              }
+              return null;
+            }
+          }
+        });
+        const maxSize = 50;
+        await assert.rejects(
+          async () => {
+            await func('https://example.com/large-file.txt', maxSize);
+          },
+          err => {
+            assert.strictEqual(err.name, 'NotReadableError', 'error name');
+            assert.strictEqual(
+              err.message,
+              `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+              'error message should use Payload terminology'
+            );
+            return true;
+          }
+        );
+      });
     });
 
     describe('fetch using response.body (Streams API)', () => {
@@ -1153,7 +1253,7 @@ describe('uri-util', () => {
             assert.strictEqual(err.name, 'NotReadableError', 'error name');
             assert.strictEqual(
               err.message,
-              `Blob size (60 bytes) exceeds max (${maxSize} bytes).`,
+              `Payload (60 bytes) exceeds max (${maxSize} bytes).`,
               'error message'
             );
             return true;
@@ -1168,7 +1268,7 @@ describe('uri-util', () => {
       });
     });
 
-    describe('environment specific paths inside fetchBlobAsDataURL', () => {
+    describe('environment specific paths inside fetchAsDataURL', () => {
       let envBuffer;
       let envFileReader;
 
@@ -1222,7 +1322,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }
@@ -1251,7 +1351,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }
@@ -1298,7 +1398,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }
@@ -1350,7 +1450,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }
@@ -1403,7 +1503,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }
@@ -1432,7 +1532,7 @@ describe('uri-util', () => {
           headers: {
             get: key => {
               if (key === 'content-length') {
-                return blob.size;
+                return `${blob.size}`;
               }
               return null;
             }

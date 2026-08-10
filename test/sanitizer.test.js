@@ -2443,18 +2443,32 @@ describe('sanitizer', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
-            allow: ['data'],
-            debug: true
-          });
-          assert.deepEqual(res, null, 'result should be null for invalid base64');
-          assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+          const res = sanitizer.sanitize(
+            'data:text/html;base64,invalid!base64',
+            {
+              allow: ['data'],
+              debug: true
+            }
+          );
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null for invalid base64'
+          );
+          assert.strictEqual(
+            warnStub.calledOnce,
+            true,
+            'console.warn should be called once'
+          );
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Failed to parse base64 data.',
             'should include the correct debug message'
           );
-          assert.ok(warnStub.firstCall.args[1] instanceof Error, 'should pass the original error object');
+          assert.ok(
+            warnStub.firstCall.args[1] instanceof Error,
+            'should pass the original error object'
+          );
         } finally {
           warnStub.restore();
         }
@@ -2464,12 +2478,23 @@ describe('sanitizer', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
-            allow: ['data'],
-            debug: false
-          });
-          assert.deepEqual(res, null, 'result should be null for invalid base64');
-          assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+          const res = sanitizer.sanitize(
+            'data:text/html;base64,invalid!base64',
+            {
+              allow: ['data'],
+              debug: false
+            }
+          );
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null for invalid base64'
+          );
+          assert.strictEqual(
+            warnStub.called,
+            false,
+            'console.warn should not be called'
+          );
         } finally {
           warnStub.restore();
         }
