@@ -9,7 +9,7 @@ import {
   URISchemes,
   escapeURLEncodedHTMLChars,
   extractDataUrlComponents,
-  fetchBlobAsDataURL,
+  // fetchBlobAsDataURL,
   getSchemeParts,
   parseBase64,
   parseURLEncodedNumCharRef,
@@ -18,7 +18,7 @@ import {
 } from './uri-util.js';
 
 /* constants */
-import { MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
+import { CHUNK_SIZE, DECI, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
 import {
   REG_AMP_ENC,
   REG_MIME_DOM,
@@ -28,6 +28,7 @@ import {
   REG_TAG_QUOT,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
+const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const URL_PROPS = Object.freeze([
   'href',
   'origin',
@@ -757,7 +758,154 @@ export class URLSanitizer extends URISchemes {
   }
 }
 
-/* instance */
+/* blob handlers */
+/**
+ * Converts Blob to data URL from Buffer.
+ * @private
+ * @param {Blob} blob - The target Blob object.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ */
+const convertFromBuffer = async blob => {
+  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
+  const buffer = await blob.arrayBuffer();
+  const base64 = globalThis.Buffer.from(buffer).toString('base64');
+  return `data:${mimeStr},${base64}`;
+};
+
+/**
+ * Converts Blob to data URL from FileReader.
+ * @private
+ * @param {Blob} blob - The target Blob object.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ */
+const convertFromFileReader = blob =>
+  new Promise((resolve, reject) => {
+    const reader = new globalThis.FileReader();
+    reader.addEventListener('error', () => {
+      const error =
+        reader.error ||
+        new DOMException(
+          'Failed to read Blob via FileReader.',
+          'NotReadableError'
+        );
+      reject(error);
+    });
+    reader.addEventListener('abort', () => resolve(null));
+    reader.addEventListener('load', () => resolve(reader.result));
+    reader.readAsDataURL(blob);
+  });
+
+/**
+ * Converts Blob to data URL from btoa.
+ * @private
+ * @param {Blob} blob - The target Blob object.
+ * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ */
+const convertFromBtoa = async blob => {
+  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
+  const buffer = await blob.arrayBuffer();
+  const uint8arr = new Uint8Array(buffer);
+  const chunks = [];
+  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
+  }
+  return `data:${mimeStr},${btoa(chunks.join(''))}`;
+};
+
+/**
+ * Reads a stream in chunks and validates its size.
+ * @private
+ * @param {ReadableStreamDefaultReader} reader - The stream reader.
+ * @param {number} maxSize - The maximum allowed size in bytes.
+ * @param {Uint8Array[]} chunks - The array to store chunks.
+ * @param {number} [accumulatedSize] - The currently accumulated size.
+ * @returns {Promise<void>}
+ */
+const readStreamInChunks = async (
+  reader,
+  maxSize,
+  chunks,
+  accumulatedSize = 0
+) => {
+  const { done, value } = await reader.read();
+  if (done) {
+    return;
+  }
+  const newSize = accumulatedSize + value.byteLength;
+  if (newSize > maxSize) {
+    await reader.cancel('Size limit exceeded');
+    const msg = `Blob size (${newSize} bytes) exceeds max (${maxSize} bytes).`;
+    throw new DOMException(msg, 'NotReadableError');
+  }
+  chunks.push(value);
+  return readStreamInChunks(reader, maxSize, chunks, newSize);
+};
+
+/**
+ * Fetches a blob URL and converts it to a data URL.
+ * @param {string} url - The blob URL to fetch.
+ * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
+ * @returns {Promise<string>} A promise resolving to the data URL.
+ */
+const fetchBlobAsDataURL = async (url, maxBlobSize) => {
+  let maxSize = MAX_BLOB_SIZE;
+  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
+    maxSize = maxBlobSize;
+  }
+  const response = await fetch(url);
+  if (!response.ok) {
+    const truncatedUrl = truncateURL(url);
+    let msg = `Failed to fetch ${truncatedUrl}`;
+    if (Number.isInteger(response.status)) {
+      if (response.statusText) {
+        msg += `: ${response.status} ${response.statusText}`;
+      } else {
+        msg += `: ${response.status}`;
+      }
+    }
+    throw new Error(msg);
+  }
+  // Check content length if available.
+  const contentLength = response.headers.get('content-length');
+  if (contentLength) {
+    const parsedLength = Number.parseInt(contentLength, DECI);
+    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
+      const msg = `Blob size (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
+  }
+  let blob;
+  // Use ReadableStream.
+  if (response.body) {
+    const reader = response.body.getReader();
+    const chunks = [];
+    try {
+      await readStreamInChunks(reader, maxSize, chunks, 0);
+    } finally {
+      reader.releaseLock();
+    }
+    const type = response.headers.get('content-type');
+    if (type) {
+      blob = new Blob(chunks, { type });
+    } else {
+      blob = new Blob(chunks);
+    }
+  } else {
+    blob = await response.blob();
+    if (blob.size > maxSize) {
+      const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
+  }
+  if (IS_NODE && globalThis.Buffer) {
+    return convertFromBuffer(blob);
+  } else if (globalThis.FileReader) {
+    return convertFromFileReader(blob);
+  }
+  return convertFromBtoa(blob);
+};
+
+/* URLSanitizer instance */
 const urlSanitizer = new URLSanitizer();
 
 /**

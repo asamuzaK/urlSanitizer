@@ -2443,18 +2443,32 @@ describe('sanitizer', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
-            allow: ['data'],
-            debug: true
-          });
-          assert.deepEqual(res, null, 'result should be null for invalid base64');
-          assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+          const res = sanitizer.sanitize(
+            'data:text/html;base64,invalid!base64',
+            {
+              allow: ['data'],
+              debug: true
+            }
+          );
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null for invalid base64'
+          );
+          assert.strictEqual(
+            warnStub.calledOnce,
+            true,
+            'console.warn should be called once'
+          );
           assert.strictEqual(
             warnStub.firstCall.args[0],
             '[URLSanitizer Debug] Failed to parse base64 data.',
             'should include the correct debug message'
           );
-          assert.ok(warnStub.firstCall.args[1] instanceof Error, 'should pass the original error object');
+          assert.ok(
+            warnStub.firstCall.args[1] instanceof Error,
+            'should pass the original error object'
+          );
         } finally {
           warnStub.restore();
         }
@@ -2464,12 +2478,23 @@ describe('sanitizer', () => {
         const warnStub = sinon.stub(console, 'warn');
         try {
           const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
-            allow: ['data'],
-            debug: false
-          });
-          assert.deepEqual(res, null, 'result should be null for invalid base64');
-          assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+          const res = sanitizer.sanitize(
+            'data:text/html;base64,invalid!base64',
+            {
+              allow: ['data'],
+              debug: false
+            }
+          );
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null for invalid base64'
+          );
+          assert.strictEqual(
+            warnStub.called,
+            false,
+            'console.warn should not be called'
+          );
         } finally {
           warnStub.restore();
         }
@@ -2529,6 +2554,643 @@ describe('sanitizer', () => {
         } finally {
           warnStub.restore();
         }
+      });
+    });
+
+    describe('internal fetchBlobAsDataURL (via sanitizeURL)', () => {
+      const func = mjs.sanitizeURL;
+      let originalFetch;
+      let warnStub;
+
+      beforeEach(() => {
+        originalFetch = globalThis.fetch;
+        warnStub = sinon.stub(console, 'warn');
+      });
+      afterEach(() => {
+        globalThis.fetch = originalFetch;
+        warnStub.restore();
+      });
+
+      it('logs error if the fetch request fails', async () => {
+        globalThis.fetch = async () => {
+          throw new TypeError('Network error');
+        };
+        const res = await func('blob:https://example.com/error-uuid', {
+          allow: ['blob'],
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          'Network error',
+          'error message'
+        );
+      });
+
+      it('logs error if the response is not ok', async () => {
+        globalThis.fetch = async url => ({ ok: false });
+        const res = await func('blob:https://example.com/some-uuid', {
+          allow: ['blob'],
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          'Failed to fetch blob:https://example.com/some-uuid',
+          'error message'
+        );
+      });
+
+      it('logs error with status if the response is not ok', async () => {
+        globalThis.fetch = async url => ({ ok: false, status: 404 });
+        const res = await func('blob:https://example.com/some-uuid', {
+          allow: ['blob'],
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          'Failed to fetch blob:https://example.com/some-uuid: 404',
+          'error message'
+        );
+      });
+
+      it('logs error with status text if the response is not ok', async () => {
+        globalThis.fetch = async url => ({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found'
+        });
+        const res = await func('blob:https://example.com/some-uuid', {
+          allow: ['blob'],
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          'Failed to fetch blob:https://example.com/some-uuid: 404 Not Found',
+          'error message'
+        );
+      });
+
+      it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid or 0', async () => {
+        const data = 'a'.repeat(10);
+        const blob = new Blob([data], { type: 'image/png' });
+        globalThis.fetch = async () => ({
+          ok: true,
+          headers: {
+            get: key => (key === 'content-length' ? String(blob.size) : null)
+          },
+          blob: async () => blob
+        });
+        const res1 = await func('blob:https://example.com/test', {
+          allow: ['blob'],
+          maxBlobSize: 0
+        });
+        const res2 = await func('blob:https://example.com/test', {
+          allow: ['blob'],
+          maxBlobSize: -50
+        });
+        const res3 = await func('blob:https://example.com/test', {
+          allow: ['blob'],
+          maxBlobSize: 'invalid'
+        });
+        assert.ok(res1.startsWith('data:'), 'should process normally with 0');
+        assert.ok(
+          res2.startsWith('data:'),
+          'should process normally with negative value'
+        );
+        assert.ok(
+          res3.startsWith('data:'),
+          'should process normally with non-number'
+        );
+      });
+
+      it('fetches a URL and successfully converts it to a sanitized data URL', async () => {
+        const data = 'Hello, blob!';
+        const blob = new Blob([data], { type: 'image/png' });
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => (key === 'content-length' ? String(blob.size) : null)
+          },
+          blob: async () => blob
+        });
+        const res = await func('blob:https://example.com/mock-uuid', {
+          allow: ['blob']
+        });
+        // base64 is decoded to plain text by sanitizeURL since it contains no binary data
+        const expectedUrl = `data:image/png,Hello, blob!`;
+        assert.strictEqual(res, expectedUrl, 'result');
+      });
+
+      it('logs error if the content length exceeds maxSize', async () => {
+        const data = 'a'.repeat(100);
+        const blob = new Blob([data], { type: 'image/png' });
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: {
+            get: key => (key === 'content-length' ? String(blob.size) : null)
+          }
+        });
+        const maxSize = 50;
+        const res = await func('blob:https://example.com/large-blob', {
+          allow: ['blob'],
+          maxBlobSize: maxSize,
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].name,
+          'NotReadableError',
+          'error name'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+          'error message'
+        );
+      });
+
+      it('logs error if the fetched blob size exceeds maxSize', async () => {
+        const data = 'a'.repeat(100);
+        const blob = new Blob([data], { type: 'image/png' });
+        globalThis.fetch = async url => ({
+          ok: true,
+          headers: { get: key => null },
+          blob: async () => blob
+        });
+        const maxSize = 50;
+        const res = await func('blob:https://example.com/large-blob', {
+          allow: ['blob'],
+          maxBlobSize: maxSize,
+          debug: true
+        });
+        assert.deepEqual(res, null, 'result should be null');
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].name,
+          'NotReadableError',
+          'error name'
+        );
+        assert.strictEqual(
+          warnStub.firstCall.args[1].message,
+          `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+          'error message'
+        );
+      });
+
+      it('handles Blob without MIME type (gets decoded)', async () => {
+        const data = 'No MIME type text';
+        const blob = new Blob([data]);
+        globalThis.fetch = async () => ({
+          ok: true,
+          headers: {
+            get: key => (key === 'content-length' ? String(blob.size) : null)
+          },
+          blob: async () => blob
+        });
+        const res = await func('blob:https://example.com/no-mime-buffer', {
+          allow: ['blob']
+        });
+        assert.strictEqual(
+          res,
+          'data:,No MIME type text',
+          'should decode base64'
+        );
+      });
+
+      describe('fetch using response.body (Streams API)', () => {
+        it('fetches a URL and convert to a data URL using stream reader', async () => {
+          const chunksData = ['Hello, ', 'stream!'];
+          const encoder = new TextEncoder();
+          const chunks = chunksData.map(str => encoder.encode(str));
+          let chunkIndex = 0;
+
+          // Mock ReadableStreamDefaultReader
+          const mockReader = {
+            read: async () => {
+              if (chunkIndex < chunks.length) {
+                return { done: false, value: chunks[chunkIndex++] };
+              }
+              return { done: true, value: undefined };
+            },
+            releaseLock: () => {}
+          };
+
+          globalThis.fetch = async url => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-type' ? 'image/png' : null)
+            },
+            body: { getReader: () => mockReader }
+          });
+          const res = await func('blob:https://example.com/stream-mock', {
+            allow: ['blob']
+          });
+          const expectedUrl = `data:image/png,Hello, stream!`;
+          assert.strictEqual(res, expectedUrl, 'result using stream');
+        });
+
+        it('fetches a URL and convert to a data URL without content-type', async () => {
+          const chunksData = ['Hello, ', 'stream!'];
+          const encoder = new TextEncoder();
+          const chunks = chunksData.map(str => encoder.encode(str));
+          let chunkIndex = 0;
+
+          // Mock ReadableStreamDefaultReader
+          const mockReader = {
+            read: async () => {
+              if (chunkIndex < chunks.length) {
+                return { done: false, value: chunks[chunkIndex++] };
+              }
+              return { done: true, value: undefined };
+            },
+            releaseLock: () => {}
+          };
+
+          globalThis.fetch = async url => ({
+            ok: true,
+            headers: { get: key => null },
+            body: { getReader: () => mockReader }
+          });
+          const res = await func('blob:https://example.com/stream-mock', {
+            allow: ['blob']
+          });
+          assert.strictEqual(
+            res,
+            'data:,Hello, stream!',
+            'result using stream (decoded)'
+          );
+        });
+
+        it('logs error if the stream chunks exceed maxSize and cancels the reader', async () => {
+          const encoder = new TextEncoder();
+          const chunk = encoder.encode('a'.repeat(30));
+          let chunkIndex = 0;
+          let isCanceled = false;
+
+          // Mock ReadableStreamDefaultReader
+          const mockReader = {
+            read: async () => {
+              chunkIndex++;
+              return { done: false, value: chunk };
+            },
+            releaseLock: () => {},
+            cancel: reason => {
+              isCanceled = true;
+              assert.strictEqual(
+                reason,
+                'Size limit exceeded',
+                'cancel reason'
+              );
+            }
+          };
+          globalThis.fetch = async url => ({
+            ok: true,
+            headers: { get: key => null },
+            body: { getReader: () => mockReader }
+          });
+          const maxSize = 50;
+          const res = await func('blob:https://example.com/large-stream', {
+            allow: ['blob'],
+            maxBlobSize: maxSize,
+            debug: true
+          });
+
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            isCanceled,
+            true,
+            'reader.cancel should be called'
+          );
+          assert.strictEqual(
+            chunkIndex,
+            2,
+            'should only read 2 chunks before throwing'
+          );
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1].name,
+            'NotReadableError',
+            'error name'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1].message,
+            `Blob size (60 bytes) exceeds max (${maxSize} bytes).`,
+            'error message'
+          );
+        });
+      });
+
+      describe('environment specific paths inside fetchBlobAsDataURL', () => {
+        let envBuffer;
+        let envFileReader;
+
+        beforeEach(() => {
+          envBuffer = globalThis.Buffer;
+          envFileReader = globalThis.FileReader;
+        });
+
+        afterEach(() => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: envBuffer,
+            writable: true,
+            configurable: true
+          });
+          Object.defineProperty(globalThis, 'FileReader', {
+            value: envFileReader,
+            writable: true,
+            configurable: true
+          });
+        });
+
+        it('uses FileReader fallback if Buffer is unavailable', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          const sampleDataURL = 'data:image/png;base64,RmlsZVJlYWRlciE=';
+          globalThis.FileReader = class {
+            constructor() {
+              this.listeners = {};
+            }
+
+            addEventListener(type, callback) {
+              this.listeners[type] = callback;
+            }
+
+            readAsDataURL() {
+              setTimeout(() => {
+                this.result = sampleDataURL;
+                if (this.listeners.load) {
+                  this.listeners.load();
+                }
+              }, 0);
+            }
+          };
+          const blob = new Blob(['FileReader!'], { type: 'image/png' });
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func('blob:https://example.com/filereader-mock', {
+            allow: ['blob']
+          });
+          assert.strictEqual(
+            res,
+            'data:image/png,FileReader!',
+            'result using FileReader'
+          );
+        });
+
+        it('uses btoa fallback if Buffer and FileReader are both unavailable', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          Object.defineProperty(globalThis, 'FileReader', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          const data = 'btoa environment fallback!';
+          const blob = new Blob([data], { type: 'image/png' });
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func('blob:https://example.com/btoa-mock', {
+            allow: ['blob']
+          });
+          assert.strictEqual(
+            res,
+            `data:image/png,btoa environment fallback!`,
+            'result using btoa'
+          );
+        });
+
+        it('logs error when FileReader emits an error event', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          const mockError = new Error('Mock FileReader Error');
+          globalThis.FileReader = class {
+            constructor() {
+              this.listeners = {};
+              this.error = mockError;
+            }
+
+            addEventListener(type, callback) {
+              this.listeners[type] = callback;
+            }
+
+            readAsDataURL() {
+              setTimeout(() => {
+                if (this.listeners.error) {
+                  this.listeners.error();
+                }
+              }, 0);
+            }
+          };
+          const blob = new Blob(['test'], { type: 'image/png' });
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func('blob:https://example.com/error-mock', {
+            allow: ['blob'],
+            debug: true
+          });
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1].message,
+            'Mock FileReader Error',
+            'error message'
+          );
+        });
+
+        it('logs default DOMException when FileReader error is missing/falsy', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          globalThis.FileReader = class {
+            constructor() {
+              this.listeners = {};
+              this.error = null;
+            }
+
+            addEventListener(type, callback) {
+              this.listeners[type] = callback;
+            }
+
+            readAsDataURL() {
+              setTimeout(() => {
+                if (this.listeners.error) {
+                  this.listeners.error();
+                }
+              }, 0);
+            }
+          };
+          const blob = new Blob(['test'], { type: 'image/png' });
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func(
+            'blob:https://example.com/fallback-error-mock',
+            { allow: ['blob'], debug: true }
+          );
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
+          assert.ok(
+            warnStub.firstCall.args[1] instanceof DOMException,
+            'should be DOMException'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1].name,
+            'NotReadableError',
+            'error name'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1].message,
+            'Failed to read Blob via FileReader.',
+            'error message'
+          );
+        });
+
+        it('resolves with null when FileReader emits an abort event', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          globalThis.FileReader = class {
+            constructor() {
+              this.listeners = {};
+            }
+
+            addEventListener(type, callback) {
+              this.listeners[type] = callback;
+            }
+
+            readAsDataURL() {
+              setTimeout(() => {
+                if (this.listeners.abort) {
+                  this.listeners.abort();
+                }
+              }, 0);
+            }
+          };
+          const blob = new Blob(['test'], { type: 'image/png' });
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func('blob:https://example.com/abort-mock', {
+            allow: ['blob'],
+            debug: true
+          });
+          assert.strictEqual(res, null, 'should return null on abort');
+          assert.strictEqual(
+            warnStub.called,
+            false,
+            'no error should be logged on abort'
+          );
+        });
+
+        it('handles Blob without MIME type using btoa fallback', async () => {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          Object.defineProperty(globalThis, 'FileReader', {
+            value: undefined,
+            writable: true,
+            configurable: true
+          });
+          const data = 'No MIME type text for btoa';
+          const blob = new Blob([data]);
+          globalThis.fetch = async () => ({
+            ok: true,
+            headers: {
+              get: key => (key === 'content-length' ? String(blob.size) : null)
+            },
+            blob: async () => blob
+          });
+          const res = await func('blob:https://example.com/no-mime-btoa', {
+            allow: ['blob']
+          });
+          assert.strictEqual(
+            res,
+            'data:,No MIME type text for btoa',
+            'should decode base64'
+          );
+        });
       });
     });
 
