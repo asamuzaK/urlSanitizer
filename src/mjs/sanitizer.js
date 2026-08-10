@@ -88,15 +88,12 @@ const DEFAULT_OPTS = Object.freeze({
 
 /**
  * Internal debug logger.
- * @param {boolean} isDebug - Flag to enable or disable debug output.
  * @param {string} message - The message to output.
  * @param {Error} [error] - The caught error object, if any.
  * @returns {void}
  */
-export const logDebug = (isDebug, message, error) => {
-  if (isDebug) {
-    console.warn(`[URLSanitizer Debug] ${message}`, error);
-  }
+export const logDebug = (message, error) => {
+  console.warn(`[URLSanitizer Debug] ${message}`, error);
 };
 
 /**
@@ -129,10 +126,9 @@ export class SanitizeContext {
    */
   enter(url) {
     if (this.recurse.has(url)) {
-      logDebug(
-        this.debug,
-        `Circular Data URL detected and skipped: ${truncateURL(url)}`
-      );
+      if (this.debug) {
+        logDebug(`Circular Data URL detected and skipped: ${truncateURL(url)}`);
+      }
       return false;
     }
     this.nest++;
@@ -249,8 +245,6 @@ export class URLSanitizer extends URISchemes {
     const schemeParts = item.split('+');
     const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
     if (isScript || !REG_SCHEME.test(item)) {
-      const msg = `Failed to add scheme '${item}' in '${listName}' list.`;
-      logDebug(ctx.debug, msg);
       return false;
     }
     schemeMap.set(item, true);
@@ -428,8 +422,6 @@ export class URLSanitizer extends URISchemes {
           isRelative = true;
           relativePath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
         }
-      } else {
-        logDebug(ctx.debug, 'Failed to parse relative URL.');
       }
     }
     if (!isVerified) {
@@ -505,7 +497,9 @@ export class URLSanitizer extends URISchemes {
       try {
         parsedData = parseBase64(data);
       } catch (e) {
-        logDebug(ctx.debug, 'Failed to parse base64 data.', e);
+        if (ctx.debug) {
+          logDebug('Failed to parse base64 data.', e);
+        }
         return null;
       }
     }
@@ -514,7 +508,6 @@ export class URLSanitizer extends URISchemes {
       const dummy = 'http://dummy.local';
       const parsedUrl = this.parse(decodedData, dummy);
       if (!parsedUrl) {
-        logDebug(ctx.debug, 'Failed to parse inner data URL protocol.');
         return null;
       }
       const dataScheme = parsedUrl.protocol;
@@ -523,7 +516,9 @@ export class URLSanitizer extends URISchemes {
         return null;
       }
     } catch (e) {
-      logDebug(ctx.debug, 'Failed to parse inner data URL protocol.', e);
+      if (ctx.debug) {
+        logDebug('Failed to parse inner data URL protocol.', e);
+      }
       return null;
     }
     if (!mediaType || REG_MIME_DOM.test(mediaType)) {
@@ -568,7 +563,7 @@ export class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
-    const { allow, allowRelative, debug, deny, maxLength, only } = opt;
+    const { allow, allowRelative, deny, maxLength, only } = opt;
     if (maxLength && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
       throw new RangeError(msg);
@@ -587,10 +582,8 @@ export class URLSanitizer extends URISchemes {
       const urlObj = URL.parse(url);
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
-      } else {
-        logDebug(debug, `Failed to parse URL.`);
-        return null;
       }
+      return null;
     }
     const ctx = new SanitizeContext(opt, domPurify);
     return this.#process(url, { allow, allowRelative, deny, only }, ctx);
@@ -796,7 +789,6 @@ export const sanitizeURL = async (url, opt = {}) => {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
     }
-    logDebug(options.debug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {
@@ -810,8 +802,12 @@ export const sanitizeURL = async (url, opt = {}) => {
       try {
         data = await fetchBlobAsDataURL(url, options.maxBlobSize);
       } catch (e) {
-        const msg = `Failed to fetch and convert blob URL: ${truncateURL(url)}`;
-        logDebug(options.debug, msg, e);
+        if (options.debug) {
+          logDebug(
+            `Failed to fetch and convert blob URL: ${truncateURL(url)}`,
+            e
+          );
+        }
       }
       if (data) {
         if (only.length) {
@@ -863,7 +859,6 @@ export const sanitizeURLSync = (url, opt = {}) => {
     if (options.allowRelative) {
       return urlSanitizer.sanitize(url, options);
     }
-    logDebug(options.debug, `Invalid URL input: ${truncateURL(url)}`);
     return null;
   }
   if (scheme === 'blob') {

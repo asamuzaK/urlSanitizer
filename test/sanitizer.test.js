@@ -33,8 +33,8 @@ describe('sanitizer', () => {
       warnStub.restore();
     });
 
-    it('logs message to console.warn when isDebug is true', () => {
-      logDebug(true, 'Test message');
+    it('logs message to console.warn', () => {
+      logDebug('Test message');
       assert.strictEqual(
         warnStub.calledOnce,
         true,
@@ -49,7 +49,7 @@ describe('sanitizer', () => {
 
     it('logs message and error details when isDebug is true', () => {
       const testError = new Error('Test error detail');
-      logDebug(true, 'Test message', testError);
+      logDebug('Test message', testError);
       assert.strictEqual(
         warnStub.calledOnce,
         true,
@@ -59,25 +59,6 @@ describe('sanitizer', () => {
         warnStub.calledWith('[URLSanitizer Debug] Test message', testError),
         true,
         'should include error message and the original error'
-      );
-    });
-
-    it('does not log message when isDebug is false', () => {
-      logDebug(false, 'Test message');
-      assert.strictEqual(
-        warnStub.called,
-        false,
-        'console.warn should not be called'
-      );
-    });
-
-    it('does not log error when isDebug is false', () => {
-      const testError = new Error('Test error detail');
-      logDebug(false, 'Test message', testError);
-      assert.strictEqual(
-        warnStub.called,
-        false,
-        'console.warn should not be called'
       );
     });
   });
@@ -1231,31 +1212,6 @@ describe('sanitizer', () => {
         }
       });
 
-      it('catches and logs debug message when relative URL parsing fails', () => {
-        const warnStub = sinon.stub(console, 'warn');
-        try {
-          const sanitizer = new mjs.URLSanitizer();
-          const res = sanitizer.sanitize('http://[::1', {
-            allowRelative: true,
-            allow: ['http'],
-            debug: true
-          });
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.calledOnce,
-            true,
-            'console.warn should be called once'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[0],
-            '[URLSanitizer Debug] Failed to parse relative URL.',
-            'should output the correct debug message'
-          );
-        } finally {
-          warnStub.restore();
-        }
-      });
-
       describe('fast-path processing', () => {
         it('uses fast-path for HTTP(S) URLs without restrictive rules', () => {
           const sanitizer = new URLSanitizer();
@@ -1318,36 +1274,10 @@ describe('sanitizer', () => {
           );
         });
 
-        it('catches and logs debug message when new URL() throws', () => {
-          const warnStub = sinon.stub(console, 'warn');
-          try {
-            const sanitizer = new URLSanitizer();
-            const res = sanitizer.sanitize('http://[::1', {
-              allow: ['data'],
-              debug: true
-            });
-            assert.deepEqual(res, null, 'result should be null');
-            assert.strictEqual(
-              warnStub.calledOnce,
-              true,
-              'console.warn should be called once'
-            );
-            assert.strictEqual(
-              warnStub.firstCall.args[0],
-              '[URLSanitizer Debug] Failed to parse URL.',
-              'should output the correct debug message'
-            );
-          } finally {
-            warnStub.restore();
-          }
-        });
-
-        it('catches and ignores error if new URL() throws without debug mode', () => {
+        it('returns null for invalid URL input', () => {
           const sanitizer = new URLSanitizer();
-          const res = sanitizer.sanitize('http://[::1', {
-            allow: ['data']
-          });
-          assert.deepEqual(res, null, 'result should be null');
+          const res = sanitizer.sanitize('http://[::1');
+          assert.strictEqual(res, null, 'result should be null');
         });
       });
 
@@ -2233,25 +2163,10 @@ describe('sanitizer', () => {
         );
       });
 
-      it('logs debug message and returns null for relative URLs', async () => {
-        const warnStub = sinon.stub(console, 'warn');
-        try {
-          const url = '/path/to/resource';
-          const res = await func(url, { debug: true, allowRelative: false });
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.calledOnce,
-            true,
-            'console.warn should be called'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[0],
-            `[URLSanitizer Debug] Invalid URL input: ${url}`,
-            'should output the correct debug message'
-          );
-        } finally {
-          warnStub.restore();
-        }
+      it('returns null for relative URLs', async () => {
+        const url = '/path/to/resource';
+        const res = await func(url, { debug: true, allowRelative: false });
+        assert.strictEqual(res, null, 'result should be null');
       });
 
       describe('DOMPurify hook edge cases', () => {
@@ -2515,33 +2430,105 @@ describe('sanitizer', () => {
           }
         });
 
-        it('returns null securely when inner URL parsing returns null', () => {
-          const warnStub = sinon.stub(console, 'warn');
-          try {
-            const sanitizer = new mjs.URLSanitizer();
-            const res = sanitizer.sanitize('data:text/html,http://[::1', {
-              allow: ['data'],
-              debug: true
-            });
-            assert.strictEqual(
-              res,
-              null,
-              'should fail securely and return null'
-            );
-            assert.strictEqual(
-              warnStub.called,
-              true,
-              'console.warn should be called'
-            );
-            assert.strictEqual(
-              warnStub.firstCall.args[0],
-              '[URLSanitizer Debug] Failed to parse inner data URL protocol.',
-              'should log the inner parsing failure message'
-            );
-          } finally {
-            warnStub.restore();
-          }
+        it('returns null when inner URL parsing returns null', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('data:text/html,http://[::1', {
+            allow: ['data']
+          });
+          assert.strictEqual(res, null, 'should fail securely and return null');
         });
+      });
+
+      it('logs debug message when base64 parsing fails and debug is true', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
+            allow: ['data'],
+            debug: true
+          });
+          assert.deepEqual(res, null, 'result should be null for invalid base64');
+          assert.strictEqual(warnStub.calledOnce, true, 'console.warn should be called once');
+          assert.strictEqual(
+            warnStub.firstCall.args[0],
+            '[URLSanitizer Debug] Failed to parse base64 data.',
+            'should include the correct debug message'
+          );
+          assert.ok(warnStub.firstCall.args[1] instanceof Error, 'should pass the original error object');
+        } finally {
+          warnStub.restore();
+        }
+      });
+
+      it('does not log debug message when base64 parsing fails', () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = sanitizer.sanitize('data:text/html;base64,invalid!base64', {
+            allow: ['data'],
+            debug: false
+          });
+          assert.deepEqual(res, null, 'result should be null for invalid base64');
+          assert.strictEqual(warnStub.called, false, 'console.warn should not be called');
+        } finally {
+          warnStub.restore();
+        }
+      });
+
+      it('logs debug message when blob fetch fails and debug is true', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const data = 'a'.repeat(20);
+          const blob = new Blob([data], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const res = await func(url, {
+            allow: ['blob'],
+            maxBlobSize: 10,
+            debug: true
+          });
+          URL.revokeObjectURL(url);
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
+          assert.ok(
+            warnStub.firstCall.args[0].startsWith(
+              '[URLSanitizer Debug] Failed to fetch and convert blob URL:'
+            ),
+            'should include the correct debug message'
+          );
+          assert.ok(
+            warnStub.firstCall.args[1] instanceof DOMException,
+            'should pass the original error'
+          );
+        } finally {
+          warnStub.restore();
+        }
+      });
+
+      it('does not log debug message when blob fetch fails', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const data = 'a'.repeat(20);
+          const blob = new Blob([data], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const res = await func(url, {
+            allow: ['blob'],
+            maxBlobSize: 10,
+            debug: false
+          });
+          URL.revokeObjectURL(url);
+          assert.deepEqual(res, null, 'result should be null');
+          assert.strictEqual(
+            warnStub.called,
+            false,
+            'console.warn should not be called'
+          );
+        } finally {
+          warnStub.restore();
+        }
       });
     });
 
@@ -2610,42 +2597,10 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('logs debug message for invalid URL format when debug is true', () => {
-        const warnStub = sinon.stub(console, 'warn');
-        try {
-          const invalidUrl = 'invalid-url-string';
-          const res = func(invalidUrl, { debug: true });
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.calledOnce,
-            true,
-            'console.warn should be called once'
-          );
-          const expectedPrefix = `[URLSanitizer Debug] Invalid URL input: ${invalidUrl}`;
-          assert.strictEqual(
-            warnStub.firstCall.args[0],
-            expectedPrefix,
-            'should output the correct debug message'
-          );
-        } finally {
-          warnStub.restore();
-        }
-      });
-
-      it('does NOT log debug message for invalid URL format when debug is false', () => {
-        const warnStub = sinon.stub(console, 'warn');
-        try {
-          const invalidUrl = 'invalid-url-string';
-          const res = func(invalidUrl, { debug: false });
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.called,
-            false,
-            'console.warn should not be called'
-          );
-        } finally {
-          warnStub.restore();
-        }
+      it('returns false for invalid URL input', () => {
+        const invalidUrl = 'invalid-url-string';
+        const res = func(invalidUrl);
+        assert.strictEqual(res, null, 'result should be null');
       });
 
       it('allows and sanitizes relative URLs', () => {
