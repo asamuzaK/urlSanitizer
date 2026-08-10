@@ -9,7 +9,7 @@ import {
   URISchemes,
   escapeURLEncodedHTMLChars,
   extractDataUrlComponents,
-  fetchAsDataURL,
+  fetchBlobAsDataURL,
   getSchemeParts,
   parseBase64,
   parseURLEncodedNumCharRef,
@@ -800,7 +800,7 @@ export const sanitizeURL = async (url, opt = {}) => {
     ) {
       let data;
       try {
-        data = await fetchAsDataURL(url, options.maxBlobSize);
+        data = await fetchBlobAsDataURL(url, options.maxBlobSize);
       } catch (e) {
         if (options.debug) {
           logDebug(
@@ -881,7 +881,7 @@ export const inspectURL = async url => {
     const parsedUrl = URL.parse(url);
     if (parsedUrl?.protocol === 'blob:') {
       try {
-        const dataUrl = await fetchAsDataURL(parsedUrl.href);
+        const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
         const inspectedURLResult = urlSanitizer.inspect(dataUrl);
         inspectedURLResult.input = url;
         return inspectedURLResult;

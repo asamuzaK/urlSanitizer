@@ -449,7 +449,7 @@ const readStreamInChunks = async (
   const newSize = accumulatedSize + value.byteLength;
   if (newSize > maxSize) {
     await reader.cancel('Size limit exceeded');
-    const msg = `Payload (${newSize} bytes) exceeds max (${maxSize} bytes).`;
+    const msg = `Blob size (${newSize} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
   chunks.push(value);
@@ -457,19 +457,20 @@ const readStreamInChunks = async (
 };
 
 /**
- * Fetches a URL and converts its content to a data URL.
- * @param {string} url - The URL to fetch.
- * @param {number} [maxSize] - The maximum allowed size in bytes.
+ * Fetches a blob URL and converts it to a data URL.
+ * @param {string} url - The blob URL to fetch.
+ * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
  * @returns {Promise<string>} A promise resolving to the data URL.
  */
-export const fetchAsDataURL = async (url, maxSize) => {
-  let maxBytes = MAX_BLOB_SIZE;
-  if (Number.isInteger(maxSize) && maxSize > 0) {
-    maxBytes = maxSize;
+export const fetchBlobAsDataURL = async (url, maxBlobSize) => {
+  let maxSize = MAX_BLOB_SIZE;
+  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
+    maxSize = maxBlobSize;
   }
   const response = await fetch(url);
   if (!response.ok) {
-    let msg = `Failed to fetch ${truncateURL(url)}`;
+    const truncatedUrl = truncateURL(url);
+    let msg = `Failed to fetch ${truncatedUrl}`;
     if (Number.isInteger(response.status)) {
       if (response.statusText) {
         msg += `: ${response.status} ${response.statusText}`;
@@ -483,11 +484,9 @@ export const fetchAsDataURL = async (url, maxSize) => {
   const contentLength = response.headers.get('content-length');
   if (contentLength) {
     const parsedLength = Number.parseInt(contentLength, DECI);
-    if (Number.isInteger(parsedLength) && parsedLength > maxBytes) {
-      throw new DOMException(
-        `Payload (${parsedLength} bytes) exceeds max (${maxBytes} bytes).`,
-        'NotReadableError'
-      );
+    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
+      const msg = `Blob size (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
     }
   }
   let blob;
@@ -496,7 +495,7 @@ export const fetchAsDataURL = async (url, maxSize) => {
     const reader = response.body.getReader();
     const chunks = [];
     try {
-      await readStreamInChunks(reader, maxBytes, chunks, 0);
+      await readStreamInChunks(reader, maxSize, chunks, 0);
     } finally {
       reader.releaseLock();
     }
@@ -508,11 +507,9 @@ export const fetchAsDataURL = async (url, maxSize) => {
     }
   } else {
     blob = await response.blob();
-    if (blob.size > maxBytes) {
-      throw new DOMException(
-        `Payload (${blob.size} bytes) exceeds max (${maxBytes} bytes).`,
-        'NotReadableError'
-      );
+    if (blob.size > maxSize) {
+      const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
     }
   }
   if (IS_NODE && globalThis.Buffer) {
