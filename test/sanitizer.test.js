@@ -2732,7 +2732,7 @@ describe('sanitizer', () => {
         );
         assert.strictEqual(
           warnStub.firstCall.args[1].message,
-          `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+          `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
           'error message'
         );
       });
@@ -2764,7 +2764,7 @@ describe('sanitizer', () => {
         );
         assert.strictEqual(
           warnStub.firstCall.args[1].message,
-          `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+          `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
           'error message'
         );
       });
@@ -2910,7 +2910,7 @@ describe('sanitizer', () => {
           );
           assert.strictEqual(
             warnStub.firstCall.args[1].message,
-            `Blob size (60 bytes) exceeds max (${maxSize} bytes).`,
+            `Payload (60 bytes) exceeds max (${maxSize} bytes).`,
             'error message'
           );
         });

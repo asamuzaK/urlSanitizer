@@ -834,7 +834,7 @@ const readStreamInChunks = async (
   const newSize = accumulatedSize + value.byteLength;
   if (newSize > maxSize) {
     await reader.cancel('Size limit exceeded');
-    const msg = `Blob size (${newSize} bytes) exceeds max (${maxSize} bytes).`;
+    const msg = `Payload (${newSize} bytes) exceeds max (${maxSize} bytes).`;
     throw new DOMException(msg, 'NotReadableError');
   }
   chunks.push(value);
@@ -870,7 +870,7 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   if (contentLength) {
     const parsedLength = Number.parseInt(contentLength, DECI);
     if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
-      const msg = `Blob size (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
+      const msg = `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
       throw new DOMException(msg, 'NotReadableError');
     }
   }
@@ -893,7 +893,7 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   } else {
     blob = await response.blob();
     if (blob.size > maxSize) {
-      const msg = `Blob size (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
+      const msg = `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
       throw new DOMException(msg, 'NotReadableError');
     }
   }
