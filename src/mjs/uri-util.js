@@ -171,7 +171,11 @@ export class URISchemes {
     if (!schemes) {
       schemes = this.#schemes;
     }
-    return REG_SCHEME_EXT.test(scheme) || parts.every(s => schemes.has(s));
+    return (
+      schemes.has(scheme) ||
+      REG_SCHEME_EXT.test(scheme) ||
+      parts.every(s => schemes.has(s))
+    );
   }
 }
 

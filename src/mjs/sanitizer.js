@@ -467,7 +467,7 @@ export class URLSanitizer extends URISchemes {
       return true;
     }
     if (restrictScheme) {
-      return schemeParts.every(s => schemeMap.get(s));
+      return schemeMap.has(scheme) || schemeParts.every(s => schemeMap.get(s));
     }
     for (const [key, value] of schemeMap.entries()) {
       const bool =
