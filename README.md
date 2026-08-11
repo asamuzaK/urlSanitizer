@@ -344,22 +344,22 @@ Specifically, it verifies that the input has a correct URI syntax, is not a deni
 * Always `false` for `javascript` and `vbscript` schemes, or any unknown/unregistered schemes (e.g., `foo:`).
 
 ``` javascript
-const res1 = isURI('https://example.com/foo');
+const res1 = isValidURI('https://example.com/foo');
 // => true
 
-const res2 = isURI('javascript:alert(1)');
+const res2 = isValidURI('javascript:alert(1)');
 // => false
 
-const res3 = isURI('mailto:foo@example.com');
+const res3 = isValidURI('mailto:foo@example.com');
 // => true
 
-const res4 = isURI('foo:bar');
+const res4 = isValidURI('foo:bar');
 // => false
 
-const res5 = isURI('web+foo:bar');
+const res5 = isValidURI('web+foo:bar');
 // => true
 
-const res6 = isURI('web+javascript:alert(1)');
+const res6 = isValidURI('web+javascript:alert(1)');
 // => false
 ```
 
