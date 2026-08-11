@@ -9,7 +9,7 @@
 export {
   default,
   inspectURL,
-  isURISync,
+  isURISync, // deprecated
   isValidURI,
   sanitizeURL,
   sanitizeURLSync

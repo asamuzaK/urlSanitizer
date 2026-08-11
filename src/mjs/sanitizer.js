@@ -9,7 +9,6 @@ import {
   URISchemes,
   escapeURLEncodedHTMLChars,
   extractDataUrlComponents,
-  // fetchBlobAsDataURL,
   getSchemeParts,
   parseBase64,
   parseURLEncodedNumCharRef,
@@ -18,7 +17,13 @@ import {
 } from './uri-util.js';
 
 /* constants */
-import { CHUNK_SIZE, DECI, MAX_BLOB_SIZE, MAX_NEST } from './constant.js';
+import {
+  CHUNK_SIZE,
+  DECI,
+  MAX_BLOB_SIZE,
+  MAX_NEST,
+  MAX_URL_LENGTH
+} from './constant.js';
 import {
   REG_AMP_ENC,
   REG_MIME_DOM,
@@ -55,7 +60,8 @@ const DEFAULT_OPTS = Object.freeze({
   allowRelative: false,
   debug: false,
   revokeObjectURL: false,
-  maxBlobSize: MAX_BLOB_SIZE
+  maxBlobSize: MAX_BLOB_SIZE,
+  maxLength: MAX_URL_LENGTH
 });
 
 /* typedef */
@@ -920,7 +926,7 @@ const urlSanitizer = new URLSanitizer();
  * @param {boolean} [opt.debug] - Enable debug mode.
  * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL after sanitization.
  * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
- * @param {number} [opt.maxLength] - The maximum allowed URL length
+ * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
 export const sanitizeURL = async (url, opt = {}) => {

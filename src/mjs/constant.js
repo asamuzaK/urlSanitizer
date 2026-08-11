@@ -39,6 +39,12 @@ export const MAX_BLOB_SIZE = 16 * 1024 * 1024;
 export const MAX_NEST = 16;
 
 /**
+ * Maximum URL length (64KB).
+ * @type {number}
+ */
+export const MAX_URL_LENGTH = 64 * 1024;
+
+/**
  * Length used for truncating string.
  * @type {number}
  */
