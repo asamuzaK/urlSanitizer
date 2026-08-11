@@ -225,6 +225,90 @@ describe('URL Sanitizer', () => {
       const res = await sanitizeURL(url);
       assert.deepEqual(res, null, 'result');
     });
+
+    it('should not mutate original opt object when sanitizing blob URLs', async () => {
+      const data = '<div><script>alert(1);</script></div>';
+      const blob = new Blob([data], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
+      const opt = {
+        allow: ['blob'],
+        deny: []
+      };
+      await sanitizeURL(blobUrl, opt);
+      URL.revokeObjectURL(blobUrl);
+      assert.deepEqual(
+        opt.allow,
+        ['blob'],
+        'opt.allow should remain unchanged'
+      );
+      assert.deepEqual(opt.deny, [], 'opt.deny should remain unchanged');
+    });
+
+    it('should enforce "only" over "allow" and "deny"', async () => {
+      const res1 = await sanitizeURL('http://example.com', {
+        only: ['https', 'data'],
+        allow: ['http']
+      });
+      assert.strictEqual(
+        res1,
+        null,
+        'http should be denied because it is not in "only", despite being in "allow"'
+      );
+      const res2 = await sanitizeURL(
+        'https://example.com/"onmouseover="alert(1)"',
+        {
+          only: ['https'],
+          deny: ['https']
+        }
+      );
+
+      assert.strictEqual(
+        res2,
+        'https://example.com/',
+        'https should be allowed because "only" takes top priority over "deny"'
+      );
+    });
+
+    it('should resolve regardless of scheme casing', async () => {
+      const res = await sanitizeURL('HTTP://example.com', {
+        deny: ['http']
+      });
+      assert.strictEqual(
+        res,
+        null,
+        'HTTP:// (uppercase) should be denied when "http" is in deny list'
+      );
+    });
+
+    it('should resolve regardless of casing and trailing colon', async () => {
+      const res = await sanitizeURL('HTTP://example.com', {
+        only: ['https']
+      });
+      assert.strictEqual(
+        res,
+        null,
+        'HTTP:// (uppercase) should be denied when not matching "only" list'
+      );
+    });
+
+    it('should handle nested/composite schemes', async () => {
+      const res1 = await sanitizeURL('git+https://example.com/repo.git', {
+        deny: ['https']
+      });
+      assert.strictEqual(
+        res1,
+        null,
+        'git+https should be denied if "https" scheme is in deny list'
+      );
+      const res2 = await sanitizeURL('git+https://example.com/repo.git', {
+        only: ['git+https']
+      });
+      assert.strictEqual(
+        res2,
+        'git+https://example.com/repo.git',
+        'git+https should be allowed when specified in "only"'
+      );
+    });
   });
 
   describe('sanitize URL sync', () => {
