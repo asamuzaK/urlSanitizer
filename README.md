@@ -110,7 +110,7 @@ Sanitizes the given URL asynchronously.
   * opt.debug **\[boolean\]** If `true`, outputs internal error/warning logs to the console. Default is `false`.
   * opt.revokeObjectURL **\[boolean\]** Revokes the blob URL after sanitization. Default is `false`. However, to prevent memory leaks, it is highly recommended to set this option to `true`.
   * opt.maxBlobSize **\[number\]** Maximum allowed blob size in bytes. Default is `16_777_216` (16MB).
-  * opt.maxLength **\[number\]** Maximum allowed URL length. Default is no limit.
+  * opt.maxLength **\[number\]** Maximum allowed URL length. Default is `65_536` (64KB).
 
 **Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
 
@@ -161,7 +161,9 @@ console.log(decodeURIComponent(res4));
 // => 'data:text/html,<div></div>'
 
 const base64data4_2 = btoa('<div><img src="javascript:alert(1)"></div>');
-const res4_2 = await sanitizeURL(`data:text/html;base64,${base64data4_2}`);
+const res4_2 = await sanitizeURL(`data:text/html;base64,${base64data4_2}`, {
+  allow: ['data']
+});
 // => 'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E'
 
 console.log(decodeURIComponent(res4_2));
