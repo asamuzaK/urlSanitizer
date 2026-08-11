@@ -28,6 +28,7 @@ import {
   REG_TAG_QUOT,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
+const DUMMY_BASE = 'http://dummy.local';
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const URL_PROPS = Object.freeze([
   'href',
@@ -412,8 +413,7 @@ export class URLSanitizer extends URISchemes {
     let relativePath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const dummy = 'http://dummy.local';
-      const dummyUrl = this.parse(url, dummy);
+      const dummyUrl = this.parse(url, DUMMY_BASE);
       if (dummyUrl) {
         if (
           dummyUrl.protocol === 'http:' &&
@@ -506,8 +506,7 @@ export class URLSanitizer extends URISchemes {
     }
     try {
       const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-      const dummy = 'http://dummy.local';
-      const parsedUrl = this.parse(decodedData, dummy);
+      const parsedUrl = this.parse(decodedData, DUMMY_BASE);
       if (!parsedUrl) {
         return null;
       }
