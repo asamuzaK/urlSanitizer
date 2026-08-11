@@ -1285,19 +1285,30 @@ describe('sanitizer', () => {
         const baseString = 'a'.repeat(30);
         const testUrl = `https://example.com/${baseString}`;
 
-        it('throws RangeError when string exceeds maxLength during sanitize', () => {
+        it('throws RangeError when URL length exceeds max length', () => {
           const sanitizer = new mjs.URLSanitizer();
           assert.throws(
             () => sanitizer.sanitize(testUrl, { maxLength: 49 }),
             RangeError,
-            'URL length 50 exceeds maxLength 49.'
+            'URL length 50 exceeds max length 49.'
           );
         });
 
-        it('allows URL when length is exactly at or below maxLength', () => {
+        it('allows URL when length is exactly at or below max length', () => {
           const sanitizer = new mjs.URLSanitizer();
           const res = sanitizer.sanitize(testUrl, { maxLength: 50 });
           assert.strictEqual(res, testUrl, 'result');
+        });
+
+        it('throws RangeError when URL length exceeds default max length', () => {
+          const sanitizer = new mjs.URLSanitizer();
+          const longString = 'a'.repeat(64 * 1024);
+          const longUrl = `https://example.com/${longString}`
+          assert.throws(
+            () => sanitizer.sanitize(longUrl),
+            RangeError,
+            `URL length ${64 * 1024 + 20} exceeds max length ${64 * 1024}.`
+          );
         });
       });
     });

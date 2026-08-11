@@ -570,8 +570,8 @@ export class URLSanitizer extends URISchemes {
       return null;
     }
     const { allow, allowRelative, deny, maxLength, only } = opt;
-    if (maxLength && url.length > maxLength) {
-      const msg = `URL length ${url.length} exceeds maxLength ${maxLength}.`;
+    if (Number.isInteger(maxLength) && url.length > maxLength) {
+      const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
       throw new RangeError(msg);
     }
     const hasRestrictiveRules =
