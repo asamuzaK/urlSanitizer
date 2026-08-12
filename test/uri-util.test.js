@@ -359,16 +359,29 @@ describe('uri-util', () => {
   describe('trim trailing empty query and hash', () => {
     const func = mjs.trimTrailingEmptyQueryAndHash;
 
+    it('does not remove fragments or query', () => {
+      assert.strictEqual(
+        func('https://example.com#bar'),
+        'https://example.com#bar',
+        'fragment'
+      );
+      assert.strictEqual(
+        func('https://example.com?bar'),
+        'https://example.com?bar',
+        'query'
+      );
+    });
+
     it('removes trailing empty hash fragments', () => {
       assert.strictEqual(
         func('https://example.com#'),
         'https://example.com',
-        'result'
+        'removes fragment'
       );
       assert.strictEqual(
         func('https://example.com%23'),
-        'https://example.com',
-        'result'
+        'https://example.com%23',
+        'does not remove'
       );
     });
 
@@ -376,12 +389,12 @@ describe('uri-util', () => {
       assert.strictEqual(
         func('https://example.com?'),
         'https://example.com',
-        'result'
+        'removes empty query'
       );
       assert.strictEqual(
         func('https://example.com%3F'),
-        'https://example.com',
-        'result'
+        'https://example.com%3F',
+        'does not remove'
       );
     });
 
@@ -389,12 +402,12 @@ describe('uri-util', () => {
       assert.strictEqual(
         func('https://example.com?#'),
         'https://example.com',
-        'result'
+        'removes empty query and empty hash'
       );
       assert.strictEqual(
         func('https://example.com%3F%23'),
-        'https://example.com',
-        'result'
+        'https://example.com%3F%23',
+        'does not remove'
       );
     });
 
