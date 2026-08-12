@@ -381,7 +381,7 @@ export class URLSanitizer extends URISchemes {
         for (const item of allow) {
           if (isString(item)) {
             this.#registerScheme(
-              item.trim(),
+              item,
               'allow',
               allowedSchemes,
               schemeMap,
@@ -393,9 +393,9 @@ export class URLSanitizer extends URISchemes {
       if (Array.isArray(deny) && deny.length) {
         for (let item of deny) {
           if (isString(item)) {
-            item = item.trim();
-            if (item) {
-              schemeMap.set(item, false);
+            const normalized = this.normalize(item, true);
+            if (normalized) {
+              schemeMap.set(normalized, false);
             }
           }
         }
@@ -454,7 +454,7 @@ export class URLSanitizer extends URISchemes {
       scheme,
       schemeParts,
       urlObj,
-      isDataUrl: schemeParts.includes('data'),
+      isDataUrl: scheme === 'data',
       urlToSanitize: urlObj.href
     };
   }

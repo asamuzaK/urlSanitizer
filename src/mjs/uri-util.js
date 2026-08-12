@@ -162,7 +162,7 @@ export class URISchemes {
     if (!parsedUrl || !parsedUrl.protocol) {
       return false;
     }
-    const scheme = parsedUrl.protocol.replace(/:$/, '');
+    const scheme = parsedUrl.protocol.toLowerCase().replace(/:$/, '');
     const parts = scheme.split('+');
     const isScript = parts.some(s => REG_SCRIPT.test(s));
     if (isScript) {
@@ -296,7 +296,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
   }
   res = res.replace(REG_NON_TEXT_G, '');
   let depth = 0;
-  for (; depth + nest <= MAX_NEST; depth++) {
+  for (; depth + nest < MAX_NEST; depth++) {
     const previousRes = res;
     // Decode '&amp;' before decoding numeric references.
     res = res.replace(REG_AMP, '&').replace(REG_NUM_REF, replaceNumCharRef);
@@ -304,7 +304,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
       break;
     }
   }
-  if (depth + nest > MAX_NEST && /&#/.test(res)) {
+  if (depth + nest >= MAX_NEST && /&#/.test(res)) {
     throw new Error('Character references nested too deeply.');
   }
   return res;

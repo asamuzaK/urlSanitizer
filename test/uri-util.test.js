@@ -314,7 +314,7 @@ describe('uri-util', () => {
       const amp = '&#x26;';
       const semi = '&#x3B;';
       let nest = amp;
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 14; i++) {
         nest = `${nest}#x26;`;
       }
       const str = `j${nest}#x61${semi}vascript:alert(1)`;
@@ -326,7 +326,7 @@ describe('uri-util', () => {
       const amp = '&#x26;';
       const semi = '&#x3B;';
       let nest = amp;
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0; i < 15; i++) {
         nest = `${nest}#x26;`;
       }
       const str = `j${nest}#x61${semi}vascript:alert(1)`;
