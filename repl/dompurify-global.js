@@ -29,10 +29,9 @@ export const domPurify = new Proxy({}, {
     return (...args) => {
       if (PROPERTIES.includes(prop)) {
         hookQueue.push({ prop, args });
-        return receiver; // Proxy 自身を返してチェーン可能に保つ
+        return receiver;
       }
       throw new Error('DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).');
     };
   }
 });
-
