@@ -380,18 +380,12 @@ export class URLSanitizer extends URISchemes {
         allowedSchemes = new Set(this.#allowedSchemes);
         for (const item of allow) {
           if (isString(item)) {
-            this.#registerScheme(
-              item,
-              'allow',
-              allowedSchemes,
-              schemeMap,
-              ctx
-            );
+            this.#registerScheme(item, 'allow', allowedSchemes, schemeMap, ctx);
           }
         }
       }
       if (Array.isArray(deny) && deny.length) {
-        for (let item of deny) {
+        for (const item of deny) {
           if (isString(item)) {
             const normalized = this.normalize(item, true);
             if (normalized) {

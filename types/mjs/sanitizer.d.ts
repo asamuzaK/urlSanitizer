@@ -21,8 +21,18 @@ export type InspectedURLResult = {
     search?: string;
     hash?: string;
 };
-export declare const logDebug: (isDebug: boolean, message: string, error?: Error) => void;
-declare class URLSanitizer extends URISchemes {
+export declare const logDebug: (message: string, error?: Error) => void;
+export declare class SanitizeContext {
+    debug: boolean;
+    domPurify: object;
+    nest: number;
+    recurse: Set<any>;
+    schemeMap: Map<string, boolean>;
+    constructor(opt: object, domPurifyInstance: object);
+    enter(url: string): boolean;
+    leave(url: string): void;
+}
+export declare class URLSanitizer extends URISchemes {
     #private;
     private static #uponSanitizeAttribute;
     constructor();
@@ -34,6 +44,7 @@ declare class URLSanitizer extends URISchemes {
     private #isSchemeAllowed;
     private #sanitizeDataURL;
     private #sanitizeStandardURL;
+    private #executeSanitize;
     sanitize(url: string, opt?: {
         allow?: string[];
         deny?: string[];
@@ -43,7 +54,7 @@ declare class URLSanitizer extends URISchemes {
         maxBlobSize?: number;
         maxLength?: number;
     }): string | null;
-    inspect(url: string, opt?: object): InspectedURLResult;
+    inspect(url: string): InspectedURLResult;
     get(): string[];
     has(scheme: string): boolean;
     add(scheme: string): string[];
@@ -51,7 +62,6 @@ declare class URLSanitizer extends URISchemes {
     reset(): void;
     verify(uri: string, schemes?: Set<string>): boolean;
 }
-export { URLSanitizer };
 declare const urlSanitizer: URLSanitizer;
 export declare const sanitizeURL: (url: string, opt?: {
     allow?: string[];
@@ -73,9 +83,6 @@ export declare const sanitizeURLSync: (url: string, opt?: {
     maxLength?: number;
 }) => string | null;
 export declare const inspectURL: (url: string) => Promise<InspectedURLResult>;
-export declare const parseURL: (url: string) => Promise<InspectedURLResult>;
-export declare const inspectURLSync: (url: string) => InspectedURLResult;
-export declare const parseURLSync: (url: string) => InspectedURLResult;
-export declare const isURI: (uri: string) => Promise<boolean>;
+export declare const isValidURI: (uri: string) => boolean;
 export declare const isURISync: (uri: string) => boolean;
 export default urlSanitizer;
