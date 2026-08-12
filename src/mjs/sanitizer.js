@@ -247,16 +247,17 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
-    if (REG_SCRIPT_OR_BLOB.test(item)) {
+    const normalizedScheme = this.normalize(item, true);
+    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
       return false;
     }
-    const schemeParts = item.split('+');
+    const schemeParts = normalizedScheme.split('+');
     const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(item)) {
+    if (isScript || !REG_SCHEME.test(normalizedScheme)) {
       return false;
     }
-    schemeMap.set(item, true);
-    allowedSchemes.add(item);
+    schemeMap.set(normalizedScheme, true);
+    allowedSchemes.add(normalizedScheme);
     return true;
   }
 

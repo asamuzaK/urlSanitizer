@@ -197,6 +197,14 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
+      it('returns null for invalid scheme', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo_bar:baz', {
+          only: ['foo', 'bar']
+        });
+        assert.deepEqual(res, null, 'result');
+      });
+
       it('returns sanitized valid HTTPS URLs', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('https://example.com');
@@ -273,13 +281,31 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('allows dynamically added schemes via "only" option', () => {
+      it('allows non-registered schemes via "only" option', () => {
         const sanitizer = new URLSanitizer();
-        sanitizer.add('foo');
         const res = sanitizer.sanitize('foo:bar', {
           only: ['foo', 'https']
         });
-        assert.strictEqual(sanitizer.has('foo'), true, 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('allows non-registered upper cased schemes via "only" option', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('FOO:bar', {
+          only: ['foo', 'https']
+        });
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('allows non-registered schemes via "only" option which has upper cased scheme', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar', {
+          only: ['FOO', 'https']
+        });
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(sanitizer.has('FOO'), false, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
@@ -294,41 +320,41 @@ describe('sanitizer', () => {
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
-      it('allows dynamically added schemes via "allow" option', () => {
+      it('allows non-registered schemes via "allow" option', () => {
         const sanitizer = new URLSanitizer();
-        sanitizer.add('foo');
         const res = sanitizer.sanitize('foo:bar', {
           allow: ['foo']
         });
-        assert.strictEqual(sanitizer.has('foo'), true, 'scheme');
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('allows non-registered upper cased schemes via "allow" option', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('FOO:bar', {
+          allow: ['foo']
+        });
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
+      });
+
+      it('allows non-registered schemes via "allow" option which has upper cased scheme', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('foo:bar', {
+          allow: ['FOO']
+        });
+        assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(sanitizer.has('FOO'), false, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
       it('respects instance schemes alongside "allow" option', () => {
         const sanitizer = new URLSanitizer();
-        sanitizer.add('bar');
         const res = sanitizer.sanitize('foo:bar', {
           allow: ['foo']
         });
         assert.strictEqual(sanitizer.has('foo'), false, 'scheme');
-        assert.strictEqual(sanitizer.has('bar'), true, 'scheme');
         assert.strictEqual(res, 'foo:bar', 'result');
-      });
-
-      it('is case-sensitive and blocks mismatched schemes in "only"', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('Foo:bar', {
-          only: ['Foo', 'https']
-        });
-        assert.deepEqual(res, null, 'result');
-      });
-
-      it('is case-sensitive and blocks mismatched schemes in "allow"', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('Foo:bar', {
-          allow: ['Foo']
-        });
-        assert.deepEqual(res, null, 'result');
       });
 
       it('blocks file: scheme if not explicitly allowed', () => {
@@ -461,8 +487,8 @@ describe('sanitizer', () => {
 
       it('blocks unknown scheme combinations', () => {
         const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('Foo:bar', {
-          only: ['Foo', 'git', 'https']
+        const res = sanitizer.sanitize('foo+bar:baz', {
+          only: ['foo', 'git', 'https']
         });
         assert.deepEqual(res, null, 'result');
       });
@@ -1212,6 +1238,40 @@ describe('sanitizer', () => {
         }
       });
 
+      describe('specific validations (via allow/only options)', () => {
+        it('ignores schemes containing "javascript" in "allow" option', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('ext+javascript:alert(1)', {
+            allow: ['ext+javascript']
+          });
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('ignores schemes containing "vbscript" in "only" option', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('web+vbscript:alert(1)', {
+            only: ['web+vbscript']
+          });
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('ignores invalid scheme strings in "allow" option', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('123foo:bar', {
+            allow: ['123foo']
+          });
+          assert.deepEqual(res, null, 'result');
+        });
+
+        it('ignores malformed scheme strings with symbols in "only" option', () => {
+          const sanitizer = new URLSanitizer();
+          const res = sanitizer.sanitize('foo=bar:baz', {
+            only: ['foo=bar', 'https']
+          });
+          assert.deepEqual(res, null, 'result');
+        });
+      });
+
       describe('fast-path processing', () => {
         it('uses fast-path for HTTP(S) URLs without restrictive rules', () => {
           const sanitizer = new URLSanitizer();
@@ -1303,7 +1363,7 @@ describe('sanitizer', () => {
         it('throws RangeError when URL length exceeds default max length', () => {
           const sanitizer = new mjs.URLSanitizer();
           const longString = 'a'.repeat(64 * 1024);
-          const longUrl = `https://example.com/${longString}`
+          const longUrl = `https://example.com/${longString}`;
           assert.throws(
             () => sanitizer.sanitize(longUrl),
             RangeError,
