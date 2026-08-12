@@ -656,7 +656,7 @@ export class URLSanitizer extends URISchemes {
           const [mediaType, ...dataParts] = pathname.split(',');
           const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
           const mediaTypes = mediaType.split(';');
-          const isBase64 = mediaTypes[mediaTypes.length - 1] === 'base64';
+          const isBase64 = /^base64$/i.test(mediaTypes.at(-1));
           if (isBase64) {
             mediaTypes.pop();
           }
