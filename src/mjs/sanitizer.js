@@ -653,13 +653,11 @@ export class URLSanitizer extends URISchemes {
         const schemeParts = getSchemeParts(protocol);
         const isDataUrl = schemeParts.includes('data');
         if (isDataUrl) {
-          const [mediaType, ...dataParts] = pathname.split(',');
-          const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
-          const mediaTypes = mediaType.split(';');
-          const isBase64 = /^base64$/i.test(mediaTypes.at(-1));
-          if (isBase64) {
-            mediaTypes.pop();
-          }
+          const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
+            urlObj.pathname,
+            urlObj.search,
+            urlObj.hash
+          );
           inspectedURL.data = {
             mime: mediaTypes.join(';'),
             base64: isBase64,
