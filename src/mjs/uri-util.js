@@ -149,16 +149,17 @@ export class URISchemes {
       return false;
     }
     const parsedUrl = this.parse(uri);
-    return this.verifyParsed(parsedUrl, schemes);
+    return this.verifyParsed(parsedUrl, schemes, true);
   }
 
   /**
    * Verifies if the pre-parsed URL object is valid and its scheme is allowed.
    * @param {URL} parsedUrl - The parsed URL object to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
+   * @param {boolean} [allowCustom] - True if web+*, ext+* schemes are allowed.
    * @returns {boolean} True if the parsed URL is valid and permitted.
    */
-  verifyParsed(parsedUrl, schemes) {
+  verifyParsed(parsedUrl, schemes, allowCustom = false) {
     if (!parsedUrl || !parsedUrl.protocol) {
       return false;
     }
@@ -171,11 +172,16 @@ export class URISchemes {
     if (!schemes) {
       schemes = this.#schemes;
     }
-    return (
-      schemes.has(scheme) ||
-      REG_SCHEME_EXT.test(scheme) ||
-      parts.every(s => schemes.has(s))
-    );
+    if (schemes.has(scheme)) {
+      return true;
+    }
+    if (parts.length > 1) {
+      return (
+        (allowCustom && REG_SCHEME_EXT.test(scheme)) ||
+        parts.every(s => schemes.has(s))
+      );
+    }
+    return false;
   }
 }
 
