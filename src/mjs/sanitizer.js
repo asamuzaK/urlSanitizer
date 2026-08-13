@@ -657,6 +657,9 @@ export class URLSanitizer extends URISchemes {
             urlObj.search,
             urlObj.hash
           );
+          if (isBase64) {
+            mediaTypes.pop();
+          }
           inspectedURL.data = {
             mime: mediaTypes.join(';'),
             base64: isBase64,
