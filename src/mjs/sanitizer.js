@@ -158,113 +158,46 @@ export class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
 
-  /**
-   * NOTE: Global Context Pattern for DOMPurify Hooks
-   * - DOMPurify hooks (e.g., 'uponSanitizeAttribute') are registered globally
-   * and do not accept custom arguments (like `this` or `ctx`).
-   * To pass the current sanitization context into the hook, we temporarily
-   * store it in static fields (#currentInstance and #currentCtx).
-   * - This is entirely safe and immune to race conditions because JavaScript
-   * runs on a single thread and DOMPurify's sanitize() is synchronous.
-   * The context is safely restored via try/finally block in #purify() even
-   * during recursive calls.
-   */
-  /** @type {URLSanitizer | null} */
-  static #currentInstance = null;
-  /** @type {SanitizeContext | null} */
-  static #currentCtx = null;
-
   constructor() {
     super();
     this.#allowedSchemes = new Set(super.get());
   }
 
   /**
-   * Validates if a normalized URI scheme is syntactically correct and safe to use.
+   * Executes the core sanitization logic.
    * @private
-   * @param {string} normalizedScheme - The normalized URI scheme string to validate.
-   * @returns {boolean} True if the scheme satisfies the syntax and security requirements.
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} opt - Sanitization options.
+   * @returns {string|null} The sanitized URL, or null.
    */
-  #isValidScheme(normalizedScheme) {
-    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
-      return false;
+  #executeSanitize(url, opt) {
+    if (!url || !isString(url)) {
+      return null;
     }
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    return !isScript && REG_SCHEME.test(normalizedScheme);
-  }
-
-  /**
-   * Helper method to register schemes for the 'allow' or 'only' options.
-   * @private
-   * @param {string} item - The scheme to register.
-   * @param {string} listName - The name of the target option list.
-   * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
-   * @param {Map<string, boolean>} schemeMap - The local map of schemes.
-   * @param {SanitizeContext} ctx - The context for state management.
-   * @returns {boolean} True if the scheme is successfully registered.
-   */
-  #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
-    const normalizedScheme = this.normalize(item, true);
-    if (!this.#isValidScheme(normalizedScheme)) {
-      return false;
+    const { allow, allowRelative, deny, maxLength, only } = opt;
+    if (Number.isInteger(maxLength) && url.length > maxLength) {
+      const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
+      throw new RangeError(msg);
     }
-    schemeMap.set(normalizedScheme, true);
-    allowedSchemes.add(normalizedScheme);
-    return true;
-  }
-
-  /**
-   * Purifies a URL-encoded DOM string to prevent XSS.
-   * @private
-   * @param {string} dom - The URL-encoded DOM string.
-   * @param {SanitizeContext} ctx - The context for state management.
-   * @returns {string} The purified DOM string.
-   */
-  #purify(dom, ctx) {
-    let decodedDom = dom;
-    try {
-      decodedDom = decodeURIComponent(dom);
-    } catch {
-      // fall through
-    }
-    let purifiedDom;
-    const tempHook = (node, evt) => {
-      if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
-        return;
+    const hasRestrictiveRules =
+      (Array.isArray(deny) && deny.length) ||
+      (Array.isArray(only) && only.length) ||
+      allowRelative;
+    // Early return for standard HTTP/HTTPS URLs without restrictive rules.
+    if (
+      !hasRestrictiveRules &&
+      (url.startsWith('https://') || url.startsWith('http://')) &&
+      !REG_TAG_QUOT.test(url) &&
+      !url.includes('data:')
+    ) {
+      const urlObj = this.parse(url);
+      if (urlObj) {
+        return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
-      const urlObj = this.parse(evt.attrValue);
-      if (!urlObj || urlObj.protocol !== 'data:') {
-        return;
-      }
-      const originalUrl = evt.attrValue;
-      if (!ctx.enter(originalUrl)) {
-        evt.attrValue = '';
-        return;
-      }
-      try {
-        const sanitized = this.#process(
-          originalUrl,
-          { allow: ['data'], deny: [], only: [], allowRelative: false },
-          ctx
-        );
-        evt.attrValue = sanitized || '';
-      } finally {
-        ctx.leave(originalUrl);
-      }
-    };
-    ctx.domPurify.addHook('uponSanitizeAttribute', tempHook);
-    try {
-      purifiedDom = ctx.domPurify.sanitize(decodedDom);
-    } finally {
-      ctx.domPurify.removeHook('uponSanitizeAttribute');
+      return null;
     }
-    purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
-    try {
-      return encodeURI(purifiedDom);
-    } catch {
-      return purifiedDom;
-    }
+    const ctx = new SanitizeContext(opt, domPurify);
+    return this.#process(url, { allow, allowRelative, deny, only }, ctx);
   }
 
   /**
@@ -361,6 +294,41 @@ export class URLSanitizer extends URISchemes {
       }
     }
     return { allowedSchemes, restrictScheme, schemeMap };
+  }
+
+  /**
+   * Helper method to register schemes for the 'allow' or 'only' options.
+   * @private
+   * @param {string} item - The scheme to register.
+   * @param {string} listName - The name of the target option list.
+   * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
+   * @param {Map<string, boolean>} schemeMap - The local map of schemes.
+   * @param {SanitizeContext} ctx - The context for state management.
+   * @returns {boolean} True if the scheme is successfully registered.
+   */
+  #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
+    const normalizedScheme = this.normalize(item, true);
+    if (!this.#isValidScheme(normalizedScheme)) {
+      return false;
+    }
+    schemeMap.set(normalizedScheme, true);
+    allowedSchemes.add(normalizedScheme);
+    return true;
+  }
+
+  /**
+   * Validates if a normalized URI scheme is syntactically correct.
+   * @private
+   * @param {string} normalizedScheme - The normalized URI scheme to validate.
+   * @returns {boolean} True if the scheme satisfies the syntax and security requirements.
+   */
+  #isValidScheme(normalizedScheme) {
+    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
+      return false;
+    }
+    const schemeParts = normalizedScheme.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    return !isScript && REG_SCHEME.test(normalizedScheme);
   }
 
   /**
@@ -500,6 +468,69 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Purifies a URL-encoded DOM string to prevent XSS.
+   * @private
+   * @param {string} dom - The URL-encoded DOM string.
+   * @param {SanitizeContext} ctx - The context for state management.
+   * @returns {string} The purified DOM string.
+   */
+  #purify(dom, ctx) {
+    let decodedDom = dom;
+    try {
+      decodedDom = decodeURIComponent(dom);
+    } catch {
+      // fall through
+    }
+    let purifiedDom;
+    const tempHook = (node, evt) =>
+      this.#handleSanitizeAttribute(node, evt, ctx);
+    ctx.domPurify.addHook('uponSanitizeAttribute', tempHook);
+    try {
+      purifiedDom = ctx.domPurify.sanitize(decodedDom);
+    } finally {
+      ctx.domPurify.removeHook('uponSanitizeAttribute');
+    }
+    purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
+    try {
+      return encodeURI(purifiedDom);
+    } catch {
+      return purifiedDom;
+    }
+  }
+
+  /**
+   * Internal handler for the DOMPurify hook.
+   * @private
+   * @param {Node} node - The DOM node.
+   * @param {object} evt - The event object.
+   * @param {SanitizeContext} ctx - The sanitization context.
+   */
+  #handleSanitizeAttribute(node, evt, ctx) {
+    if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
+      return;
+    }
+    const urlObj = this.parse(evt.attrValue);
+    if (!urlObj || urlObj.protocol !== 'data:') {
+      return;
+    }
+    const originalUrl = evt.attrValue;
+    if (!ctx.enter(originalUrl)) {
+      evt.attrValue = '';
+      return;
+    }
+    try {
+      const sanitized = this.#process(
+        originalUrl,
+        { allow: ['data'], deny: [], only: [], allowRelative: false },
+        ctx
+      );
+      evt.attrValue = sanitized || '';
+    } finally {
+      ctx.leave(originalUrl);
+    }
+  }
+
+  /**
    * Applies regex cleanups to standard non-data URLs.
    * Strips out trailing queries or problematic characters.
    * @private
@@ -516,43 +547,6 @@ export class URLSanitizer extends URISchemes {
       }
     }
     return sanitized;
-  }
-
-  /**
-   * Executes the core sanitization logic.
-   * @private
-   * @param {string} url - The URL string to sanitize.
-   * @param {object} opt - Sanitization options.
-   * @returns {string|null} The sanitized URL, or null.
-   */
-  #executeSanitize(url, opt) {
-    if (!url || !isString(url)) {
-      return null;
-    }
-    const { allow, allowRelative, deny, maxLength, only } = opt;
-    if (Number.isInteger(maxLength) && url.length > maxLength) {
-      const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
-      throw new RangeError(msg);
-    }
-    const hasRestrictiveRules =
-      (Array.isArray(deny) && deny.length) ||
-      (Array.isArray(only) && only.length) ||
-      allowRelative;
-    // Early return for standard HTTP/HTTPS URLs without restrictive rules.
-    if (
-      !hasRestrictiveRules &&
-      (url.startsWith('https://') || url.startsWith('http://')) &&
-      !REG_TAG_QUOT.test(url) &&
-      !url.includes('data:')
-    ) {
-      const urlObj = this.parse(url);
-      if (urlObj) {
-        return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
-      }
-      return null;
-    }
-    const ctx = new SanitizeContext(opt, domPurify);
-    return this.#process(url, { allow, allowRelative, deny, only }, ctx);
   }
 
   /**
