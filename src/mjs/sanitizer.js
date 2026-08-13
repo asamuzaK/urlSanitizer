@@ -371,18 +371,10 @@ export class URLSanitizer extends URISchemes {
     const schemeMap = new Map(ctx.schemeMap);
     if (Array.isArray(only) && only.length) {
       allowedSchemes = new Set();
+      restrictScheme = true;
       for (const item of only) {
         if (isString(item)) {
-          const registered = this.#registerScheme(
-            item.trim(),
-            'only',
-            allowedSchemes,
-            schemeMap,
-            ctx
-          );
-          if (registered && !restrictScheme) {
-            restrictScheme = true;
-          }
+          this.#registerScheme(item, 'only', allowedSchemes, schemeMap, ctx);
         }
       }
     } else {
@@ -726,7 +718,7 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const normalizedScheme = this.normalize(scheme, true);  
+    const normalizedScheme = this.normalize(scheme, true);
     if (!this.#isValidScheme(normalizedScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }

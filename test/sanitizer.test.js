@@ -269,16 +269,24 @@ describe('sanitizer', () => {
         assert.deepEqual(res, null, 'result');
       });
 
-      it('allows valid web+ custom schemes', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.sanitize('web+foo:bar');
-        assert.strictEqual(res, 'web+foo:bar', 'result');
-      });
-
-      it('blocks unregistered custom schemes', () => {
+      it('blocks unregistered schemes', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.sanitize('foo:bar');
         assert.deepEqual(res, null, 'result');
+      });
+
+      it('blocks web+ custom schemes', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar');
+        assert.strictEqual(res, null, 'result');
+      });
+
+      it('web+ custom schemes must be allowed', () => {
+        const sanitizer = new URLSanitizer();
+        const res = sanitizer.sanitize('web+foo:bar', {
+          allow: ['web+foo']
+        });
+        assert.strictEqual(res, 'web+foo:bar', 'result');
       });
 
       it('allows non-registered schemes via "only" option', () => {
