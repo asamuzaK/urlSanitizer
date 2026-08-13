@@ -4,7 +4,9 @@ We take security vulnerabilities seriously. Thank you for improving the security
 
 ## Supported Versions
 
-Always the latest release.
+We currently provide security updates **only for the latest major release**. 
+
+Due to the complex nature of deep URL inspection and our focus on highly optimized, performant architecture, backporting security patches to older major versions is not feasible. Ensure you are always using the latest version of `url-sanitizer`.
 
 ## Reporting a Vulnerability
 
