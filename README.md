@@ -411,7 +411,7 @@ This library validates the *syntax and safe construction* of a URL, but it does 
 * **Server-Side Request Forgery (SSRF):** We do not check if a URL points to an internal IP address (e.g., `http://localhost`, `http://169.254.169.254`) or a malicious external server.
 * **Phishing & Open Redirects:** A perfectly valid HTTP URL pointing to a phishing site (e.g., `https://evil-example.com/login`) will be considered safe. You must implement your own domain allow-listing if you need to restrict destinations.
 * **General HTML Sanitization:** While we sanitize HTML/SVG *inside* data URLs, this library is not a general-purpose HTML body sanitizer. Do not use it to sanitize arbitrary user-generated DOM content.
-* **Compromised Host Environment:** We assume the native `URL` API is intact. We do not protect against runtime attacks where the global `URL` object has been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
+* **Compromised Host Environment:** We assume the native `URL` and `fetch` APIs are intact. We do not protect against runtime attacks where these global objects have been monkey-patched or tampered with. Additionally, when using the lightweight build (`url-sanitizer-wo-dompurify.min.js`), ensuring a secure and untampered global `DOMPurify` instance is the responsibility of the host environment.
 
 ## AI / LLM Application Security
 
