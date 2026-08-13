@@ -48,11 +48,6 @@ const URL_PROPS = Object.freeze([
   'search',
   'hash'
 ]);
-const INTERNAL_PURIFY_CONFIG = Object.freeze({
-  RETURN_DOM: false,
-  RETURN_DOM_FRAGMENT: false,
-  RETURN_TRUSTED_TYPE: false
-});
 const DEFAULT_OPTS = Object.freeze({
   allow: Object.freeze([]),
   deny: Object.freeze([]),
@@ -179,59 +174,6 @@ export class URLSanitizer extends URISchemes {
   /** @type {SanitizeContext | null} */
   static #currentCtx = null;
 
-  /**
-   * DOMPurify 'uponSanitizeAttribute' hook callback.
-   * @private
-   * @static
-   * @param {Node} node - The DOM node being sanitized.
-   * @param {object} evt - The event object containing attribute details.
-   */
-  static #uponSanitizeAttribute(node, evt) {
-    if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
-      return;
-    }
-    /** @type {URLSanitizer | null} */
-    const sanitizer = URLSanitizer.#currentInstance;
-    const ctx = URLSanitizer.#currentCtx;
-    if (!sanitizer || !ctx) {
-      return;
-    }
-    const urlObj = URL.parse(evt.attrValue);
-    if (!urlObj) {
-      return;
-    }
-    if (urlObj.protocol === 'data:') {
-      const originalUrl = evt.attrValue;
-      if (!ctx.enter(originalUrl)) {
-        evt.attrValue = '';
-        return;
-      }
-      try {
-        const sanitized = sanitizer.#process(
-          originalUrl,
-          {
-            allow: ['data'],
-            deny: [],
-            only: [],
-            allowRelative: false
-          },
-          ctx
-        );
-        evt.attrValue = sanitized || '';
-      } finally {
-        ctx.leave(originalUrl);
-      }
-    }
-  }
-
-  static {
-    domPurify.setConfig(INTERNAL_PURIFY_CONFIG);
-    domPurify.addHook(
-      'uponSanitizeAttribute',
-      URLSanitizer.#uponSanitizeAttribute
-    );
-  }
-
   constructor() {
     super();
     this.#allowedSchemes = new Set(super.get());
@@ -286,16 +228,36 @@ export class URLSanitizer extends URISchemes {
     } catch {
       // fall through
     }
-    const prevInstance = URLSanitizer.#currentInstance;
-    const prevCtx = URLSanitizer.#currentCtx;
-    URLSanitizer.#currentInstance = this;
-    URLSanitizer.#currentCtx = ctx;
     let purifiedDom;
+    const tempHook = (node, evt) => {
+      if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
+        return;
+      }
+      const urlObj = URL.parse(evt.attrValue);
+      if (!urlObj || urlObj.protocol !== 'data:') {
+        return;
+      }
+      const originalUrl = evt.attrValue;
+      if (!ctx.enter(originalUrl)) {
+        evt.attrValue = '';
+        return;
+      }
+      try {
+        const sanitized = this.#process(
+          originalUrl,
+          { allow: ['data'], deny: [], only: [], allowRelative: false },
+          ctx
+        );
+        evt.attrValue = sanitized || '';
+      } finally {
+        ctx.leave(originalUrl);
+      }
+    };
+    ctx.domPurify.addHook('uponSanitizeAttribute', tempHook);
     try {
       purifiedDom = ctx.domPurify.sanitize(decodedDom);
     } finally {
-      URLSanitizer.#currentInstance = prevInstance;
-      URLSanitizer.#currentCtx = prevCtx;
+      ctx.domPurify.removeHook('uponSanitizeAttribute');
     }
     purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
     try {
