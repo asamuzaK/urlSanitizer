@@ -649,14 +649,14 @@ export class URLSanitizer extends URISchemes {
       const urlObj = URL.parse(sanitizedUrl);
       inspectedURL.valid = true;
       if (urlObj) {
-        const { pathname, protocol } = urlObj;
-        const schemeParts = getSchemeParts(protocol);
+        const schemeParts = getSchemeParts(urlObj.protocol);
         const isDataUrl = schemeParts.includes('data');
         if (isDataUrl) {
-          const [mediaType, ...dataParts] = pathname.split(',');
-          const data = `${dataParts.join(',')}${urlObj.search}${urlObj.hash}`;
-          const mediaTypes = mediaType.split(';');
-          const isBase64 = /^base64$/i.test(mediaTypes.at(-1));
+          const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
+            urlObj.pathname,
+            urlObj.search,
+            urlObj.hash
+          );
           if (isBase64) {
             mediaTypes.pop();
           }
