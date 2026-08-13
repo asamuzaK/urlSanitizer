@@ -233,7 +233,7 @@ export class URLSanitizer extends URISchemes {
       if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
         return;
       }
-      const urlObj = URL.parse(evt.attrValue);
+      const urlObj = this.parse(evt.attrValue);
       if (!urlObj || urlObj.protocol !== 'data:') {
         return;
       }
@@ -545,7 +545,7 @@ export class URLSanitizer extends URISchemes {
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      const urlObj = URL.parse(url);
+      const urlObj = this.parse(url);
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
@@ -611,7 +611,7 @@ export class URLSanitizer extends URISchemes {
     }
     if (sanitizedUrl) {
       // Reparse the sanitized string to safely extract updated properties.
-      const urlObj = URL.parse(sanitizedUrl);
+      const urlObj = this.parse(sanitizedUrl);
       inspectedURL.valid = true;
       if (urlObj) {
         const schemeParts = getSchemeParts(urlObj.protocol);
@@ -992,7 +992,7 @@ export const sanitizeURLSync = (url, opt = {}) => {
  */
 export const inspectURL = async url => {
   if (isString(url)) {
-    const parsedUrl = URL.parse(url);
+    const parsedUrl = urlSanitizer.parse(url);
     if (parsedUrl?.protocol === 'blob:') {
       try {
         const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
