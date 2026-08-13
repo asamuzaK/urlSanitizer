@@ -649,8 +649,7 @@ export class URLSanitizer extends URISchemes {
       const urlObj = URL.parse(sanitizedUrl);
       inspectedURL.valid = true;
       if (urlObj) {
-        const { pathname, protocol } = urlObj;
-        const schemeParts = getSchemeParts(protocol);
+        const schemeParts = getSchemeParts(urlObj.protocol);
         const isDataUrl = schemeParts.includes('data');
         if (isDataUrl) {
           const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
