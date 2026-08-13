@@ -1137,6 +1137,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                 const clean = res.replace(/[\x00-\x20\x7F]/g, '').toLowerCase();
                 if (
                   clean.startsWith('javascript:') ||
+                  clean.startsWith('data:') ||
                   clean.startsWith('vbscript:')
                 ) {
                   console.error(
@@ -1302,6 +1303,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
                   .replace(/[\x00-\x20\x7F]/g, '');
                 if (
                   normalized.startsWith('javascript:') ||
+                  normalized.startsWith('data:') ||
                   normalized.startsWith('vbscript:')
                 ) {
                   console.error(
