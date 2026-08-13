@@ -8,7 +8,7 @@ import fc from 'fast-check';
 import { describe, it } from 'mocha';
 
 /* test target */
-import { sanitizeURLSync } from '../src/mjs/sanitizer.js';
+import { sanitizeURL, sanitizeURLSync } from '../src/mjs/sanitizer.js';
 
 describe('Fuzz Testing (Property-based Testing)', () => {
   describe('sanitizeURLSync', () => {
@@ -1100,6 +1100,292 @@ describe('Fuzz Testing (Property-based Testing)', () => {
             return true;
           } catch (e) {
             console.error('Unhandled crash with relative URL:', relativeUrl, e);
+            return false;
+          }
+        }),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should correctly handle prefix padding bypass attempts', () => {
+      const prefixCharsArb = fc
+        .array(
+          fc.constantFrom(
+            '\x00',
+            '\x01',
+            '\x09',
+            '\x0A',
+            '\x0D',
+            '\x20',
+            '\u00A0',
+            '\uFEFF'
+          ),
+          { minLength: 1, maxLength: 20 }
+        )
+        .map(arr => arr.join(''));
+
+      fc.assert(
+        fc.property(
+          prefixCharsArb,
+          fc.constantFrom('javascript:', 'vbscript:'),
+          fc.string({ maxLength: 100 }),
+          (prefix, scheme, suffix) => {
+            const url = `${prefix}${scheme}${suffix}`;
+            try {
+              const res = sanitizeURLSync(url, { allowRelative: true });
+              if (res) {
+                const clean = res.replace(/[\x00-\x20\x7F]/g, '').toLowerCase();
+                if (
+                  clean.startsWith('javascript:') ||
+                  clean.startsWith('vbscript:')
+                ) {
+                  console.error(
+                    'Bypass detected via prefix padding:',
+                    url,
+                    '\nResult:',
+                    res
+                  );
+                  return false;
+                }
+              }
+              return true;
+            } catch (e) {
+              console.error('Unhandled crash with prefix padding:', url, e);
+              return false;
+            }
+          }
+        ),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should not crash with completely randomized options', () => {
+      const schemesArb = fc.array(fc.string({ maxLength: 10 }), {
+        maxLength: 5
+      });
+      const optionsArb = fc.record(
+        {
+          allow: schemesArb,
+          deny: schemesArb,
+          only: schemesArb,
+          allowRelative: fc.boolean(),
+          debug: fc.boolean(),
+          revokeObjectURL: fc.boolean(),
+          maxBlobSize: fc.oneof(
+            fc.integer({ min: -10, max: 1000000 }),
+            fc.constant(undefined)
+          ),
+          maxLength: fc.oneof(
+            fc.integer({ min: -10, max: 100000 }),
+            fc.constant(undefined)
+          )
+        },
+        { requiredKeys: [] }
+      );
+
+      fc.assert(
+        fc.property(fc.webUrl(), optionsArb, (url, opts) => {
+          try {
+            sanitizeURLSync(url, opts);
+            return true;
+          } catch (e) {
+            if (
+              e instanceof RangeError &&
+              e.message.includes('exceeds max length')
+            ) {
+              return true;
+            }
+            console.error('Unhandled crash with randomized options:', opts, e);
+            return false;
+          }
+        }),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should handle potentially expensive repeating characters without ReDoS', () => {
+      const redosArb = fc
+        .array(fc.constantFrom('%', '&', 'a', ';', '0', '#', 'x'), {
+          maxLength: 10000
+        })
+        .map(arr => arr.join(''));
+
+      fc.assert(
+        fc.property(redosArb, str => {
+          try {
+            sanitizeURLSync(str, { maxLength: 10000 });
+            return true;
+          } catch (e) {
+            if (e.message === 'Character references nested too deeply.') {
+              return true;
+            }
+            console.error('Crash in ReDoS test:', e);
+            return false;
+          }
+        }),
+        { numRuns: 100, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should never crash with invalid UTF-16 (unpaired surrogates)', () => {
+      const invalidUTF16Arb = fc
+        .array(fc.integer({ min: 0, max: 0xffff }), { maxLength: 5000 })
+        .map(arr => String.fromCharCode(...arr));
+
+      fc.assert(
+        fc.property(invalidUTF16Arb, randomStr => {
+          try {
+            sanitizeURLSync(randomStr);
+            return true;
+          } catch (e) {
+            console.error('Unhandled crash with invalid UTF-16 string:', e);
+            return false;
+          }
+        }),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should correctly handle Unicode case-folding anomalies (e.g., Long S)', () => {
+      // 's' -> 'ſ' (U+017F)
+      // 'a' -> 'ª' (U+00AA)
+      // 'i' -> 'İ' (U+0130)
+      const anomalyMap = {
+        a: ['a', '\u00AA', '\uFF41', '\u24D0'],
+        s: ['s', '\u017F', '\uFF53', '\u24E2'],
+        i: ['i', '\u0130', '\uFF49', '\u24D8'],
+        c: ['c', '\u212D', '\uFF43', '\u24D2']
+      };
+
+      const anomalySchemeArb = fc
+        .constantFrom('javascript', 'vbscript')
+        .chain(scheme => {
+          return fc
+            .array(fc.integer({ min: 0, max: 3 }), {
+              minLength: scheme.length,
+              maxLength: scheme.length
+            })
+            .map(indices => {
+              return Array.from(scheme)
+                .map((char, i) => {
+                  const candidates = anomalyMap[char];
+                  if (candidates) {
+                    return candidates[indices[i] % candidates.length];
+                  }
+                  return indices[i] % 2 === 0 ? char.toUpperCase() : char;
+                })
+                .join('');
+            });
+        });
+
+      const safeDecode = str => {
+        try {
+          return decodeURIComponent(str);
+        } catch (e) {
+          return str;
+        }
+      };
+
+      fc.assert(
+        fc.property(
+          anomalySchemeArb,
+          fc.string({ maxLength: 100 }),
+          (obfuscatedScheme, suffix) => {
+            const directUrl = `${obfuscatedScheme}:${suffix}`;
+            try {
+              const res = sanitizeURLSync(directUrl, { allowRelative: true });
+              if (res) {
+                const decoded = safeDecode(res);
+                const normalized = decoded
+                  .normalize('NFKC')
+                  .toLowerCase()
+                  .replace(/[\x00-\x20\x7F]/g, '');
+                if (
+                  normalized.startsWith('javascript:') ||
+                  normalized.startsWith('vbscript:')
+                ) {
+                  console.error(
+                    'Bypass detected via Case Folding Anomaly URL:',
+                    directUrl,
+                    '\nResult:',
+                    res
+                  );
+                  return false;
+                }
+              }
+            } catch (e) {
+              console.error(
+                'Unhandled crash in Case Folding Anomaly URL:',
+                directUrl,
+                e
+              );
+              return false;
+            }
+            return true;
+          }
+        ),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+  });
+
+  describe('sanitizeURL (Async)', () => {
+    it('should never crash with randomly generated valid web URLs', async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.webUrl(), async randomUrl => {
+          try {
+            await sanitizeURL(randomUrl);
+            return true;
+          } catch (e) {
+            console.error('Unhandled async crash with URL:', randomUrl, e);
+            return false;
+          }
+        }),
+        { numRuns: 1000, verbose: fc.VerbosityLevel.Verbose }
+      );
+    });
+
+    it('should never crash with randomized options (async)', async () => {
+      const schemesArb = fc.array(fc.string({ maxLength: 10 }), {
+        maxLength: 5
+      });
+      const optionsArb = fc.record(
+        {
+          allow: schemesArb,
+          deny: schemesArb,
+          only: schemesArb,
+          allowRelative: fc.boolean(),
+          debug: fc.boolean(),
+          revokeObjectURL: fc.boolean(),
+          maxBlobSize: fc.oneof(
+            fc.integer({ min: -10, max: 1000000 }),
+            fc.constant(undefined)
+          ),
+          maxLength: fc.oneof(
+            fc.integer({ min: -10, max: 100000 }),
+            fc.constant(undefined)
+          )
+        },
+        { requiredKeys: [] }
+      );
+
+      await fc.assert(
+        fc.asyncProperty(fc.webUrl(), optionsArb, async (url, opts) => {
+          try {
+            await sanitizeURL(url, opts);
+            return true;
+          } catch (e) {
+            if (
+              e instanceof RangeError &&
+              e.message.includes('exceeds max length')
+            ) {
+              return true;
+            }
+            console.error(
+              'Unhandled async crash with randomized options:',
+              opts,
+              e
+            );
             return false;
           }
         }),
