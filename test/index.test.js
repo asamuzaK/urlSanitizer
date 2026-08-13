@@ -309,6 +309,75 @@ describe('URL Sanitizer', () => {
         'git+https should be allowed when specified in "only"'
       );
     });
+
+    it('should handle composite schemes', async () => {
+      // ... 既存のテスト ...
+      const res2 = await sanitizeURL('git+https://example.com/repo.git', {
+        only: ['git+https']
+      });
+      assert.strictEqual(
+        res2,
+        'git+https://example.com/repo.git',
+        'git+https should be allowed when specified in "only"'
+      );
+    });
+
+    it('should process concurrent sanitization without DOMPurify hook collisions', async () => {
+      // Create distinct Blob objects containing nested Data URLs with different XSS payloads
+      const blob1 = new Blob(
+        [
+          '<a href="data:text/html,<script>alert(\'XSS 1\')</script>">Link 1</a>'
+        ],
+        { type: 'text/html' }
+      );
+      const blob2 = new Blob(
+        [
+          '<a href="data:text/html,<img src=x onerror=alert(\'XSS 2\')>">Link 2</a>'
+        ],
+        { type: 'text/html' }
+      );
+      // Generate temporary Object URLs
+      const url1 = URL.createObjectURL(blob1);
+      const url2 = URL.createObjectURL(blob2);
+      // Execute sanitization concurrently
+      const [res1, res2] = await Promise.all([
+        sanitizeURL(url1, { allow: ['blob', 'data'] }),
+        sanitizeURL(url2, { allow: ['blob', 'data'] })
+      ]);
+      // Revoke Object URLs to prevent memory leaks
+      URL.revokeObjectURL(url1);
+      URL.revokeObjectURL(url2);
+      const decodedRes1 = decodeURIComponent(res1);
+      const decodedRes2 = decodeURIComponent(res2);
+      // Verify that hooks operated independently and removed their payloads
+      assert.strictEqual(
+        decodedRes1.includes('<script>'),
+        false,
+        'Script payload from blob1 should be removed'
+      );
+      assert.strictEqual(
+        decodedRes2.includes('onerror'),
+        false,
+        'Event handler payload from blob2 should be removed'
+      );
+      // Verify that closures prevented context collision
+      assert.notEqual(
+        res1,
+        res2,
+        'Concurrent sanitization outputs must remain distinct and not mixed'
+      );
+      // Verify that the legitimate parts of the nested data URLs survived
+      assert.strictEqual(
+        decodedRes1.includes('Link 1'),
+        true,
+        'Legitimate text from blob1 should remain intact'
+      );
+      assert.strictEqual(
+        decodedRes2.includes('Link 2'),
+        true,
+        'Legitimate text from blob2 should remain intact'
+      );
+    });
   });
 
   describe('sanitize URL sync', () => {
