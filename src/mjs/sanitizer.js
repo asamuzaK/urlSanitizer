@@ -79,6 +79,7 @@ const DEFAULT_OPTS = Object.freeze({
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URL passed sanitization rules.
+ * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
  * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
  * @property {string} [href] - The sanitized URL input.
@@ -678,8 +679,11 @@ export class URLSanitizer extends URISchemes {
         }
       } else {
         // Fallback for the valid relative URL without a base URL.
-        inspectedURL.data = null;
+        inspectedURL.valid = false;
+        inspectedURL.relative = true;
         inspectedURL.href = sanitizedUrl;
+        inspectedURL.reason =
+          'Invalid as an absolute URL, but valid as a relative URL.';
       }
     } else {
       inspectedURL.valid = false;

@@ -1625,7 +1625,7 @@ describe('sanitizer', () => {
         const sanitizer = new URLSanitizer();
         const url = './foo/bar';
         const res = sanitizer.inspect(url);
-        assert.strictEqual(res.valid, true, 'result should be valid');
+        assert.strictEqual(res.valid, false, 'result should be valid');
         assert.strictEqual(res.input, url, 'input should match');
         assert.strictEqual(
           res.href,
@@ -1633,9 +1633,9 @@ describe('sanitizer', () => {
           'href should match the normalized relative path'
         );
         assert.strictEqual(
-          res.data,
-          null,
-          'data should be null for non-data URLs'
+          res.relative,
+          true,
+          'should be true for valid relative URL'
         );
         assert.strictEqual(
           res.protocol,
