@@ -237,6 +237,21 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Validates if a normalized URI scheme is syntactically correct and safe to use.
+   * @private
+   * @param {string} normalizedScheme - The normalized URI scheme string to validate.
+   * @returns {boolean} True if the scheme satisfies the syntax and security requirements.
+   */
+  #isValidScheme(normalizedScheme) {
+    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
+      return false;
+    }
+    const schemeParts = normalizedScheme.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    return !isScript && REG_SCHEME.test(normalizedScheme);
+  }
+
+  /**
    * Helper method to register schemes for the 'allow' or 'only' options.
    * @private
    * @param {string} item - The scheme to register.
@@ -248,12 +263,7 @@ export class URLSanitizer extends URISchemes {
    */
   #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
     const normalizedScheme = this.normalize(item, true);
-    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
-      return false;
-    }
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(normalizedScheme)) {
+    if (!this.#isValidScheme(normalizedScheme)) {
       return false;
     }
     schemeMap.set(normalizedScheme, true);
@@ -716,10 +726,8 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const normalizedScheme = this.normalize(scheme, true);
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    if (isScript || !REG_SCHEME.test(normalizedScheme)) {
+    const normalizedScheme = this.normalize(scheme, true);  
+    if (!this.#isValidScheme(normalizedScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#allowedSchemes.add(normalizedScheme);
