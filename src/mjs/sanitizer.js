@@ -74,10 +74,10 @@ const DEFAULT_OPTS = Object.freeze({
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URL passed sanitization rules.
+ * @property {string | null} href - The sanitized URL, or null.
  * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
  * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
- * @property {string} [href] - The sanitized URL input.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
  * @property {string} [username] - The specified username.
@@ -578,6 +578,7 @@ export class URLSanitizer extends URISchemes {
   inspect(url) {
     const inspectedURL = {
       input: url,
+      href: null,
       valid: false
     };
     if (!isString(url)) {

@@ -112,7 +112,7 @@ Sanitizes the given URL asynchronously.
   * opt.maxBlobSize **\[number\]** Maximum allowed blob size in bytes. Default is `16_777_216` (16MB).
   * opt.maxLength **\[number\]** Maximum allowed URL length. Default is `65_536` (64KB).
 
-**Returns** **Promise&lt;string?&gt;** Sanitized URL, nullable.
+**Returns** **Promise&lt;string?&gt;** Sanitized URL, or null.
 
 #### Samples
 
@@ -242,13 +242,14 @@ The properties except for `input` and `valid` are omitted from the object for in
 
 * `input` — **string** The original URL input.
 * `valid` — **boolean** Indicates whether the URI is valid.
+* `href` - **string?** The sanitized URL, or null.
 * `relative` - **[boolean]** Indicates whether the input is a valid relative URL.
 * `reason` — **[string]** The reason why the URL is invalid. Omitted if `valid` is `true`.
 * `data` — **[{ mime: string; base64: boolean; data: string; } | null | undefined]** The parsed result of a data URL. Returns `null` if the URL is valid but not a data URL, and is omitted if the URL is invalid.
   * `data.mime` — **string** The MIME type of the data.
   * `data.base64` — **boolean** Indicates whether the data is base64-encoded.
   * `data.data` — **string** The actual data part of the data URL.
-* `href`, `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string | undefined]** Properties identical to the standard URL API (omitted if the URL is invalid).
+* `origin`, `protocol`, `username`, `password`, `host`, `hostname`, `port`, `pathname`, `search`, `hash` — **[string | undefined]** Properties identical to the standard URL API (omitted if the URL is invalid).
 
 ``` javascript
 const res1 = await inspectURL('javascript:alert(1)');
