@@ -7,6 +7,7 @@ export type InspectedDataURL = {
 export type InspectedURLResult = {
     input: string;
     valid: boolean;
+    relative?: boolean;
     reason?: string;
     data?: InspectedDataURL | null;
     href?: string;
@@ -34,17 +35,18 @@ export declare class SanitizeContext {
 }
 export declare class URLSanitizer extends URISchemes {
     #private;
-    private static #uponSanitizeAttribute;
     constructor();
-    private #registerScheme;
-    private #purify;
+    private #executeSanitize;
     private #process;
     private #resolveSchemeRules;
+    private #registerScheme;
+    private #isValidScheme;
     private #parseAndVerifyURL;
     private #isSchemeAllowed;
     private #sanitizeDataURL;
+    private #purify;
+    private #handleSanitizeAttribute;
     private #sanitizeStandardURL;
-    private #executeSanitize;
     sanitize(url: string, opt?: {
         allow?: string[];
         deny?: string[];

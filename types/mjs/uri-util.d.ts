@@ -6,7 +6,7 @@ export declare class URISchemes {
     normalize(uri: string, isScheme?: boolean): string | null;
     parse(uri: string, base?: string): URL | null;
     verify(uri: string, schemes?: Set<string>): boolean;
-    verifyParsed(parsedUrl: URL, schemes?: Set<string>): boolean;
+    verifyParsed(parsedUrl: URL, schemes?: Set<string>, allowCustom?: boolean): boolean;
 }
 export declare const getSchemeParts: (protocol: string) => string[];
 export declare const getURLEncodedString: (str: string) => string;
