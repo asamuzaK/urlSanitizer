@@ -238,12 +238,12 @@ Sanitizes the given URL and returns its parsed components.
 #### InspectedURLResult
 
 An object extending the standard [URL](https://developer.mozilla.org/ja/docs/Web/API/URL) API with additional properties.
-The properties except for `input` and `valid` are omitted from the object for invalid URLs.
+The properties except for `input`, `valid`, and `href` are omitted from the object for invalid URLs.
 
 * `input` — **string** The original URL input.
 * `valid` — **boolean** Indicates whether the URI is valid.
-* `href` - **string?** The sanitized URL, or null.
-* `relative` - **[boolean]** Indicates whether the input is a valid relative URL.
+* `href` — **string?** The sanitized URL, or null.
+* `relative` — **[boolean]** Indicates whether the input is a valid relative URL.
 * `reason` — **[string]** The reason why the URL is invalid. Omitted if `valid` is `true`.
 * `data` — **[{ mime: string; base64: boolean; data: string; } | null | undefined]** The parsed result of a data URL. Returns `null` if the URL is valid but not a data URL, and is omitted if the URL is invalid.
   * `data.mime` — **string** The MIME type of the data.
