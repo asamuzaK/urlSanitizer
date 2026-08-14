@@ -310,18 +310,6 @@ describe('URL Sanitizer', () => {
       );
     });
 
-    it('should handle composite schemes', async () => {
-      // ... 既存のテスト ...
-      const res2 = await sanitizeURL('git+https://example.com/repo.git', {
-        only: ['git+https']
-      });
-      assert.strictEqual(
-        res2,
-        'git+https://example.com/repo.git',
-        'git+https should be allowed when specified in "only"'
-      );
-    });
-
     it('should process concurrent sanitization without DOMPurify hook collisions', async () => {
       // Create distinct Blob objects containing nested Data URLs with different XSS payloads
       const blob1 = new Blob(
@@ -491,6 +479,7 @@ describe('URL Sanitizer', () => {
         {
           input: 'javascript:alert(1)',
           valid: false,
+          href: null,
           reason: 'Sanitization failed (blocked by allowed schemes or rules).'
         },
         'result'

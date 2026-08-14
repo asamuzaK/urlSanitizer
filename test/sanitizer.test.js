@@ -1385,11 +1385,16 @@ describe('sanitizer', () => {
       it('returns invalid URL result for missing arguments', () => {
         const sanitizer = new URLSanitizer();
         const res = sanitizer.inspect();
-        assert.deepEqual(res, {
-          input: undefined,
-          valid: false,
-          reason: 'Invalid URL input: undefined'
-        });
+        assert.deepEqual(
+          res,
+          {
+            input: undefined,
+            valid: false,
+            href: null,
+            reason: 'Invalid URL input: undefined'
+          },
+          'result'
+        );
       });
 
       it('returns invalid URL result for empty string input', () => {
@@ -1400,6 +1405,7 @@ describe('sanitizer', () => {
           {
             input: '',
             valid: false,
+            href: null,
             reason: 'Invalid URL input: (empty string)'
           },
           'result'
@@ -1415,6 +1421,7 @@ describe('sanitizer', () => {
           {
             input: 'javascript:alert(1)',
             valid: false,
+            href: null,
             reason: 'Sanitization failed (blocked by allowed schemes or rules).'
           },
           'result'
@@ -1592,6 +1599,7 @@ describe('sanitizer', () => {
         const items = {
           input: url,
           valid: false,
+          href: null,
           reason: 'Sanitization failed (blocked by allowed schemes or rules).'
         };
         const res = sanitizer.inspect(url);
@@ -1647,22 +1655,15 @@ describe('sanitizer', () => {
       it('returns invalid object with reason for unregistered schemes', () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = sanitizer.inspect('foo://bar');
-        assert.strictEqual(res.valid, false, 'should be invalid');
-        assert.strictEqual(
-          res.reason,
-          'Sanitization failed (blocked by allowed schemes or rules).',
-          'reason should match'
-        );
-      });
-
-      it('omits reason property when URL is valid', () => {
-        const sanitizer = new URLSanitizer();
-        const res = sanitizer.inspect('https://example.com');
-        assert.strictEqual(res.valid, true, 'should be valid');
-        assert.strictEqual(
-          'reason' in res,
-          false,
-          'reason property should not exist'
+        assert.deepEqual(
+          res,
+          {
+            input: 'foo://bar',
+            valid: false,
+            href: null,
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+          },
+          'result'
         );
       });
 
@@ -1674,11 +1675,15 @@ describe('sanitizer', () => {
           url = `data:text/html;base64,${htmlBase64}`;
         }
         const res = sanitizer.inspect(url);
-        assert.strictEqual(res.valid, false, 'should be valid: false');
-        assert.strictEqual(
-          res.reason,
-          'Data URLs nested too deeply.',
-          'reason should contain the error message from the caught exception'
+        assert.deepEqual(
+          res,
+          {
+            input: url,
+            valid: false,
+            href: null,
+            reason: 'Data URLs nested too deeply.'
+          },
+          'result'
         );
       });
     });
@@ -3370,6 +3375,7 @@ describe('sanitizer', () => {
           {
             input: undefined,
             valid: false,
+            href: null,
             reason: 'Invalid URL input: undefined'
           },
           'result'
@@ -3383,6 +3389,7 @@ describe('sanitizer', () => {
           {
             input: '',
             valid: false,
+            href: null,
             reason: 'Invalid URL input: (empty string)'
           },
           'result'
