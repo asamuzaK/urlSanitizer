@@ -53,6 +53,16 @@ const NON_TEXT_PATTERN = `[${[...NON_TEXT_CHAR_CODES.values()].join('')}]`;
 const REG_NON_TEXT = new RegExp(NON_TEXT_PATTERN);
 const REG_NON_TEXT_G = new RegExp(NON_TEXT_PATTERN, 'g');
 
+/* typedef */
+/**
+ * The extracted data URL components.
+ * @typedef {object} DataURLComponents
+ * @property {string} data - The actual data part of the data URL.
+ * @property {boolean} isBase64 - Indicates whether the data is base64-encoded.
+ * @property {string} mediaType - The MIME type of the data.
+ * @property {string[]} mediaTypes - The array of parsed media types.
+ */
+
 /* encoder / decoder */
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -331,7 +341,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
  * @param {string} pathname - The pathname of the URL.
  * @param {string} [search] - The search (query) string of the URL.
  * @param {string} [hash] - The hash (fragment) of the URL.
- * @returns {object} An object containing the media type, parsed media types array, data string, and a boolean indicating if it is base64-encoded.
+ * @returns {DataURLComponents} The DataURLComponents object.
  */
 export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
   if (!isString(pathname)) {

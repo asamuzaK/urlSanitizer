@@ -63,9 +63,9 @@ const DEFAULT_OPTS = Object.freeze({
 /**
  * The parsed result of a data URL.
  * @typedef {object} InspectedDataURL
- * @property {string} mime - The MIME type of the data.
  * @property {boolean} base64 - Indicates whether the data is base64-encoded.
  * @property {string} data - The actual data part of the data URL.
+ * @property {string} mime - The MIME type of the data.
  */
 
 /**
