@@ -363,13 +363,12 @@ export class URLSanitizer extends URISchemes {
         urlToSanitize: relativePath
       };
     }
-    const scheme = urlObj.protocol.replace(/:$/, '');
-    const schemeParts = scheme.split('+');
+    const scheme = urlObj.protocol.replace(/:$/, '').toLowerCase();
     return {
       isRelative,
       isVerified,
       scheme,
-      schemeParts,
+      schemeParts: scheme.split('+'),
       urlObj,
       isDataUrl: scheme === 'data',
       urlToSanitize: urlObj.href
@@ -394,9 +393,7 @@ export class URLSanitizer extends URISchemes {
       return schemeMap.has(scheme) || schemeParts.every(s => schemeMap.get(s));
     }
     for (const [key, value] of schemeMap.entries()) {
-      const bool =
-        value || (scheme !== key && schemeParts.every(s => s !== key));
-      if (!bool) {
+      if (!value && (scheme === key || schemeParts.includes(key))) {
         return false;
       }
     }
@@ -599,9 +596,7 @@ export class URLSanitizer extends URISchemes {
       const urlObj = this.parse(sanitizedUrl);
       inspectedURL.valid = true;
       if (urlObj) {
-        const schemeParts = getSchemeParts(urlObj.protocol);
-        const isDataUrl = schemeParts.includes('data');
-        if (isDataUrl) {
+        if (urlObj.protocol.toLowerCase() === 'data:') {
           const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
             urlObj.pathname,
             urlObj.search,
