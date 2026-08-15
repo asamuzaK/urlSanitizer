@@ -4,7 +4,8 @@
 
 /* api */
 import { strict as assert } from 'node:assert';
-import { describe, it } from 'mocha';
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import sinon from 'sinon';
 
 /* test */
 import * as mjs from '../src/mjs/common.js';
@@ -64,6 +65,46 @@ describe('common', () => {
       for (const item of items) {
         assert.strictEqual(func(item), true);
       }
+    });
+  });
+
+  describe('logDebug', () => {
+    const func = mjs.logDebug;
+    let warnStub;
+    beforeEach(() => {
+      warnStub = sinon.stub(console, 'warn');
+    });
+    afterEach(() => {
+      warnStub.restore();
+    });
+
+    it('logs message to console.warn', () => {
+      func('Test message');
+      assert.strictEqual(
+        warnStub.calledOnce,
+        true,
+        'console.warn should be called once'
+      );
+      assert.strictEqual(
+        warnStub.calledWith('[URLSanitizer Debug] Test message'),
+        true,
+        'should include error message'
+      );
+    });
+
+    it('logs message and error details when isDebug is true', () => {
+      const testError = new Error('Test error detail');
+      func('Test message', testError);
+      assert.strictEqual(
+        warnStub.calledOnce,
+        true,
+        'console.warn should be called once'
+      );
+      assert.strictEqual(
+        warnStub.calledWith('[URLSanitizer Debug] Test message', testError),
+        true,
+        'should include error message and the original error'
+      );
     });
   });
 });

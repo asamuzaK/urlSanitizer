@@ -23,46 +23,6 @@ describe('sanitizer', () => {
     });
   });
 
-  describe('logDebug', () => {
-    const { logDebug } = mjs;
-    let warnStub;
-    beforeEach(() => {
-      warnStub = sinon.stub(console, 'warn');
-    });
-    afterEach(() => {
-      warnStub.restore();
-    });
-
-    it('logs message to console.warn', () => {
-      logDebug('Test message');
-      assert.strictEqual(
-        warnStub.calledOnce,
-        true,
-        'console.warn should be called once'
-      );
-      assert.strictEqual(
-        warnStub.calledWith('[URLSanitizer Debug] Test message'),
-        true,
-        'should include error message'
-      );
-    });
-
-    it('logs message and error details when isDebug is true', () => {
-      const testError = new Error('Test error detail');
-      logDebug('Test message', testError);
-      assert.strictEqual(
-        warnStub.calledOnce,
-        true,
-        'console.warn should be called once'
-      );
-      assert.strictEqual(
-        warnStub.calledWith('[URLSanitizer Debug] Test message', testError),
-        true,
-        'should include error message and the original error'
-      );
-    });
-  });
-
   describe('SanitizeContext', () => {
     const { SanitizeContext } = mjs;
 
