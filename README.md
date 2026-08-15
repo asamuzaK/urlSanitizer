@@ -255,15 +255,17 @@ The properties except for `input`, `valid`, and `href` are omitted from the obje
 const res1 = await inspectURL('javascript:alert(1)');
 /* => {
         input: 'javascript:alert(1)',
-        valid: false
+        valid: false,
+        href: null,
+        reason: 'Sanitization failed (blocked by allowed schemes or rules).'
       } */
 
 const res2 = await inspectURL('https://www.example.com/?foo=bar#baz');
 /* => {
         input: 'https://www.example.com/?foo=bar#baz',
         valid: true,
-        data: null,
         href: 'https://www.example.com/?foo=bar#baz',
+        data: null,
         origin: 'https://www.example.com',
         protocol: 'https:',
         hostname: 'www.example.com',
@@ -278,12 +280,12 @@ const res3 = await inspectURL('data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJ
 /* => {
         input: 'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
         valid: true,
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         data: {
           mime: 'image/svg+xml',
           base64: false,
           data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
         },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
         protocol: 'data:',
         pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
@@ -295,12 +297,12 @@ const res4 = await inspectURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAU
 /* => {
         input: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         valid: true,
+        href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         data: {
           mime: 'image/png',
           base64: true,
           data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
         },
-        href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
         origin: 'null',
         protocol: 'data:',
         pathname: 'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
@@ -315,12 +317,12 @@ const res5 = await inspectURL(url5);
 /* => {
         input: 'blob:nodedata:82ecc5a4-aea8-48d7-a407-64e2ef0913da',
         valid: true,
+        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         data: {
           mime: 'image/svg+xml',
           base64: false,
           data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
         },
-        href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
         origin: 'null',
         protocol: 'data:',
         pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
