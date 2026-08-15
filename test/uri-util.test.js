@@ -637,138 +637,164 @@ describe('uri-util', () => {
         assert.strictEqual(res.hostname, 'example.com', 'hostname');
         assert.strictEqual(res.pathname, '/path', 'pathname');
       });
+
+      it('returns a parsed URL object for normalized URL', () => {
+        const schemes = new URISchemes();
+        const res = schemes.parse(
+          'ＨＴＴＰＳ://example.com/path?query=1#hash',
+          null,
+          true
+        );
+        assert.ok(res instanceof URL, 'returns a URL instance');
+        assert.strictEqual(res.protocol, 'https:', 'protocol');
+        assert.strictEqual(res.hostname, 'example.com', 'hostname');
+        assert.strictEqual(res.pathname, '/path', 'pathname');
+      });
+
+      it('returns a parsed URL object for normalized relative URL', () => {
+        const schemes = new URISchemes();
+        const res = schemes.parse(
+          '/path?query=1#hash',
+          'https://example.com',
+          true
+        );
+        assert.ok(res instanceof URL, 'returns a URL instance');
+        assert.strictEqual(res.protocol, 'https:', 'protocol');
+        assert.strictEqual(res.hostname, 'example.com', 'hostname');
+        assert.strictEqual(res.pathname, '/path', 'pathname');
+      });
     });
 
-    describe('verify scheme', () => {
+    describe('verify URI', () => {
       it('returns false for missing input', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify();
+        const res = schemes.verifyURI();
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for plain string without scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('foo');
+        const res = schemes.verifyURI('foo');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for unregistered scheme format', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('foo:bar');
+        const res = schemes.verifyURI('foo:bar');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns true for scheme allowed by custom set', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('foo:bar', new Set(['foo']));
+        const res = schemes.verifyURI('foo:bar', new Set(['foo']));
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns false for javascript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('javascript:alert(1)');
+        const res = schemes.verifyURI('javascript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for web+javascript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+javascript:alert(1)');
+        const res = schemes.verifyURI('web+javascript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for obfuscated javascript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('Javas&#99;ript:alert(1)');
+        const res = schemes.verifyURI('Javas&#99;ript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for absolute path traversal (/../)', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('/../');
+        const res = schemes.verifyURI('/../');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for relative path traversal (../../)', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('../../');
+        const res = schemes.verifyURI('../../');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns true for valid standard HTTPS URL', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('https://example.com');
+        const res = schemes.verifyURI('https://example.com');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid URL with surrounding whitespace', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify(' https://example.com ');
+        const res = schemes.verifyURI(' https://example.com ');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for URL with port, path, and query', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('https://example.com:8000/#foo?bar=baz');
+        const res = schemes.verifyURI('https://example.com:8000/#foo?bar=baz');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns false for invalid URL with spaces in path', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('https://example.com foo');
+        const res = schemes.verifyURI('https://example.com foo');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns true for valid IPv4 URL', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('https://127.0.0.1');
+        const res = schemes.verifyURI('https://127.0.0.1');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid IPv6 URL', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('https://[::1]/');
+        const res = schemes.verifyURI('https://[::1]/');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid file: URL', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('file:///C:/Users/Foo/');
+        const res = schemes.verifyURI('file:///C:/Users/Foo/');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid mailto: URL', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('mailto:foo@example.com');
+        const res = schemes.verifyURI('mailto:foo@example.com');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid ext+ custom scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('ext+foo://example.com/');
+        const res = schemes.verifyURI('ext+foo://example.com/');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns true for valid web+ custom scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+foo://example.com/');
+        const res = schemes.verifyURI('web+foo://example.com/');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns false for ext+javascript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('ext+javascript:alert(1)');
+        const res = schemes.verifyURI('ext+javascript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for web+javascript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+javascript:alert(1)');
+        const res = schemes.verifyURI('web+javascript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false for ext+vbscript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify(
+        const res = schemes.verifyURI(
           'ext+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
         );
         assert.strictEqual(res, false, 'result');
@@ -776,7 +802,7 @@ describe('uri-util', () => {
 
       it('returns false for web+vbscript: scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify(
+        const res = schemes.verifyURI(
           'web+vbscript:window.external.AddFavorite(&quot;http://www.mozilla.org/&quot;,&quot;Mozilla&quot;)'
         );
         assert.strictEqual(res, false, 'result');
@@ -784,57 +810,211 @@ describe('uri-util', () => {
 
       it('returns true for compounded valid schemes (e.g., git+https)', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('git+https://example.com/');
+        const res = schemes.verifyURI('git+https://example.com/');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns false if compound scheme contains unregistered part', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('foo+https://example.com/');
+        const res = schemes.verifyURI('foo+https://example.com/');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false if compound scheme inner part is unregistered', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('git+foo://example.com/');
+        const res = schemes.verifyURI('git+foo://example.com/');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns true for URN scheme', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('URN:ISBN:4-8399-0454-5');
+        const res = schemes.verifyURI('URN:ISBN:4-8399-0454-5');
         assert.strictEqual(res, true, 'result');
       });
 
       it('returns false if scheme contains javascript execution', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+javascript:alert(1)');
+        const res = schemes.verifyURI('web+javascript:alert(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns false if scheme contains vbscript execution', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('ext+vbscript:msgbox(1)');
+        const res = schemes.verifyURI('ext+vbscript:msgbox(1)');
         assert.strictEqual(res, false, 'result');
       });
 
       it('returns true for valid web+ custom scheme without scripts', () => {
         const schemes = new URISchemes();
-        const res = schemes.verify('web+foo:bar');
+        const res = schemes.verifyURI('web+foo:bar');
         assert.strictEqual(res, true, 'result');
       });
 
       it('verifies against custom schemes set instead of default list', () => {
         const schemes = new URISchemes();
         const customSchemes = new Set(['foo', 'bar']);
-        assert.strictEqual(schemes.verify('foo:test'), false, 'default false');
         assert.strictEqual(
-          schemes.verify('foo:test', customSchemes),
+          schemes.verifyURI('foo:test'),
+          false,
+          'default false'
+        );
+        assert.strictEqual(
+          schemes.verifyURI('foo:test', customSchemes),
           true,
           'custom true'
         );
         assert.strictEqual(
-          schemes.verify('baz:test', customSchemes),
+          schemes.verifyURI('baz:test', customSchemes),
+          false,
+          'custom false'
+        );
+      });
+    });
+
+    describe('verify scheme', () => {
+      it('returns false for missing input', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme();
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for unregistered scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('foo');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns true for scheme allowed by custom set', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('foo', new Set(['foo']));
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns false for javascript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('javascript');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for *+javascript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('https+javascript');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for javascript** scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('javascript+https');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for obfuscated javascript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('Javas&#99;ript');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns true for registered scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('https');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns true for URL.protocol (with colon)', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('https:');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns true for scheme with surrounding whitespace', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme(' https ');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns false for ext+* custom scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('ext+foo');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns true for ext+* scheme if allowed in custom Set', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('ext+foo', new Set(['ext+foo']));
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns true for ext+* scheme if custom schemes are allowed', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('ext+foo', null, true);
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns false for ext+javascript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('ext+javascript', null, true);
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for ext+vbscript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('ext+vbscript', null, true);
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for web+* custom scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('web+foo');
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns true for web+* scheme if allowed in custom Set', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('web+foo', new Set(['web+foo']));
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns true for web+* scheme if custom schemes are allowed', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('web+foo', null, true);
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns false for web+javascript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('web+javascript', null, true);
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns false for web+vbscript scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('web+vbscript', null, true);
+        assert.strictEqual(res, false, 'result');
+      });
+
+      it('returns true for compounded schemes (e.g., git+https)', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('git+https');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('returns true for URN scheme', () => {
+        const schemes = new URISchemes();
+        const res = schemes.verifyScheme('URN');
+        assert.strictEqual(res, true, 'result');
+      });
+
+      it('verifies against custom schemes set instead of default list', () => {
+        const schemes = new URISchemes();
+        const customSchemes = new Set(['foo', 'bar']);
+        assert.strictEqual(schemes.verifyScheme('foo'), false, 'default false');
+        assert.strictEqual(
+          schemes.verifyScheme('foo', customSchemes),
+          true,
+          'custom true'
+        );
+        assert.strictEqual(
+          schemes.verifyScheme('baz', customSchemes),
           false,
           'custom false'
         );
