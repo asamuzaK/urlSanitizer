@@ -20,3 +20,13 @@ export const getType = o =>
  * @returns {boolean} True if the value is a string, false otherwise.
  */
 export const isString = o => typeof o === 'string' || o instanceof String;
+
+/**
+ * Debug logger.
+ * @param {string} message - The message to output.
+ * @param {Error} [error] - The caught error object, if any.
+ * @returns {void}
+ */
+export const logDebug = (message, error) => {
+  console.warn(`[URLSanitizer Debug] ${message}`, error);
+};

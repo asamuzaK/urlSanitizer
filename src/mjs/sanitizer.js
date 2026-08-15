@@ -4,7 +4,7 @@
 
 /* shared */
 import { domPurify } from './dompurify.js';
-import { getType, isString } from './common.js';
+import { getType, logDebug, isString } from './common.js';
 import {
   URISchemes,
   escapeURLEncodedHTMLChars,
@@ -89,16 +89,6 @@ const DEFAULT_OPTS = Object.freeze({
  * @property {string} [search] - The query string.
  * @property {string} [hash] - The fragment identifier.
  */
-
-/**
- * Internal debug logger.
- * @param {string} message - The message to output.
- * @param {Error} [error] - The caught error object, if any.
- * @returns {void}
- */
-export const logDebug = (message, error) => {
-  console.warn(`[URLSanitizer Debug] ${message}`, error);
-};
 
 /**
  * Context manager for the sanitization process.
