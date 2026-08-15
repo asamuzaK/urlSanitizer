@@ -74,10 +74,10 @@ const DEFAULT_OPTS = Object.freeze({
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
  * @property {boolean} valid - Indicates whether the URL passed sanitization rules.
- * @property {string | null} href - The sanitized URL, or null.
+ * @property {string|null} href - The sanitized URL, or null.
  * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
- * @property {InspectedDataURL | null} [data] - The parsed result of a data URL. Null if not a data URL.
+ * @property {InspectedDataURL|null} [data] - The parsed result of a data URL. Null if not a data URL.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
  * @property {string} [username] - The specified username.
@@ -180,7 +180,7 @@ export class URLSanitizer extends URISchemes {
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      const urlObj = this.parse(url);
+      const urlObj = this.parse(url, null, true);
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
@@ -331,8 +331,8 @@ export class URLSanitizer extends URISchemes {
    * @returns {object} Parsed URL properties and flags.
    */
   #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
-    const urlObj = this.parse(url);
-    let isVerified = this.verifyParsed(urlObj, allowedSchemes);
+    const urlObj = this.parse(url, null, true);
+    let isVerified = this.verifyScheme(urlObj?.protocol, allowedSchemes);
     let isRelative = false;
     let relativePath = '';
     // Handle Relative URLs
@@ -496,7 +496,7 @@ export class URLSanitizer extends URISchemes {
     if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
       return;
     }
-    const urlObj = this.parse(evt.attrValue);
+    const urlObj = this.parse(evt.attrValue, null, true);
     if (!urlObj || urlObj.protocol !== 'data:') {
       return;
     }
@@ -700,7 +700,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the URI is syntactically valid and permitted.
    */
   verify(uri, schemes) {
-    return super.verify(uri, schemes ?? this.#allowedSchemes);
+    return super.verifyURI(uri, schemes ?? this.#allowedSchemes);
   }
 }
 
@@ -972,7 +972,7 @@ export const sanitizeURLSync = (url, opt = {}) => {
  */
 export const inspectURL = async url => {
   if (isString(url)) {
-    const parsedUrl = urlSanitizer.parse(url);
+    const parsedUrl = urlSanitizer.parse(url, null, true);
     if (parsedUrl?.protocol === 'blob:') {
       try {
         const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);

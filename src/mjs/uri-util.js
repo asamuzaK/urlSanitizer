@@ -125,17 +125,24 @@ export class URISchemes {
    * Parse the URI string.
    * @param {string} uri - The URI string.
    * @param {string} [base] - The base URI string.
+   * @param {boolean} [normalize] - True if to normalize the URI.
    * @returns {URL|null} The parsed URL object, or null.
    */
-  parse(uri, base) {
+  parse(uri, base, normalize = false) {
     if (!isString(uri)) {
       return null;
     }
-    const normalized = this.normalize(uri);
-    if (base && isString(base)) {
-      return URL.parse(normalized, this.normalize(base));
+    if (normalize) {
+      const normalized = this.normalize(uri);
+      if (base && isString(base)) {
+        return URL.parse(normalized, this.normalize(base));
+      }
+      return URL.parse(normalized);
     }
-    return URL.parse(normalized);
+    if (base && isString(base)) {
+      return URL.parse(uri, this.normalize(base));
+    }
+    return URL.parse(uri);
   }
 
   /**
@@ -144,27 +151,30 @@ export class URISchemes {
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @returns {boolean} True if the URI is valid and permitted.
    */
-  verify(uri, schemes) {
+  verifyURI(uri, schemes) {
     if (!isString(uri)) {
       return false;
     }
     const parsedUrl = this.parse(uri);
-    return this.verifyParsed(parsedUrl, schemes, true);
+    if (!parsedUrl) {
+      return false;
+    }
+    return this.verifyScheme(parsedUrl.protocol, schemes, true);
   }
 
   /**
-   * Verifies if the pre-parsed URL object is valid and its scheme is allowed.
-   * @param {URL} parsedUrl - The parsed URL object to verify.
+   * Verifies if the scheme is valid and allowed.
+   * @param {string} scheme - A scheme or URL.protocol to verify.
    * @param {Set<string>} [schemes] - The set of allowed schemes.
    * @param {boolean} [allowCustom] - True if web+*, ext+* schemes are allowed.
    * @returns {boolean} True if the parsed URL is valid and permitted.
    */
-  verifyParsed(parsedUrl, schemes, allowCustom = false) {
-    if (!parsedUrl || !parsedUrl.protocol) {
+  verifyScheme(scheme, schemes, allowCustom = false) {
+    if (!isString(scheme)) {
       return false;
     }
-    const scheme = parsedUrl.protocol.toLowerCase().replace(/:$/, '');
-    const parts = scheme.split('+');
+    const normalized = this.normalize(scheme, true).replace(/:$/, '');
+    const parts = normalized.split('+');
     const isScript = parts.some(s => REG_SCRIPT.test(s));
     if (isScript) {
       return false;
@@ -172,12 +182,12 @@ export class URISchemes {
     if (!schemes) {
       schemes = this.#schemes;
     }
-    if (schemes.has(scheme)) {
+    if (schemes.has(normalized)) {
       return true;
     }
     if (parts.length > 1) {
       return (
-        (allowCustom && REG_SCHEME_EXT.test(scheme)) ||
+        (allowCustom && REG_SCHEME_EXT.test(normalized)) ||
         parts.every(s => schemes.has(s))
       );
     }
