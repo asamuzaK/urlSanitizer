@@ -77,20 +77,16 @@ export class URISchemes {
   /**
    * Parses a URL string with a fallback.
    * @private
-   * @param {string} targetUri - The URL string to parse.
-   * @param {string} [targetBase] - The base URL string.
+   * @param {string} uri - The URL string to parse.
+   * @param {string} [base] - The base URL string.
    * @returns {URL|null} The parsed URL object, or null.
    */
-  #parseURL(targetUri, targetBase) {
+  #parseURL(uri, base) {
     if (typeof URL.parse === 'function') {
-      return targetBase !== undefined
-        ? URL.parse(targetUri, targetBase)
-        : URL.parse(targetUri);
+      return base !== undefined ? URL.parse(uri, base) : URL.parse(uri);
     }
     try {
-      return targetBase !== undefined
-        ? new URL(targetUri, targetBase)
-        : new URL(targetUri);
+      return base !== undefined ? new URL(uri, base) : new URL(uri);
     } catch {
       return null;
     }
