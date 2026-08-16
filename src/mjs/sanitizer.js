@@ -363,7 +363,7 @@ export class URLSanitizer extends URISchemes {
         urlToSanitize: relativePath
       };
     }
-    const scheme = urlObj.protocol.replace(/:$/, '').toLowerCase();
+    const scheme = this.normalize(urlObj.protocol, true);
     return {
       isRelative,
       isVerified,
@@ -596,7 +596,8 @@ export class URLSanitizer extends URISchemes {
       const urlObj = this.parse(sanitizedUrl);
       inspectedURL.valid = true;
       if (urlObj) {
-        if (urlObj.protocol.toLowerCase() === 'data:') {
+        const scheme = this.normalize(urlObj.protocol, true);
+        if (scheme === 'data') {
           const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
             urlObj.pathname,
             urlObj.search,
@@ -628,7 +629,6 @@ export class URLSanitizer extends URISchemes {
           'Invalid as an absolute URL, but valid as a relative URL.';
       }
     } else {
-      inspectedURL.valid = false;
       inspectedURL.reason = invalidReason;
     }
     return inspectedURL;

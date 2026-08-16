@@ -75,9 +75,9 @@ export class URISchemes {
   #schemes = new Set(uriSchemes);
 
   /**
-   * Parses a URL string with a fallback.
+   * Parses a URI/URL string with a fallback.
    * @private
-   * @param {string} uri - The URL string to parse.
+   * @param {string} uri - The URI/URL string to parse.
    * @param {string} [base] - The base URL string.
    * @returns {URL|null} The parsed URL object, or null.
    */
@@ -114,7 +114,7 @@ export class URISchemes {
     }
     const parsed = this.parse(uri);
     if (parsed) {
-      return parsed.protocol.replace(/:$/, '');
+      return this.normalize(parsed.protocol, true);
     }
     return null;
   }
@@ -134,7 +134,7 @@ export class URISchemes {
 
   /**
    * Normalizes the URI string using NFKC.
-   * @param {string} uri - The URL to normalize.
+   * @param {string} uri - The URI string to normalize.
    * @param {boolean} [isScheme] - True if uri is a scheme.
    * @returns {string|null} The normalized URI string, or null.
    */
@@ -144,15 +144,15 @@ export class URISchemes {
     }
     const normalized = uri.normalize('NFKC');
     if (isScheme) {
-      return normalized.trim().toLowerCase();
+      return normalized.trim().toLowerCase().replace(/:$/, '');
     }
     return normalized;
   }
 
   /**
-   * Parse the URI string.
-   * @param {string} uri - The URI string.
-   * @param {string} [base] - The base URI string.
+   * Parse the URI/URL string.
+   * @param {string} uri - The URI/URL string.
+   * @param {string} [base] - The base URL string.
    * @param {boolean} [normalize] - True if to normalize the URI.
    * @returns {URL|null} The parsed URL object, or null.
    */
@@ -201,7 +201,7 @@ export class URISchemes {
     if (!isString(scheme)) {
       return false;
     }
-    const normalized = this.normalize(scheme, true).replace(/:$/, '');
+    const normalized = this.normalize(scheme, true);
     const parts = normalized.split('+');
     const isScript = parts.some(s => REG_SCRIPT.test(s));
     if (isScript) {
