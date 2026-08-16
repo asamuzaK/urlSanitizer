@@ -11,6 +11,7 @@ import { sanitizeURL, sanitizeURLSync } from '../src/mjs/sanitizer.js';
 const normalUrl = 'https://www.example.com/path/to/page?query=1#top';
 const xssUrl = 'javascript:alert("XSS")';
 const xssHtml = '<div><script>alert("XSS");</script></div>';
+const httpsXssUrl = `https://www.example.com/?query=${xssHtml}`;
 const dataUrl = `data:text/html;base64,${btoa(xssHtml)}`;
 const blobUrl = URL.createObjectURL(new Blob([xssHtml], { type: 'text/html' }));
 const invalidUrl = 'not-a-valid-URL';
@@ -48,8 +49,17 @@ group(`1. Normal HTTP URL:${logNormal}`, () => {
   bench('strict-url-sanitise', () => strictUrlSanitise(normalUrl));
 });
 
+const logHttpsXss = await getOutputs(httpsXssUrl);
+group(`2. HTTPS XSS URL:${logHttpsXss}`, () => {
+  bench('url-sanitizer', () => sanitizeURLSync(httpsXssUrl, sanitizeOpt));
+  bench('@braintree/sanitize-url', () => braintreeSanitize(httpsXssUrl));
+  bench('strict-url-sanitise', () => {
+    try { strictUrlSanitise(httpsXssUrl); } catch (e) {}
+  });
+});
+
 const logXss = await getOutputs(xssUrl);
-group(`2. XSS URL:${logXss}`, () => {
+group(`3. XSS URL:${logXss}`, () => {
   bench('url-sanitizer', () => sanitizeURLSync(xssUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', () => braintreeSanitize(xssUrl));
   bench('strict-url-sanitise', () => {
@@ -58,7 +68,7 @@ group(`2. XSS URL:${logXss}`, () => {
 });
 
 const logData = await getOutputs(dataUrl);
-group(`3. Data URL:${logData}`, () => {
+group(`4. Data URL:${logData}`, () => {
   bench('url-sanitizer', () => sanitizeURLSync(dataUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', () => braintreeSanitize(dataUrl));
   bench('strict-url-sanitise', () => {
@@ -67,7 +77,7 @@ group(`3. Data URL:${logData}`, () => {
 });
 
 const logBlob = await getOutputs(blobUrl, async () => await sanitizeURL(blobUrl, sanitizeOpt));
-group(`4. Blob URL:${logBlob}`, () => {
+group(`5. Blob URL:${logBlob}`, () => {
   bench('url-sanitizer', async () => await sanitizeURL(blobUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', () => braintreeSanitize(blobUrl));
   bench('strict-url-sanitise', () => {
@@ -76,7 +86,7 @@ group(`4. Blob URL:${logBlob}`, () => {
 });
 
 const logInvalid = await getOutputs(invalidUrl);
-group(`5. Invalid URL:${logInvalid}`, () => {
+group(`6. Invalid URL:${logInvalid}`, () => {
   bench('url-sanitizer', () => sanitizeURLSync(invalidUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', () => braintreeSanitize(invalidUrl));
   bench('strict-url-sanitise', () => {

@@ -440,11 +440,12 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **Normal HTTP URL** | ~1.25 µs/iter | ~4.33 µs/iter | ~4.68 µs/iter |
-| **XSS URL** | ~5.68 µs/iter<br>returns `null` | ~1.63 µs/iter<br>returns `about:blank` | ~9.44 µs/iter<br>throws Error |
-| **Data URL** | ~371.03 µs/iter<br>returns sanitized data URL | ~2.85 µs/iter<br>returns `about:blank` | ~9.44 µs/iter<br>throws Error |
-| **Blob URL** | ~552.58 µs/iter<br>returns sanitized data URL | ~2.18 µs/iter<br>returns blob URL as-is | ~9.11 µs/iter<br>throws Error |
-| **Invalid URL** | ~0.28 µs/iter<br>returns `null` | ~1.35 µs/iter<br>returns invalid URL as-is | ~21.22 µs/iter<br>throws Error |
+| **Normal HTTPS URL** | ~1.41 µs/iter | ~4.00 µs/iter | ~4.65 µs/iter |
+| **HTTPS URL with XSS** | ~6.44 µs/iter<br>returns sanitized URL | ~4.50 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~6.56 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
+| **XSS Scheme URL** | ~5.78 µs/iter<br>returns `null` | ~1.51 µs/iter<br>returns `about:blank` | ~6.33 µs/iter<br>throws `Error` |
+| **XSS Data URL** | ~393.24 µs/iter<br>returns sanitized data URL | ~2.34 µs/iter<br>returns `about:blank` | ~9.83 µs/iter<br>throws `Error` |
+| **XSS Blob URL** | ~606.15 µs/iter<br>returns sanitized data URL | ~2.14 µs/iter<br>returns blob URL as-is | ~9.98 µs/iter<br>throws `Error` |
+| **Invalid URL** | ~0.22 µs/iter<br>returns `null` | ~1.22 µs/iter<br>returns invalid URL as-is | ~20.50 µs/iter<br>throws `Error` |
 
 ### Characteristics & Trade-offs
 
