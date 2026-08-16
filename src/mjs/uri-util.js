@@ -75,6 +75,28 @@ export class URISchemes {
   #schemes = new Set(uriSchemes);
 
   /**
+   * Parses a URL string with a fallback.
+   * @private
+   * @param {string} targetUri - The URL string to parse.
+   * @param {string} [targetBase] - The base URL string.
+   * @returns {URL|null} The parsed URL object, or null.
+   */
+  #parseURL(targetUri, targetBase) {
+    if (typeof URL.parse === 'function') {
+      return targetBase !== undefined
+        ? URL.parse(targetUri, targetBase)
+        : URL.parse(targetUri);
+    }
+    try {
+      return targetBase !== undefined
+        ? new URL(targetUri, targetBase)
+        : new URL(targetUri);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Gets the list of registered URI schemes.
    * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
    * - Historical schemes are omitted.
@@ -145,14 +167,14 @@ export class URISchemes {
     if (normalize) {
       const normalized = this.normalize(uri);
       if (base && isString(base)) {
-        return URL.parse(normalized, this.normalize(base));
+        return this.#parseURL(normalized, this.normalize(base));
       }
-      return URL.parse(normalized);
+      return this.#parseURL(normalized);
     }
     if (base && isString(base)) {
-      return URL.parse(uri, base);
+      return this.#parseURL(uri, base);
     }
-    return URL.parse(uri);
+    return this.#parseURL(uri);
   }
 
   /**

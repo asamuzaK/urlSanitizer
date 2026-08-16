@@ -4,7 +4,7 @@
 
 /* api */
 import { strict as assert } from 'node:assert';
-import { describe, it } from 'mocha';
+import { afterEach, beforeEach, describe, it } from 'mocha';
 
 /* test */
 import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
@@ -662,6 +662,62 @@ describe('uri-util', () => {
         assert.strictEqual(res.protocol, 'https:', 'protocol');
         assert.strictEqual(res.hostname, 'example.com', 'hostname');
         assert.strictEqual(res.pathname, '/path', 'pathname');
+      });
+    });
+
+    describe('parse URL fallback', () => {
+      const { URISchemes } = mjs;
+      let originalURLParse;
+
+      beforeEach(() => {
+        originalURLParse = globalThis.URL.parse;
+      });
+      afterEach(() => {
+        globalThis.URL.parse = originalURLParse;
+      });
+
+      it('uses URL.parse when available (modern environments)', () => {
+        const schemes = new URISchemes();
+        let isParseCalled = false;
+        globalThis.URL.parse = (url, base) => {
+          isParseCalled = true;
+          return base !== undefined
+            ? new globalThis.URL(url, base)
+            : new globalThis.URL(url);
+        };
+        const res = schemes.parse('https://example.com/modern');
+        assert.strictEqual(isParseCalled, true, 'URL.parse should be executed');
+        assert.ok(res instanceof URL, 'returns a URL instance');
+        assert.strictEqual(res.href, 'https://example.com/modern', 'href');
+      });
+
+      it('falls back to new URL() when URL.parse is not available', () => {
+        const schemes = new URISchemes();
+        globalThis.URL.parse = undefined;
+        const res = schemes.parse('https://example.com/fallback');
+        assert.ok(
+          res instanceof globalThis.URL,
+          'returns a URL instance via fallback'
+        );
+        assert.strictEqual(res.href, 'https://example.com/fallback', 'href');
+      });
+
+      it('falls back to new URL(uri, base)', () => {
+        const schemes = new URISchemes();
+        globalThis.URL.parse = undefined;
+        const res = schemes.parse('/path', 'https://example.com');
+        assert.ok(
+          res instanceof globalThis.URL,
+          'returns a URL instance via fallback'
+        );
+        assert.strictEqual(res.href, 'https://example.com/path', 'href');
+      });
+
+      it('returns null if fallback throws an error for invalid URI', () => {
+        const schemes = new URISchemes();
+        globalThis.URL.parse = undefined;
+        const res = schemes.parse('/invalid-without-base');
+        assert.strictEqual(res, null, 'returns null on fallback error');
       });
     });
 
