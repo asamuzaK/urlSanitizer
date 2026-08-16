@@ -438,13 +438,13 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 ### Benchmark Results
 
-| URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
-| :--- | :---: | :---: | :---: |
-| **Normal HTTP URL** | ~1.25 µs/iter | ~4.33 µs/iter | ~4.68 µs/iter |
-| **XSS URL** | ~5.68 µs/iter | ~1.63 µs/iter | ~9.44 µs/iter |
-| **Data URL** | ~371.03 µs/iter | ~2.85 µs/iter | ~9.44 µs/iter |
-| **Blob URL** | ~552.58 µs/iter | ~2.18 µs/iter | ~9.11 µs/iter |
-| **Invalid URL** | ~0.28 µs/iter | ~1.35 µs/iter | ~21.22 µs/iter |
+| URL Type & Input | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
+| :--- | :--- | :--- | :--- |
+| **Normal HTTP URL**<br>`https://www.example.com/path/to/page?query=1#top` | **1.38 µs/iter**<br>`https://www.example.com/path/to/page?query=1#top` | **4.10 µs/iter**<br>`https://www.example.com/path/to/page?query=1#top` | **4.67 µs/iter**<br>`https://www.example.com/path/to/page?query=1#top` |
+| **XSS URL**<br>`javascript:alert("XSS")` | **5.93 µs/iter**<br>`null` | **1.55 µs/iter**<br>`about:blank` | **6.33 µs/iter**<br>`[Error]` |
+| **Data URL**<br>`data:text/html;base64,PGRpdj48c2NyaXB0PmFsZXJ0KCJYU1MiKTs8L3NjcmlwdD48L2Rpdj4=` | **385.79 µs/iter**<br>`data:text/html,%3Cdiv%3E%3C/div%3E` | **2.31 µs/iter**<br>`about:blank` | **9.20 µs/iter**<br>`[Error]` |
+| **Blob URL**<br>`blob:nodedata:d484822e-cac6-40e9-9bf1-5e01c603542f` | **584.54 µs/iter**<br>`data:text/html,%3Cdiv%3E%3C/div%3E` | **2.16 µs/iter**<br>`blob:nodedata:d484822e-cac6-40e9-9bf1-5e01c603542f` | **9.30 µs/iter**<br>`[Error]` |
+| **Invalid URL**<br>`not-a-valid-URL` | **0.22 µs/iter**<br>`null` | **1.21 µs/iter**<br>`not-a-valid-URL` | **19.72 µs/iter**<br>`[Error]` |
 
 ### Characteristics & Trade-offs
 
