@@ -439,12 +439,12 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 ### Benchmark Results
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
-| :--- | :---: | :---: | :---: |
+| :--- | :--- | :--- | :--- |
 | **Normal HTTP URL** | ~1.25 µs/iter | ~4.33 µs/iter | ~4.68 µs/iter |
-| **XSS URL** | ~5.68 µs/iter | ~1.63 µs/iter | ~9.44 µs/iter |
-| **Data URL** | ~371.03 µs/iter | ~2.85 µs/iter | ~9.44 µs/iter |
-| **Blob URL** | ~552.58 µs/iter | ~2.18 µs/iter | ~9.11 µs/iter |
-| **Invalid URL** | ~0.28 µs/iter | ~1.35 µs/iter | ~21.22 µs/iter |
+| **XSS URL** | ~5.68 µs/iter<br>returns `null` | ~1.63 µs/iter<br>returns `about:blank` | ~9.44 µs/iter<br>throws Error |
+| **Data URL** | ~371.03 µs/iter<br>returns sanitized data URL | ~2.85 µs/iter<br>returns `about:blank` | ~9.44 µs/iter<br>throws Error |
+| **Blob URL** | ~552.58 µs/iter<br>returns sanitized data URL | ~2.18 µs/iter<br>returns blob URL as-is | ~9.11 µs/iter<br>throws Error |
+| **Invalid URL** | ~0.28 µs/iter<br>returns `null` | ~1.35 µs/iter<br>returns invalid URL as-is | ~21.22 µs/iter<br>throws Error |
 
 ### Characteristics & Trade-offs
 
