@@ -150,7 +150,7 @@ export class URISchemes {
       return URL.parse(normalized);
     }
     if (base && isString(base)) {
-      return URL.parse(uri, this.normalize(base));
+      return URL.parse(uri, base);
     }
     return URL.parse(uri);
   }
