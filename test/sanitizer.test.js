@@ -1206,6 +1206,41 @@ describe('sanitizer', () => {
         }
       });
 
+      it('returns null for malformed base64 strings', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res1 = sanitizer.sanitize(
+          'data:text/html;base64,invalid!base64',
+          {
+            allow: ['data']
+          }
+        );
+        assert.deepEqual(
+          res1,
+          null,
+          'result should be null for failing REG_B64'
+        );
+        const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
+          allow: ['data']
+        });
+        assert.deepEqual(res2, null, 'result should be null for failing atob');
+      });
+
+      it('preserves and deeply sanitizes multiple sibling data URL attributes', () => {
+        const sanitizer = new URLSanitizer();
+        const dirtySvg = 'data:image/svg+xml,%3Csvg%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/svg%3E';
+        const cleanSvg = 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E';
+        const html = `<div><img src="${dirtySvg}"><img src="${dirtySvg}"></div>`;
+        const url = `data:text/html,${encodeURIComponent(html)}`;
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(
+          decodeURIComponent(res),
+          `data:text/html,<div><img src="${cleanSvg}"><img src="${cleanSvg}"></div>`,
+          'Both data URLs should be deeply sanitized'
+        );
+      });
+
       describe('specific validations (via allow/only options)', () => {
         it('ignores schemes containing "javascript" in "allow" option', () => {
           const sanitizer = new URLSanitizer();
@@ -2176,25 +2211,6 @@ describe('sanitizer', () => {
           ['blob', 'data'],
           'original allow array should not be mutated'
         );
-      });
-
-      it('returns null for malformed base64 strings', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res1 = sanitizer.sanitize(
-          'data:text/html;base64,invalid!base64',
-          {
-            allow: ['data']
-          }
-        );
-        assert.deepEqual(
-          res1,
-          null,
-          'result should be null for failing REG_B64'
-        );
-        const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
-          allow: ['data']
-        });
-        assert.deepEqual(res2, null, 'result should be null for failing atob');
       });
 
       it('allows and sanitizes relative URLs', async () => {
