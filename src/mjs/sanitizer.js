@@ -764,27 +764,23 @@ const convertFromBtoa = async blob => {
  * @param {ReadableStreamDefaultReader} reader - The stream reader.
  * @param {number} maxSize - The maximum allowed size in bytes.
  * @param {Uint8Array[]} chunks - The array to store chunks.
- * @param {number} [accumulatedSize] - The currently accumulated size.
  * @returns {Promise<void>}
  */
-const readStreamInChunks = async (
-  reader,
-  maxSize,
-  chunks,
-  accumulatedSize = 0
-) => {
-  const { done, value } = await reader.read();
-  if (done) {
-    return;
+const readStreamInChunks = async (reader, maxSize, chunks) => {
+  let accumulatedSize = 0;
+  while (accumulatedSize <= maxSize) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    accumulatedSize += value.byteLength;
+    if (accumulatedSize > maxSize) {
+      await reader.cancel('Size limit exceeded');
+      const msg = `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`;
+      throw new DOMException(msg, 'NotReadableError');
+    }
+    chunks.push(value);
   }
-  const newSize = accumulatedSize + value.byteLength;
-  if (newSize > maxSize) {
-    await reader.cancel('Size limit exceeded');
-    const msg = `Payload (${newSize} bytes) exceeds max (${maxSize} bytes).`;
-    throw new DOMException(msg, 'NotReadableError');
-  }
-  chunks.push(value);
-  return readStreamInChunks(reader, maxSize, chunks, newSize);
 };
 
 /**
@@ -826,7 +822,7 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
     const reader = response.body.getReader();
     const chunks = [];
     try {
-      await readStreamInChunks(reader, maxSize, chunks, 0);
+      await readStreamInChunks(reader, maxSize, chunks);
     } finally {
       reader.releaseLock();
     }
