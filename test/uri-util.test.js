@@ -1101,7 +1101,7 @@ describe('uri-util', () => {
   });
 
   describe('extract Data URL components', () => {
-    const func = mjs.extractDataUrlComponents;
+    const func = mjs.extractDataURLComponents;
 
     it('returns default object if pathname is not a string', () => {
       const expected = {

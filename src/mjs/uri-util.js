@@ -55,9 +55,9 @@ const REG_NON_TEXT_G = new RegExp(NON_TEXT_PATTERN, 'g');
 
 /* typedef */
 /**
- * The extracted data URL components.
+ * The extracted Data URL components.
  * @typedef {object} DataURLComponents
- * @property {string} data - The actual data part of the data URL.
+ * @property {string} data - The actual data part of the Data URL.
  * @property {boolean} isBase64 - Indicates whether the data is base64-encoded.
  * @property {string} mediaType - The MIME type of the data.
  * @property {string[]} mediaTypes - The array of parsed media types.
@@ -135,7 +135,7 @@ export class URISchemes {
   /**
    * Normalizes the URI string using NFKC.
    * @param {string} uri - The URI string to normalize.
-   * @param {boolean} [isScheme] - True if uri is a scheme.
+   * @param {boolean} [isScheme] - True if the URI is a scheme.
    * @returns {string|null} The normalized URI string, or null.
    */
   normalize(uri, isScheme = false) {
@@ -150,10 +150,10 @@ export class URISchemes {
   }
 
   /**
-   * Parse the URI/URL string.
+   * Parses the URI/URL string.
    * @param {string} uri - The URI/URL string.
    * @param {string} [base] - The base URL string.
-   * @param {boolean} [normalize] - True if to normalize the URI.
+   * @param {boolean} [normalize] - Indicates whether to normalize the URI.
    * @returns {URL|null} The parsed URL object, or null.
    */
   parse(uri, base, normalize = false) {
@@ -266,9 +266,9 @@ export const escapeURLEncodedHTMLChars = ch => {
 };
 
 /**
- * Truncate URL string.
- * @param {string|unknown} url - A URL string
- * @returns {string} - The truncated string
+ * Truncates the URL string.
+ * @param {string|unknown} url - A URL string.
+ * @returns {string} The truncated string.
  */
 export const truncateURL = url => {
   const str = isString(url) ? url : String(url);
@@ -361,7 +361,7 @@ export const parseURLEncodedNumCharRef = (str, nest = 0) => {
  * @param {string} [hash] - The hash (fragment) of the URL.
  * @returns {DataURLComponents} The DataURLComponents object.
  */
-export const extractDataUrlComponents = (pathname, search = '', hash = '') => {
+export const extractDataURLComponents = (pathname, search = '', hash = '') => {
   if (!isString(pathname)) {
     return { mediaType: '', mediaTypes: [], data: '', isBase64: false };
   }

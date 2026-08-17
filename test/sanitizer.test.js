@@ -1227,7 +1227,8 @@ describe('sanitizer', () => {
 
       it('preserves and deeply sanitizes multiple sibling data URL attributes', () => {
         const sanitizer = new URLSanitizer();
-        const dirtySvg = 'data:image/svg+xml,%3Csvg%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/svg%3E';
+        const dirtySvg =
+          'data:image/svg+xml,%3Csvg%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/svg%3E';
         const cleanSvg = 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E';
         const html = `<div><img src="${dirtySvg}"><img src="${dirtySvg}"></div>`;
         const url = `data:text/html,${encodeURIComponent(html)}`;

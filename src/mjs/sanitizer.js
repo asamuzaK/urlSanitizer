@@ -8,7 +8,7 @@ import { getType, logDebug, isString } from './common.js';
 import {
   URISchemes,
   escapeURLEncodedHTMLChars,
-  extractDataUrlComponents,
+  extractDataURLComponents,
   getSchemeParts,
   parseBase64,
   parseURLEncodedNumCharRef,
@@ -61,10 +61,10 @@ const DEFAULT_OPTS = Object.freeze({
 
 /* typedef */
 /**
- * The parsed result of a data URL.
+ * The parsed result of a Data URL.
  * @typedef {object} InspectedDataURL
  * @property {boolean} base64 - Indicates whether the data is base64-encoded.
- * @property {string} data - The actual data part of the data URL.
+ * @property {string} data - The actual data part of the Data URL.
  * @property {string} mime - The MIME type of the data.
  */
 
@@ -77,7 +77,7 @@ const DEFAULT_OPTS = Object.freeze({
  * @property {string|null} href - The sanitized URL, or null.
  * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
- * @property {InspectedDataURL|null} [data] - The parsed result of a data URL. Null if not a data URL.
+ * @property {InspectedDataURL|null} [data] - The parsed result of a Data URL. Null if not a Data URL.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
  * @property {string} [username] - The specified username.
@@ -211,7 +211,7 @@ export class URLSanitizer extends URISchemes {
       this.#resolveSchemeRules({ allow, deny, only }, ctx);
     // Parse and verify the URL
     const {
-      isDataUrl,
+      isDataURL,
       isRelative,
       isVerified,
       scheme,
@@ -235,7 +235,7 @@ export class URLSanitizer extends URISchemes {
       return null;
     }
     // Sanitize based on URL type
-    if (isDataUrl) {
+    if (isDataURL) {
       return this.#sanitizeDataURL(urlObj, scheme, ctx);
     }
     return this.#sanitizeStandardURL(urlToSanitize);
@@ -337,15 +337,15 @@ export class URLSanitizer extends URISchemes {
     let relativePath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const dummyUrl = this.parse(url, DUMMY_BASE);
-      if (dummyUrl) {
+      const dummyURL = this.parse(url, DUMMY_BASE);
+      if (dummyURL) {
         if (
-          dummyUrl.protocol === 'http:' &&
-          dummyUrl.hostname === 'dummy.local'
+          dummyURL.protocol === 'http:' &&
+          dummyURL.hostname === 'dummy.local'
         ) {
           isVerified = true;
           isRelative = true;
-          relativePath = `${dummyUrl.pathname}${dummyUrl.search}${dummyUrl.hash}`;
+          relativePath = `${dummyURL.pathname}${dummyURL.search}${dummyURL.hash}`;
         }
       }
     }
@@ -357,7 +357,7 @@ export class URLSanitizer extends URISchemes {
       return {
         isRelative,
         isVerified,
-        isDataUrl: false,
+        isDataURL: false,
         scheme: '',
         schemeParts: [],
         urlToSanitize: relativePath
@@ -370,7 +370,7 @@ export class URLSanitizer extends URISchemes {
       scheme,
       schemeParts: scheme.split('+'),
       urlObj,
-      isDataUrl: scheme === 'data',
+      isDataURL: scheme === 'data',
       urlToSanitize: urlObj.href
     };
   }
@@ -401,15 +401,15 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Decodes, verifies inner protocols, and purifies data URLs.
+   * Decodes, verifies inner protocols, and purifies Data URLs.
    * @private
    * @param {object} urlObj - The URL object.
    * @param {string} scheme - The URL scheme.
    * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
-   * @returns {string|null} Sanitized data URL or null.
+   * @returns {string|null} Sanitized Data URL or null.
    */
   #sanitizeDataURL(urlObj, scheme, ctx) {
-    const { mediaType, mediaTypes, data, isBase64 } = extractDataUrlComponents(
+    const { mediaType, mediaTypes, data, isBase64 } = extractDataURLComponents(
       urlObj.pathname,
       urlObj.search,
       urlObj.hash
@@ -427,11 +427,11 @@ export class URLSanitizer extends URISchemes {
     }
     try {
       const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-      const parsedUrl = this.parse(decodedData, DUMMY_BASE);
-      if (!parsedUrl) {
+      const parsedURL = this.parse(decodedData, DUMMY_BASE);
+      if (!parsedURL) {
         return null;
       }
-      const dataScheme = parsedUrl.protocol;
+      const dataScheme = parsedURL.protocol;
       const dataSchemeParts = getSchemeParts(dataScheme);
       if (dataSchemeParts.some(s => REG_SCRIPT_OR_BLOB.test(s))) {
         return null;
@@ -500,29 +500,28 @@ export class URLSanitizer extends URISchemes {
     if (!urlObj || urlObj.protocol !== 'data:') {
       return;
     }
-    const originalUrl = evt.attrValue;
-    if (!ctx.enter(originalUrl)) {
+    const originalURL = evt.attrValue;
+    if (!ctx.enter(originalURL)) {
       evt.attrValue = '';
       return;
     }
     try {
       const sanitized = this.#process(
-        originalUrl,
+        originalURL,
         { allow: ['data'], deny: [], only: [], allowRelative: false },
         ctx
       );
       evt.attrValue = sanitized || '';
     } finally {
-      ctx.leave(originalUrl);
+      ctx.leave(originalURL);
     }
   }
 
   /**
-   * Applies regex cleanups to standard non-data URLs.
-   * Strips out trailing queries or problematic characters.
+   * Sanitizes URLs by stripping out trailing queries or problematic characters.
    * @private
    * @param {string} urlToSanitize - The absolute/relative URL.
-   * @returns {string|null} Cleaned URL string or null.
+   * @returns {string} The sanitized URL.
    */
   #sanitizeStandardURL(urlToSanitize) {
     let sanitized = urlToSanitize;
@@ -545,7 +544,6 @@ export class URLSanitizer extends URISchemes {
    * @param {string[]} [opt.only] - An array of specific schemes to allow.
    * @param {boolean} [opt.allowRelative] - Allow relative URLs.
    * @param {boolean} [opt.debug] - Flag to enable debug mode.
-   * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
    * @param {number} [opt.maxLength] - The maximum allowed URL length.
    * @returns {string|null} The sanitized URL, or null.
    */
@@ -576,29 +574,29 @@ export class URLSanitizer extends URISchemes {
       inspectedURL.reason = 'Invalid URL input: (empty string)';
       return inspectedURL;
     }
-    let sanitizedUrl;
+    let sanitizedURL;
     let invalidReason = null;
     try {
-      sanitizedUrl = this.#executeSanitize(url, {
+      sanitizedURL = this.#executeSanitize(url, {
         ...DEFAULT_OPTS,
         allow: ['data'],
         allowRelative: true
       });
-      if (!sanitizedUrl) {
+      if (!sanitizedURL) {
         invalidReason =
           'Sanitization failed (blocked by allowed schemes or rules).';
       }
     } catch (e) {
       invalidReason = e.message;
     }
-    if (sanitizedUrl) {
+    if (sanitizedURL) {
       // Reparse the sanitized string to safely extract updated properties.
-      const urlObj = this.parse(sanitizedUrl);
+      const urlObj = this.parse(sanitizedURL);
       inspectedURL.valid = true;
       if (urlObj) {
         const scheme = this.normalize(urlObj.protocol, true);
         if (scheme === 'data') {
-          const { mediaTypes, data, isBase64 } = extractDataUrlComponents(
+          const { mediaTypes, data, isBase64 } = extractDataURLComponents(
             urlObj.pathname,
             urlObj.search,
             urlObj.hash
@@ -624,7 +622,7 @@ export class URLSanitizer extends URISchemes {
         // Fallback for the valid relative URL without a base URL.
         inspectedURL.valid = false;
         inspectedURL.relative = true;
-        inspectedURL.href = sanitizedUrl;
+        inspectedURL.href = sanitizedURL;
         inspectedURL.reason =
           'Invalid as an absolute URL, but valid as a relative URL.';
       }
@@ -706,10 +704,10 @@ export class URLSanitizer extends URISchemes {
 
 /* blob handlers */
 /**
- * Converts Blob to data URL from Buffer.
+ * Converts Blob to Data URL from Buffer.
  * @private
  * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ * @returns {Promise<string>} A promise resolving to the Data URL.
  */
 const convertFromBuffer = async blob => {
   const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
@@ -719,10 +717,10 @@ const convertFromBuffer = async blob => {
 };
 
 /**
- * Converts Blob to data URL from FileReader.
+ * Converts Blob to Data URL from FileReader.
  * @private
  * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ * @returns {Promise<string|null>} A promise resolving to the Data URL, or null.
  */
 const convertFromFileReader = blob =>
   new Promise((resolve, reject) => {
@@ -742,10 +740,10 @@ const convertFromFileReader = blob =>
   });
 
 /**
- * Converts Blob to data URL from btoa.
+ * Converts Blob to Data URL from btoa.
  * @private
  * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string|null>} A promise resolving to the data URL, or null.
+ * @returns {Promise<string>} A promise resolving to the Data URL.
  */
 const convertFromBtoa = async blob => {
   const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
@@ -759,11 +757,11 @@ const convertFromBtoa = async blob => {
 };
 
 /**
- * Reads a stream in chunks and generates blob.
+ * Reads a stream in chunks and generates a Blob.
  * @private
  * @param {Response} response - The Response instance.
  * @param {number} maxSize - The maximum allowed size in bytes.
- * @returns {Promise<Blob>}
+ * @returns {Promise<Blob>} A promise resolving to the generated Blob.
  */
 const readStreamInChunks = async (response, maxSize) => {
   const reader = response.body.getReader();
@@ -796,10 +794,10 @@ const readStreamInChunks = async (response, maxSize) => {
 };
 
 /**
- * Fetches a blob URL and converts it to a data URL.
- * @param {string} url - The blob URL to fetch.
- * @param {number} [maxBlobSize] - The maximum allowed blob size in bytes.
- * @returns {Promise<string>} A promise resolving to the data URL.
+ * Fetches a Blob URL and converts it to a Data URL.
+ * @param {string} url - The Blob URL to fetch.
+ * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
+ * @returns {Promise<string>} A promise resolving to the Data URL.
  */
 const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   let maxSize = MAX_BLOB_SIZE;
@@ -808,8 +806,8 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   }
   const response = await fetch(url);
   if (!response.ok) {
-    const truncatedUrl = truncateURL(url);
-    let msg = `Failed to fetch ${truncatedUrl}`;
+    const truncatedURL = truncateURL(url);
+    let msg = `Failed to fetch ${truncatedURL}`;
     if (Number.isInteger(response.status)) {
       if (response.statusText) {
         msg += `: ${response.status} ${response.statusText}`;
@@ -824,8 +822,10 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   if (contentLength) {
     const parsedLength = Number.parseInt(contentLength, DECI);
     if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
-      const msg = `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`;
-      throw new DOMException(msg, 'NotReadableError');
+      throw new DOMException(
+        `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`,
+        'NotReadableError'
+      );
     }
   }
   let blob;
@@ -835,8 +835,10 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   } else {
     blob = await response.blob();
     if (blob.size > maxSize) {
-      const msg = `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`;
-      throw new DOMException(msg, 'NotReadableError');
+      throw new DOMException(
+        `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+        'NotReadableError'
+      );
     }
   }
   if (IS_NODE && globalThis.Buffer) {
@@ -854,15 +856,15 @@ const urlSanitizer = new URLSanitizer();
  * Asynchronously sanitizes the given URL.
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
- * @param {string} url - URL
- * @param {object} [opt] - options
+ * @param {string} url - URL.
+ * @param {object} [opt] - options.
  * @param {string[]} [opt.allow] - The array of schemes to allow.
  * @param {string[]} [opt.deny] - The array of schemes to deny.
  * @param {string[]} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
- * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL after sanitization.
- * @param {number} [opt.maxBlobSize] - The maximum allowed blob size in bytes.
+ * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL after sanitization.
+ * @param {number} [opt.maxBlobSize] - The maximum allowed Blob size in bytes.
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
@@ -927,14 +929,14 @@ export const sanitizeURL = async (url, opt = {}) => {
  * Synchronously sanitizes the given URL.
  * NOTE: `data` and `file` schemes must be explicitly allowed.
  * The `blob` scheme is not supported and will return `null`.
- * @param {string} url - URL
- * @param {object} [opt] - options
+ * @param {string} url - URL.
+ * @param {object} [opt] - options.
  * @param {string[]} [opt.allow] - The array of schemes to allow.
  * @param {string[]} [opt.deny] - The array of schemes to deny.
  * @param {string[]} [opt.only] - The array of specific schemes to allow.
  * @param {boolean} [opt.allowRelative] - Allow relative URLs.
  * @param {boolean} [opt.debug] - Enable debug mode.
- * @param {boolean} [opt.revokeObjectURL] - Revokes the blob URL.
+ * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL.
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
@@ -964,17 +966,17 @@ export const sanitizeURLSync = (url, opt = {}) => {
 
 /**
  * Sanitizes the given URL and returns its parsed components.
- * NOTE: blob URLs are not revoked after inspection.
+ * NOTE: Blob URLs are not revoked after inspection.
  * @param {string} url - The URL string to inspect.
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
 export const inspectURL = async url => {
   if (isString(url)) {
-    const parsedUrl = urlSanitizer.parse(url, null, true);
-    if (parsedUrl?.protocol === 'blob:') {
+    const parsedURL = urlSanitizer.parse(url, null, true);
+    if (parsedURL?.protocol === 'blob:') {
       try {
-        const dataUrl = await fetchBlobAsDataURL(parsedUrl.href);
-        const inspectedURLResult = urlSanitizer.inspect(dataUrl);
+        const dataURL = await fetchBlobAsDataURL(parsedURL.href);
+        const inspectedURLResult = urlSanitizer.inspect(dataURL);
         inspectedURLResult.input = url;
         return inspectedURLResult;
       } catch (e) {

@@ -13,7 +13,7 @@ import { BYTE_RANGE, HEX } from './constant.js';
 export const TEXT_CHAR_CODES = new Set(textChars);
 
 /**
- * A mapping of Windows-1252 specific character codes to their corresponding Unicode code points.
+ * A map of Windows-1252 codes and their corresponding Unicode code points.
  * @type {Map<number, number>}
  */
 export const WINDOWS1252_TO_UNICODE = new Map([
@@ -47,9 +47,9 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 ]);
 
 /**
- * Generates hexadecimal escape strings for non-text characters.
+ * Generates hexadecimal escape strings for non-text codes.
  * @private
- * @returns {Map<number, string>} Generated control char codes.
+ * @returns {Map<number, string>} The map of non-text codes and hexadicimal escape strings.
  */
 const generateNonTextCharCodes = () => {
   const charCodes = new Map();
@@ -62,7 +62,7 @@ const generateNonTextCharCodes = () => {
 };
 
 /**
- * A mapping of non-text character codes to their hexadecimal escape strings.
+ * A map of non-text codes and their hexadecimal escape strings.
  * @type {Map<number, string>}
  */
 export const NON_TEXT_CHAR_CODES = generateNonTextCharCodes();

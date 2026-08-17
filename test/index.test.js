@@ -310,6 +310,25 @@ describe('URL Sanitizer', () => {
       );
     });
 
+    it('should process concurrent sanitization correctly with differing option contexts', async () => {
+      const url1 = 'data:text/html,%3Cp%3EAllowed%3C/p%3E';
+      const url2 = 'data:text/html,%3Cp%3EDenied%3C/p%3E';
+      const [res1, res2] = await Promise.all([
+        sanitizeURL(url1, { allow: ['data'] }),
+        sanitizeURL(url2)
+      ]);
+      assert.strictEqual(
+        res1,
+        'data:text/html,%3Cp%3EAllowed%3C/p%3E',
+        'url1 should be sanitized successfully because "data" is allowed'
+      );
+      assert.strictEqual(
+        res2,
+        null,
+        'url2 should return null as the "data" scheme is not allowed by default'
+      );
+    });
+
     it('should process concurrent sanitization without DOMPurify hook collisions', async () => {
       // Create distinct Blob objects containing nested Data URLs with different XSS payloads
       const blob1 = new Blob(
