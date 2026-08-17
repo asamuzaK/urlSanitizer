@@ -886,7 +886,9 @@ export const sanitizeURL = async (url, opt = {}) => {
     return null;
   }
   if (scheme === 'blob') {
-    const { allow, deny, only } = options;
+    const allow = Array.isArray(options.allow) ? options.allow : [];
+    const deny = Array.isArray(options.deny) ? options.deny : [];
+    const only = Array.isArray(options.only) ? options.only : [];
     let res = null;
     if (
       (allow.includes('blob') && !deny.includes('blob')) ||

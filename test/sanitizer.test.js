@@ -6,7 +6,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import sinon from 'sinon';
-import { isString } from '../scripts/common.js';
+import { getType, isString } from '../scripts/common.js';
 
 /* test */
 import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
@@ -2211,6 +2211,44 @@ describe('sanitizer', () => {
         const url = '/path/to/resource';
         const res = await func(url, { debug: true, allowRelative: false });
         assert.strictEqual(res, null, 'result should be null');
+      });
+
+      it('does not throw TypeError when options arrays are overridden by invalid types', async () => {
+        const data = '<svg><g></g></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const invalidValues = [
+          null,
+          undefined,
+          'not-an-array',
+          { length: 1, 0: 'blob' },
+          123,
+          true
+        ];
+        for (const val of invalidValues) {
+          let error = null;
+          let res;
+          try {
+            res = await func(url, {
+              allow: val,
+              deny: val,
+              only: val
+            });
+          } catch (e) {
+            error = e;
+          }
+          assert.strictEqual(
+            error,
+            null,
+            `Should not throw error when options contain ${getType(val)}`
+          );
+          assert.deepEqual(
+            res,
+            null,
+            `Result should be null when options contain ${getType(val)}`
+          );
+        }
+        URL.revokeObjectURL(url);
       });
 
       describe('DOMPurify hook edge cases', () => {
