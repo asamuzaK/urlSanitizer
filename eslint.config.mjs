@@ -33,7 +33,6 @@ export default [
     },
     rules: {
       curly: ['error', 'all'],
-      'no-await-in-loop': 'error',
       'no-use-before-define': [
         'error',
         {

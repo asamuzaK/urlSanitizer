@@ -6,7 +6,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import sinon from 'sinon';
-import { isString } from '../scripts/common.js';
+import { getType, isString } from '../scripts/common.js';
 
 /* test */
 import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
@@ -1206,6 +1206,41 @@ describe('sanitizer', () => {
         }
       });
 
+      it('returns null for malformed base64 strings', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res1 = sanitizer.sanitize(
+          'data:text/html;base64,invalid!base64',
+          {
+            allow: ['data']
+          }
+        );
+        assert.deepEqual(
+          res1,
+          null,
+          'result should be null for failing REG_B64'
+        );
+        const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
+          allow: ['data']
+        });
+        assert.deepEqual(res2, null, 'result should be null for failing atob');
+      });
+
+      it('preserves and deeply sanitizes multiple sibling data URL attributes', () => {
+        const sanitizer = new URLSanitizer();
+        const dirtySvg = 'data:image/svg+xml,%3Csvg%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/svg%3E';
+        const cleanSvg = 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E';
+        const html = `<div><img src="${dirtySvg}"><img src="${dirtySvg}"></div>`;
+        const url = `data:text/html,${encodeURIComponent(html)}`;
+        const res = sanitizer.sanitize(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(
+          decodeURIComponent(res),
+          `data:text/html,<div><img src="${cleanSvg}"><img src="${cleanSvg}"></div>`,
+          'Both data URLs should be deeply sanitized'
+        );
+      });
+
       describe('specific validations (via allow/only options)', () => {
         it('ignores schemes containing "javascript" in "allow" option', () => {
           const sanitizer = new URLSanitizer();
@@ -2178,25 +2213,6 @@ describe('sanitizer', () => {
         );
       });
 
-      it('returns null for malformed base64 strings', () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res1 = sanitizer.sanitize(
-          'data:text/html;base64,invalid!base64',
-          {
-            allow: ['data']
-          }
-        );
-        assert.deepEqual(
-          res1,
-          null,
-          'result should be null for failing REG_B64'
-        );
-        const res2 = sanitizer.sanitize('data:text/html;base64,a-b_', {
-          allow: ['data']
-        });
-        assert.deepEqual(res2, null, 'result should be null for failing atob');
-      });
-
       it('allows and sanitizes relative URLs', async () => {
         const url = '/path/to/resource?query=1#hash';
         const res = await func(url, { allowRelative: true });
@@ -2211,6 +2227,44 @@ describe('sanitizer', () => {
         const url = '/path/to/resource';
         const res = await func(url, { debug: true, allowRelative: false });
         assert.strictEqual(res, null, 'result should be null');
+      });
+
+      it('does not throw TypeError when options arrays are overridden by invalid types', async () => {
+        const data = '<svg><g></g></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const invalidValues = [
+          null,
+          undefined,
+          'not-an-array',
+          { length: 1, 0: 'blob' },
+          123,
+          true
+        ];
+        for (const val of invalidValues) {
+          let error = null;
+          let res;
+          try {
+            res = await func(url, {
+              allow: val,
+              deny: val,
+              only: val
+            });
+          } catch (e) {
+            error = e;
+          }
+          assert.strictEqual(
+            error,
+            null,
+            `Should not throw error when options contain ${getType(val)}`
+          );
+          assert.deepEqual(
+            res,
+            null,
+            `Result should be null when options contain ${getType(val)}`
+          );
+        }
+        URL.revokeObjectURL(url);
       });
 
       describe('DOMPurify hook edge cases', () => {
