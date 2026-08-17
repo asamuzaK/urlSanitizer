@@ -759,28 +759,40 @@ const convertFromBtoa = async blob => {
 };
 
 /**
- * Reads a stream in chunks and validates its size.
+ * Reads a stream in chunks and generates blob.
  * @private
- * @param {ReadableStreamDefaultReader} reader - The stream reader.
+ * @param {Response} response - The Response instance.
  * @param {number} maxSize - The maximum allowed size in bytes.
- * @param {Uint8Array[]} chunks - The array to store chunks.
- * @returns {Promise<void>}
+ * @returns {Promise<Blob>}
  */
-const readStreamInChunks = async (reader, maxSize, chunks) => {
-  let accumulatedSize = 0;
-  while (accumulatedSize <= maxSize) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
+const readStreamInChunks = async (response, maxSize) => {
+  const reader = response.body.getReader();
+  const chunks = [];
+  try {
+    let accumulatedSize = 0;
+    while (accumulatedSize <= maxSize) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      accumulatedSize += value.byteLength;
+      if (accumulatedSize > maxSize) {
+        await reader.cancel('Size limit exceeded');
+        throw new DOMException(
+          `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`,
+          'NotReadableError'
+        );
+      }
+      chunks.push(value);
     }
-    accumulatedSize += value.byteLength;
-    if (accumulatedSize > maxSize) {
-      await reader.cancel('Size limit exceeded');
-      const msg = `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`;
-      throw new DOMException(msg, 'NotReadableError');
-    }
-    chunks.push(value);
+  } finally {
+    reader.releaseLock();
   }
+  const type = response.headers.get('content-type');
+  if (type) {
+    return new Blob(chunks, { type });
+  }
+  return new Blob(chunks);
 };
 
 /**
@@ -819,19 +831,7 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
   let blob;
   // Use ReadableStream.
   if (response.body) {
-    const reader = response.body.getReader();
-    const chunks = [];
-    try {
-      await readStreamInChunks(reader, maxSize, chunks);
-    } finally {
-      reader.releaseLock();
-    }
-    const type = response.headers.get('content-type');
-    if (type) {
-      blob = new Blob(chunks, { type });
-    } else {
-      blob = new Blob(chunks);
-    }
+    blob = await readStreamInChunks(response, maxSize);
   } else {
     blob = await response.blob();
     if (blob.size > maxSize) {
