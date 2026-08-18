@@ -73,9 +73,9 @@ const DEFAULT_OPTS = Object.freeze({
  * The properties except for input and valid are omitted for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
- * @property {boolean} valid - Indicates whether the URL passed rules.
+ * @property {boolean} valid - Indicates whether the sanitized URL (href) is a valid absolute URL.
  * @property {string|null} href - The sanitized URL, or null.
- * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
+ * @property {boolean} [relative] - Indicates whether the sanitized URL (href) is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
  * @property {InspectedDataURL|null} [data] - The parsed result of a Data URL, or null.
  * @property {string} [origin] - The scheme, domain, and port.
@@ -225,8 +225,8 @@ export class URLSanitizer extends URISchemes {
       throw new RangeError(msg);
     }
     const hasRestrictiveRules =
-      (Array.isArray(deny) && deny.length) ||
-      (Array.isArray(only) && only.length) ||
+      (Array.isArray(deny) && deny.length > 0) ||
+      (Array.isArray(only) && only.length > 0) ||
       allowRelative;
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
@@ -1068,7 +1068,7 @@ export const sanitizeURL = async (url, opt) => {
           if (!allow.includes('data')) {
             options.allow = [...allow, 'data'];
           }
-          options.deny = options.deny.filter(s => s !== 'data');
+          options.deny = deny.filter(s => s !== 'data');
         }
       }
     }
