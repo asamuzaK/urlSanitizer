@@ -240,27 +240,6 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Asynchronously executes the sanitization logic.
-   * @private
-   * @param {string} url - The URL string to sanitize.
-   * @param {object} opt - Sanitization options.
-   * @returns {Promise<string|null>} The sanitized URL, or null.
-   */
-  async #executeSanitizeAsync(url, opt) {
-    if (!url || !isString(url)) {
-      return null;
-    }
-    const { maxLength } = opt;
-    if (Number.isInteger(maxLength) && url.length > maxLength) {
-      throw new RangeError(
-        `URL length ${url.length} exceeds max length ${maxLength}.`
-      );
-    }
-    const ctx = new SanitizeContext(opt, domPurify);
-    return this.#processAsync(url, opt, ctx);
-  }
-
-  /**
    * Process recursive method for sanitization.
    * @private
    * @param {string} url - The URL string to sanitize.
@@ -311,44 +290,6 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Asynchronously process Data URLs.
-   * @private
-   * @param {string} url - The Data URL string to sanitize.
-   * @param {object} rules - The sanitization rules.
-   * @param {string[]} rules.allow - Allowed schemes.
-   * @param {string[]} rules.deny - Denied schemes.
-   * @param {string[]} rules.only - Exclusively allowed schemes.
-   * @param {SanitizeContext} ctx - Internal context for state.
-   * @returns {Promise<string|null>} The sanitized Data URL, or null.
-   */
-  async #processAsync(url, { allow, deny, only }, ctx) {
-    const { allowedSchemes, restrictScheme, schemeMap } =
-      this.#resolveSchemeRules({ allow, deny, only }, ctx);
-    const { isVerified, scheme, schemeParts, urlObj, urlToSanitize } = this.#parseAndVerifyURL(
-      url,
-      false,
-      allowedSchemes,
-      ctx
-    );
-    if (
-      !isVerified ||
-      !this.#isSchemeAllowed(
-        scheme,
-        schemeParts,
-        restrictScheme,
-        schemeMap,
-        false
-      )
-    ) {
-      return null;
-    }
-    if (scheme === 'data') {
-      return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
-    }
-    return this.#sanitizeStandardURL(urlToSanitize);
-  }
-
-  /**
    * Resolves allow, deny, and only rules into mappings.
    * @private
    * @param {object} rules - The sanitization rules.
@@ -367,7 +308,7 @@ export class URLSanitizer extends URISchemes {
       restrictScheme = true;
       for (const item of only) {
         if (isString(item)) {
-          this.#registerScheme(item, 'only', allowedSchemes, schemeMap, ctx);
+          this.#registerScheme(item, allowedSchemes, schemeMap);
         }
       }
     } else {
@@ -375,7 +316,7 @@ export class URLSanitizer extends URISchemes {
         allowedSchemes = new Set(this.#allowedSchemes);
         for (const item of allow) {
           if (isString(item)) {
-            this.#registerScheme(item, 'allow', allowedSchemes, schemeMap, ctx);
+            this.#registerScheme(item, allowedSchemes, schemeMap);
           }
         }
       }
@@ -397,13 +338,11 @@ export class URLSanitizer extends URISchemes {
    * Helper method to register schemes for the 'allow' or 'only' options.
    * @private
    * @param {string} item - The scheme to register.
-   * @param {string} listName - The name of the target option list.
    * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
    * @param {Map<string, boolean>} schemeMap - The local map of schemes.
-   * @param {SanitizeContext} ctx - The context for state management.
    * @returns {boolean} True if the scheme is successfully registered.
    */
-  #registerScheme(item, listName, allowedSchemes, schemeMap, ctx) {
+  #registerScheme(item, allowedSchemes, schemeMap) {
     const normalizedScheme = this.normalize(item, true);
     if (!this.#isValidScheme(normalizedScheme)) {
       return false;
@@ -702,17 +641,39 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Asynchronously sanitizes the given URL.
+   * Asynchronously sanitizes the Data URL.
    * @param {string} url - The URL string to sanitize.
    * @param {object} [opt] - Sanitization options.
-   * @returns {Promise<string|null>} The sanitized URL, or null.
+   * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
-  async sanitizeAsync(url, opt = {}) {
+  async sanitizeDataURL(url, opt = {}) {
+    if (!url || !isString(url)) {
+      return null;
+    }
     const options = {
       ...DEFAULT_OPTS,
       ...opt
     };
-    return this.#executeSanitizeAsync(url, options);
+    const { maxLength } = options;
+    if (Number.isInteger(maxLength) && url.length > maxLength) {
+      throw new RangeError(
+        `URL length ${url.length} exceeds max length ${maxLength}.`
+      );
+    }
+    const urlObj = this.parse(url);
+    if (!urlObj) {
+      return null;
+    }
+    const scheme = this.normalize(urlObj.protocol, true);
+    if (scheme !== 'data') {
+      return null;
+    }
+    const ctx = new SanitizeContext(options, domPurify);
+    const { schemeMap } = this.#resolveSchemeRules(options, ctx);
+    if (!schemeMap.get(scheme)) {
+      return null;
+    }
+    return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
   }
 
   /**
@@ -1062,12 +1023,11 @@ export const sanitizeURL = async (url, opt) => {
     const allow = Array.isArray(options.allow) ? options.allow : [];
     const deny = Array.isArray(options.deny) ? options.deny : [];
     const only = Array.isArray(options.only) ? options.only : [];
-    let res = null;
+    let data = null;
     if (
       (allow.includes('blob') && !deny.includes('blob')) ||
       only.includes('blob')
     ) {
-      let data;
       try {
         data = await fetchBlobAsDataURL(url, options.maxBlobSize);
       } catch (e) {
@@ -1089,15 +1049,17 @@ export const sanitizeURL = async (url, opt) => {
           }
           options.deny = options.deny.filter(s => s !== 'data');
         }
-        res = data;
       }
     }
     if (options.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
-    return res ? urlSanitizer.sanitizeAsync(res, options) : null;
+    if (!data) {
+      return null;
+    }
+    return urlSanitizer.sanitizeDataURL(data, options);
   } else if (scheme === 'data') {
-    return urlSanitizer.sanitizeAsync(url, options);
+    return urlSanitizer.sanitizeDataURL(url, options);
   }
   return urlSanitizer.sanitize(url, options);
 };
