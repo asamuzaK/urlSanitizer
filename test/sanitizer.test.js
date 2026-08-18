@@ -2087,7 +2087,8 @@ describe('sanitizer', () => {
           const hasCircularWarning = warnStub.args.some(
             args =>
               args[0] &&
-              args[0] === '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop'
+              args[0] ===
+                '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop'
           );
           assert.strictEqual(
             hasCircularWarning,
