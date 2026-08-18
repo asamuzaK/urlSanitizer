@@ -152,10 +152,9 @@ const workerPendingTasks = new Map();
  */
 export const getWorker = () => {
   if (!workerInstance && typeof Worker !== 'undefined') {
-    workerInstance = new Worker(
-      new URL('./sanitizer-worker.js', import.meta.url),
-      { type: 'module' }
-    );
+    workerInstance = new Worker(new URL('./worker.js', import.meta.url), {
+      type: 'module'
+    });
     workerInstance.addEventListener('error', evt => {
       for (const [, task] of workerPendingTasks) {
         task.reject(evt);
