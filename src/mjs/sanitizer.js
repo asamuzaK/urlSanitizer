@@ -156,6 +156,13 @@ export const getWorker = () => {
       new URL('./sanitizer-worker.js', import.meta.url),
       { type: 'module' }
     );
+    workerInstance.addEventListener('error', evt => {
+      for (const [, task] of workerPendingTasks) {
+        task.reject(evt);
+      }
+      workerPendingTasks.clear();
+      workerInstance = null;
+    });
     workerInstance.addEventListener('message', evt => {
       const { id, success, result, error } = evt.data;
       const task = workerPendingTasks.get(id);
