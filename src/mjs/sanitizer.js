@@ -999,6 +999,21 @@ const prepareSanitizeRoute = (url, opt = {}) => {
 };
 
 /**
+ * Normalizes an array of scheme strings.
+ * Filters out non-string items and trims/lowercases valid schemes.
+ * @private
+ * @param {string[]} [schemes] - An array of scheme strings to normalize.
+ * @returns {string[]} An array of normalized scheme strings, or an empty array if invalid.
+ */
+const normalizeSchemes = schemes =>
+  Array.isArray(schemes)
+    ? schemes
+        .filter(isString)
+        .map(scheme => urlSanitizer.normalize(scheme, true))
+        .filter(Boolean)
+    : [];
+
+/**
  * Asynchronously sanitizes the given URL.
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
@@ -1020,9 +1035,9 @@ export const sanitizeURL = async (url, opt) => {
     return earlyResult;
   }
   if (scheme === 'blob') {
-    const allow = Array.isArray(options.allow) ? options.allow : [];
-    const deny = Array.isArray(options.deny) ? options.deny : [];
-    const only = Array.isArray(options.only) ? options.only : [];
+    const allow = normalizeSchemes(options.allow);
+    const deny = normalizeSchemes(options.deny);
+    const only = normalizeSchemes(options.only);
     let data = null;
     if (
       (allow.includes('blob') && !deny.includes('blob')) ||
