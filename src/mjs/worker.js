@@ -5,32 +5,34 @@
 /* shared */
 import {
   URISchemes,
-  extractDataURLComponents,
   getSchemeParts,
-  parseBase64,
   parseURLEncodedNumCharRef
 } from './uri-util.js';
 
 /* constants */
 import { DUMMY_BASE } from './constant.js';
-import { REG_SCRIPT_OR_BLOB } from './regexp.js';
+import { REG_SCRIPT_OR_BLOB, REG_MIME_DOM } from './regexp.js';
 
-/* URISchemes instance */
 const uriScheme = new URISchemes();
+const textDecoder = new TextDecoder('utf-8', { fatal: false });
 
 /**
  * Sends a successful result message back to the main thread via postMessage.
  * @private
  * @param {number|string} id - The unique identifier for the worker message.
- * @param {object} result - The result payload containing data URL validation and parsed components.
+ * @param {object} result - The result payload containing data validation.
+ * @param {ArrayBuffer[]} [transferables] - Optional array of transferable objects.
  * @returns {void}
  */
-const postResult = (id, result) => {
-  self.postMessage({
-    id,
-    success: true,
-    result
-  });
+const postResult = (id, result, transferables = []) => {
+  self.postMessage(
+    {
+      id,
+      success: true,
+      result
+    },
+    transferables
+  );
 };
 
 /**
@@ -49,30 +51,17 @@ const postError = (id, error) => {
 };
 
 self.onmessage = evt => {
-  const { id, action, url } = evt.data;
-  if (action !== 'DECODE_DATA_URL') {
+  const { id, action, buffer, mimeType } = evt.data;
+  if (action !== 'PROCESS_BUFFER') {
     return;
   }
   try {
-    if (typeof url !== 'string' || !url) {
+    if (!(buffer instanceof ArrayBuffer)) {
       postResult(id, { isValid: false });
       return;
     }
-    const urlObj = uriScheme.parse(url, null, true);
-    if (!urlObj || urlObj.protocol !== 'data:') {
-      postResult(id, { isValid: false });
-      return;
-    }
-    const { mediaType, mediaTypes, data, isBase64 } = extractDataURLComponents(
-      urlObj.pathname,
-      urlObj.search,
-      urlObj.hash
-    );
-    let parsedData = data;
-    if (isBase64) {
-      parsedData = parseBase64(data);
-    }
-    const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
+    const decodedString = textDecoder.decode(buffer);
+    const decodedData = parseURLEncodedNumCharRef(decodedString).trim();
     const parsedURL = uriScheme.parse(decodedData, DUMMY_BASE);
     if (!parsedURL) {
       postResult(id, { isValid: false });
@@ -83,13 +72,27 @@ self.onmessage = evt => {
       postResult(id, { isValid: false });
       return;
     }
-    postResult(id, {
-      parsedData,
-      mediaType,
-      mediaTypes,
-      isBase64,
-      isValid: true
-    });
+    const needsPurify = !mimeType || REG_MIME_DOM.test(mimeType);
+    if (needsPurify) {
+      postResult(id, {
+        isValid: true,
+        mimeType,
+        needsPurify: true,
+        parsedData: decodedString
+      });
+    } else {
+      postResult(
+        id,
+        {
+          isValid: true,
+          mimeType,
+          needsPurify: false,
+          parsedData: null,
+          buffer
+        },
+        [buffer]
+      );
+    }
   } catch (error) {
     postError(id, error);
   }

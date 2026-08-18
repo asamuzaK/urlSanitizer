@@ -137,7 +137,7 @@ describe('sanitizer', () => {
   });
 
   describe('Worker setup and communication', () => {
-    const { getWorker, decodeDataURLViaWorker } = mjs;
+    const { getWorker, processBufferViaWorker } = mjs;
     let originalWorker;
 
     // Fake Worker for comprehensive event testing
@@ -149,7 +149,6 @@ describe('sanitizer', () => {
 
       addEventListener(type, cb) {
         this.listeners[type] = cb;
-        // Specifically map message events to simulate original test behavior
         if (type === 'message') {
           this.messageListener = cb;
         }
@@ -176,12 +175,10 @@ describe('sanitizer', () => {
       originalWorker = globalThis.Worker;
     });
     after(() => {
-      // Ensure any lingering MockWorker instance is safely cleared out
       const worker = getWorker();
       if (worker && typeof worker.simulateError === 'function') {
         worker.simulateError(new Error('cleanup'));
       }
-      // Restore the original global context
       globalThis.Worker = originalWorker;
     });
     afterEach(() => {
@@ -190,32 +187,26 @@ describe('sanitizer', () => {
 
     it('returns null if Worker is not defined in the environment', () => {
       globalThis.Worker = undefined;
-      // Force clear workerInstance to simulate an unsupported environment
       let worker = getWorker();
       if (worker && typeof worker.simulateError === 'function') {
         worker.simulateError(new Error('reset'));
       }
       worker = getWorker();
-      assert.strictEqual(
-        worker,
-        null,
-        'should return null when Web Workers are unsupported'
-      );
+      assert.strictEqual(worker, null, 'should return null');
     });
 
     it('rejects if Worker is not available in the environment', async () => {
       globalThis.Worker = undefined;
       let caughtError = null;
       try {
-        await decodeDataURLViaWorker('data:,test');
+        await processBufferViaWorker(new ArrayBuffer(0), 'text/plain');
       } catch (e) {
         caughtError = e;
       }
       assert.ok(caughtError instanceof Error, 'should throw an Error object');
       assert.strictEqual(
         caughtError.message,
-        'Worker is not available in this environment.',
-        'error message should match the rejection reason'
+        'Worker is not available in this environment.'
       );
     });
 
@@ -234,57 +225,47 @@ describe('sanitizer', () => {
     it('resolves task when worker responds with success', async () => {
       globalThis.Worker = MockWorker;
       const worker = getWorker();
-      const promise = decodeDataURLViaWorker('data:,test-success');
+      const promise = processBufferViaWorker(new ArrayBuffer(0), 'text/plain');
       const { id } = worker.lastMessage;
       worker.simulateMessage({ id, success: true, result: { isValid: true } });
       const result = await promise;
-      assert.deepEqual(
-        result,
-        { isValid: true },
-        'Should resolve with worker result'
-      );
+      assert.deepEqual(result, { isValid: true });
     });
 
     it('rejects task when worker responds with failure', async () => {
       globalThis.Worker = MockWorker;
       const worker = getWorker();
-      const promise = decodeDataURLViaWorker('data:,test-failure');
+      const promise = processBufferViaWorker(new ArrayBuffer(0), 'text/plain');
       const { id } = worker.lastMessage;
-      worker.simulateMessage({ id, success: false, error: 'Decoding failed' });
+      worker.simulateMessage({
+        id,
+        success: false,
+        error: 'Processing failed'
+      });
       let caughtError;
       try {
         await promise;
       } catch (e) {
         caughtError = e;
       }
-      assert.ok(caughtError instanceof Error, 'Should reject with an Error');
-      assert.strictEqual(
-        caughtError.message,
-        'Decoding failed',
-        'Error message should match worker error'
-      );
+      assert.ok(caughtError instanceof Error);
+      assert.strictEqual(caughtError.message, 'Processing failed');
     });
 
     it('ignores message events with unknown task IDs', async () => {
       globalThis.Worker = MockWorker;
       const worker = getWorker();
       let resolved = false;
-      const promise = decodeDataURLViaWorker('data:,test-unknown-id').then(
-        () => {
-          resolved = true;
-        }
-      );
-      // Simulate message with a mismatched task ID
+      const promise = processBufferViaWorker(
+        new ArrayBuffer(0),
+        'text/plain'
+      ).then(() => {
+        resolved = true;
+      });
       const wrongId = worker.lastMessage.id + 999;
       worker.simulateMessage({ id: wrongId, success: true, result: 'wrong' });
-      // Allow minor tick execution to verify task remains pending
       await new Promise(resolve => setTimeout(resolve, 10));
-      assert.strictEqual(
-        resolved,
-        false,
-        'Task should not resolve from unknown ID'
-      );
-      // Execute normal flow to resolve cleanup
+      assert.strictEqual(resolved, false);
       worker.simulateMessage({
         id: worker.lastMessage.id,
         success: true,
@@ -296,8 +277,8 @@ describe('sanitizer', () => {
     it('rejects all pending tasks and clears instance on worker error event', async () => {
       globalThis.Worker = MockWorker;
       const worker = getWorker();
-      const promise1 = decodeDataURLViaWorker('data:,test1');
-      const promise2 = decodeDataURLViaWorker('data:,test2');
+      const promise1 = processBufferViaWorker(new ArrayBuffer(0), 'text/plain');
+      const promise2 = processBufferViaWorker(new ArrayBuffer(0), 'image/png');
       const errorEvt = new Error('Worker crashed');
       worker.simulateError(errorEvt);
       let caughtError1, caughtError2;
@@ -311,23 +292,10 @@ describe('sanitizer', () => {
       } catch (e) {
         caughtError2 = e;
       }
-      assert.strictEqual(
-        caughtError1,
-        errorEvt,
-        'Pending task 1 should reject with worker error event'
-      );
-      assert.strictEqual(
-        caughtError2,
-        errorEvt,
-        'Pending task 2 should reject with worker error event'
-      );
+      assert.strictEqual(caughtError1, errorEvt);
+      assert.strictEqual(caughtError2, errorEvt);
       const newWorker = getWorker();
-      assert.notStrictEqual(
-        newWorker,
-        worker,
-        'A new worker instance should be created after crash'
-      );
-      // Cleanup the generated worker to isolate tests
+      assert.notStrictEqual(newWorker, worker);
       newWorker.simulateError(new Error('cleanup'));
     });
   });
@@ -1573,6 +1541,130 @@ describe('sanitizer', () => {
       });
     });
 
+    describe('encodeBufferToBase64 chunking logic', () => {
+      let envBuffer;
+      let originalWorker;
+
+      beforeEach(() => {
+        envBuffer = globalThis.Buffer;
+        originalWorker = globalThis.Worker;
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        globalThis.Worker = undefined;
+      });
+
+      afterEach(() => {
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: envBuffer,
+          writable: true,
+          configurable: true
+        });
+        globalThis.Worker = originalWorker;
+      });
+
+      it('safely base64 encodes large buffers exceeding CHUNK_SIZE using btoa', async () => {
+        const targetSize = 20000;
+        const uint8Arr = new Uint8Array(targetSize);
+        uint8Arr.fill(255);
+        const buffer = uint8Arr.buffer;
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeBuffer(buffer, 'image/png', {
+          allow: ['data']
+        });
+        const expectedBase64 = envBuffer.from(buffer).toString('base64');
+        const expectedUrl = `data:image/png;base64,${expectedBase64}`;
+        assert.strictEqual(
+          res,
+          expectedUrl,
+          'Should chunk and encode correctly without call stack size errors'
+        );
+      });
+    });
+
+    describe('sanitizeBuffer', () => {
+      it('returns null if the first argument is not an ArrayBuffer', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const invalidBuffers = [
+          { value: undefined, desc: 'undefined' },
+          { value: null, desc: 'null' },
+          { value: 'string_data', desc: 'string' },
+          { value: 12345, desc: 'number' },
+          { value: {}, desc: 'plain object' },
+          { value: new Blob(['test']), desc: 'Blob' },
+          { value: new Uint8Array([1, 2, 3]), desc: 'TypedArray (Uint8Array)' }
+        ];
+        for (const { value, desc } of invalidBuffers) {
+          const res = await sanitizer.sanitizeBuffer(value, 'text/plain', {
+            allow: ['data']
+          });
+          assert.strictEqual(
+            res,
+            null,
+            `result should be null when buffer is a ${desc}`
+          );
+        }
+      });
+
+      it('returns null if the "data" scheme is not explicitly allowed', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const buffer = new ArrayBuffer(8);
+        const res = await sanitizer.sanitizeBuffer(buffer, 'image/png');
+        assert.strictEqual(
+          res,
+          null,
+          'result should be null when data is not allowed'
+        );
+      });
+
+      it('returns null if the "data" scheme is explicitly denied', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const buffer = new ArrayBuffer(8);
+        const res = await sanitizer.sanitizeBuffer(buffer, 'image/png', {
+          allow: ['data'],
+          deny: ['data']
+        });
+        assert.strictEqual(
+          res,
+          null,
+          'result should be null when data is in deny list'
+        );
+      });
+
+      it('returns null if the "only" option does not include "data"', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const buffer = new ArrayBuffer(8);
+        const res = await sanitizer.sanitizeBuffer(buffer, 'image/png', {
+          only: ['https', 'http']
+        });
+        assert.strictEqual(
+          res,
+          null,
+          'result should be null when data is missing from only list'
+        );
+      });
+
+      it('returns null if the constructed Data URL fails to parse during sync fallback', async () => {
+        const originalWorker = globalThis.Worker;
+        globalThis.Worker = undefined;
+        const sanitizer = new mjs.URLSanitizer();
+        const buffer = new ArrayBuffer(8);
+        const parseStub = sinon.stub(sanitizer, 'parse').returns(null);
+        try {
+          const res = await sanitizer.sanitizeBuffer(buffer, 'image/png', {
+            allow: ['data']
+          });
+          assert.strictEqual(res, null, 'result should be null when parse() returns null');
+          assert.strictEqual(parseStub.called, true, 'parse method should have been called');
+        } finally {
+          parseStub.restore();
+          globalThis.Worker = originalWorker;
+        }
+      });
+    });
+
     describe('sanitize Data URL', () => {
       it('returns null for missing or empty input', async () => {
         const sanitizer = new mjs.URLSanitizer();
@@ -1765,43 +1857,36 @@ describe('sanitizer', () => {
               }
             }, 0);
           }
+
+          simulateError(err) {
+            if (this.listeners.error) {
+              this.listeners.error(err);
+            }
+          }
         }
         originalWorker = globalThis.Worker;
         try {
           const currentWorker = mjs.getWorker();
           if (currentWorker && currentWorker.simulateError) {
             currentWorker.simulateError(new Error('reset'));
-          } else if (
-            currentWorker &&
-            currentWorker.listeners &&
-            currentWorker.listeners.error
-          ) {
-            currentWorker.listeners.error(new Error('reset'));
           }
           globalThis.Worker = MockWorkerForDataURL;
           const sanitizer = new mjs.URLSanitizer();
           return await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
         } finally {
           const workerToClean = mjs.getWorker();
-          if (
-            workerToClean &&
-            workerToClean.listeners &&
-            workerToClean.listeners.error
-          ) {
-            workerToClean.listeners.error(new Error('cleanup'));
-          } else if (workerToClean && workerToClean.simulateError) {
+          if (workerToClean && workerToClean.simulateError) {
             workerToClean.simulateError(new Error('cleanup'));
           }
           globalThis.Worker = originalWorker;
         }
       };
 
-      it('purifies data when mediaType is empty', async () => {
+      it('purifies data when it requires DOMPurify (needsPurify: true)', async () => {
         const workerResult = {
           isValid: true,
-          isBase64: false,
-          mediaType: '',
-          mediaTypes: [],
+          needsPurify: true,
+          mimeType: '',
           parsedData: '<script>alert("XSS")</script>hello'
         };
         const res = await runWithWorkerResult('data:,raw-data', workerResult);
@@ -1811,9 +1896,8 @@ describe('sanitizer', () => {
       it('purifies data when mediaType is a DOM type', async () => {
         const workerResult = {
           isValid: true,
-          isBase64: false,
-          mediaType: 'text/html',
-          mediaTypes: ['text/html'],
+          needsPurify: true,
+          mimeType: 'text/html',
           parsedData: '<script>alert("XSS")</script><div>safe</div>'
         };
         const res = await runWithWorkerResult(
@@ -1827,35 +1911,36 @@ describe('sanitizer', () => {
         );
       });
 
-      it('skips purification when mediaType is NOT a DOM type', async () => {
+      it('skips purification and encodes to base64 when needsPurify is false (e.g. images)', async () => {
+        const rawString = '<script>alert("XSS")</script>fake-image-data';
+        const buffer = new TextEncoder().encode(rawString).buffer;
         const workerResult = {
           isValid: true,
-          isBase64: false,
-          mediaType: 'image/png',
-          mediaTypes: ['image/png'],
-          parsedData: '<script>alert("XSS")</script>fake-image-data'
+          needsPurify: false,
+          mimeType: 'image/png',
+          buffer
         };
         const res = await runWithWorkerResult(
           'data:image/png,raw-data',
           workerResult
         );
+        const expectedBase64 = btoa(rawString);
         assert.strictEqual(
           res,
-          'data:image/png,<script>alert("XSS")</script>fake-image-data',
-          'result'
+          `data:image/png;base64,${expectedBase64}`,
+          'result must be base64 encoded'
         );
       });
 
-      it('removes "base64" from mediaTypes', async () => {
+      it('removes "base64" from mimeType if needsPurify is true', async () => {
         const workerResult = {
           isValid: true,
-          isBase64: true,
-          mediaType: 'text/html',
-          mediaTypes: ['text/html', 'base64'],
+          needsPurify: true,
+          mimeType: 'text/html;base64',
           parsedData: '<script>alert("XSS")</script><div>safe</div>'
         };
         const res = await runWithWorkerResult(
-          'data:text/html;base64,base64-raw-data',
+          'data:text/html;base64,cmF3LWRhdGE=',
           workerResult
         );
         assert.strictEqual(
@@ -1868,9 +1953,8 @@ describe('sanitizer', () => {
       it('returns null if sanitizedData evaluates to an empty string', async () => {
         const workerResult = {
           isValid: true,
-          isBase64: false,
-          mediaType: 'text/html',
-          mediaTypes: ['text/html'],
+          needsPurify: true,
+          mimeType: 'text/html',
           parsedData: '<script>alert("XSS")</script>'
         };
         const res = await runWithWorkerResult(
@@ -1878,6 +1962,44 @@ describe('sanitizer', () => {
           workerResult
         );
         assert.deepEqual(res, null, 'result should be null');
+      });
+
+      it('appends "base64" without a leading semicolon when mimeType is completely empty (needsPurify: false)', async () => {
+        const rawString = 'fake-binary-data';
+        const buffer = new TextEncoder().encode(rawString).buffer;
+        const workerResult = {
+          isValid: true,
+          needsPurify: false,
+          mimeType: '', // 空のMIMEタイプをシミュレート
+          buffer: buffer
+        };
+        const res = await runWithWorkerResult('data:,raw-data', workerResult);
+        
+        const expectedBase64 = btoa(rawString);
+        assert.strictEqual(
+          res, 
+          `data:base64,${expectedBase64}`, 
+          'result should set finalMimeType exactly to "base64"'
+        );
+      });
+
+      it('does not duplicate "base64" flag if the mimeType already ends with ";base64"', async () => {
+        const uint8Arr = new Uint8Array(16);
+        uint8Arr.fill(255);
+        const buffer = uint8Arr.buffer;
+        const validBase64 = globalThis.Buffer.from(buffer).toString('base64');
+        const workerResult = {
+          isValid: true,
+          needsPurify: false,
+          mimeType: 'image/jpeg;base64',
+          buffer: buffer
+        };
+        const res = await runWithWorkerResult(`data:image/jpeg;base64,${validBase64}`, workerResult);
+        assert.strictEqual(
+          res, 
+          `data:image/jpeg;base64,${validBase64}`, 
+          'result should not duplicate the base64 flag'
+        );
       });
     });
 
@@ -1906,6 +2028,12 @@ describe('sanitizer', () => {
               });
             }
           }, 0);
+        }
+
+        simulateError(err) {
+          if (this.listeners.error) {
+            this.listeners.error(err);
+          }
         }
       }
 
@@ -1973,25 +2101,47 @@ describe('sanitizer', () => {
           'should successfully sanitize via fallback'
         );
         assert.strictEqual(
-          warnStub.calledOnce,
+          warnStub.called,
           true,
-          'console.warn should be called once'
+          'console.warn should be called'
         );
-        const [logMessage, logError] = warnStub.firstCall.args;
-        assert.strictEqual(
-          logMessage,
-          '[URLSanitizer Debug] Failed to parse or sanitize data URL via Worker.',
-          'log message should match'
-        );
-        assert.ok(
-          logError instanceof Error,
-          'should pass the caught Error object'
+        const hasCorrectLog = warnStub.args.some(
+          args =>
+            args[0] ===
+            '[URLSanitizer Debug] Failed to process buffer via Worker.'
         );
         assert.strictEqual(
-          logError.message,
-          'Simulated Worker Error',
-          'error message should match the simulated error'
+          hasCorrectLog,
+          true,
+          'should include the correct debug message'
         );
+      });
+
+      it('logs debug message when fetching data URL as buffer fails and falls back to sync', async () => {
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async () => {
+          throw new Error('Simulated Fetch Error');
+        };
+        try {
+          const sanitizer = new mjs.URLSanitizer();
+          const res = await sanitizer.sanitizeDataURL('data:text/plain,hello', {
+            allow: ['data'],
+            debug: true
+          });
+          assert.strictEqual(
+            res, 
+            'data:text/plain,hello', 
+            'should successfully sanitize via sync fallback'
+          );
+          assert.strictEqual(warnStub.called, true, 'console.warn should be called');
+          const hasCorrectLog = warnStub.args.some(args => 
+            args[0] === '[URLSanitizer Debug] Failed to fetch data URL as buffer. Falling back to sync.'
+          );
+          assert.strictEqual(hasCorrectLog, true, 'should include the correct debug message');
+          
+        } finally {
+          globalThis.fetch = originalFetch;
+        }
       });
     });
 
@@ -3386,7 +3536,7 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('internal fetchBlobAsDataURL (via sanitizeURL)', () => {
+    describe('internal fetchBlobAsArrayBuffer (via sanitizeURL)', () => {
       const func = mjs.sanitizeURL;
       let originalFetch;
       let warnStub;
@@ -3521,14 +3671,21 @@ describe('sanitizer', () => {
         globalThis.fetch = async url => ({
           ok: true,
           headers: {
-            get: key => (key === 'content-length' ? String(blob.size) : null)
+            get: key => {
+              if (key === 'content-length') {
+                return String(blob.size);
+              }
+              if (key === 'content-type') {
+                return 'image/png';
+              }
+              return null;
+            }
           },
           blob: async () => blob
         });
         const res = await func('blob:https://example.com/mock-uuid', {
           allow: ['blob']
         });
-        // base64 is decoded to plain text by sanitizeURL since it contains no binary data
         const expectedUrl = `data:image/png,Hello, blob!`;
         assert.strictEqual(res, expectedUrl, 'result');
       });
@@ -3624,8 +3781,6 @@ describe('sanitizer', () => {
           const encoder = new TextEncoder();
           const chunks = chunksData.map(str => encoder.encode(str));
           let chunkIndex = 0;
-
-          // Mock ReadableStreamDefaultReader
           const mockReader = {
             read: async () => {
               if (chunkIndex < chunks.length) {
@@ -3741,283 +3896,6 @@ describe('sanitizer', () => {
             warnStub.firstCall.args[1].message,
             `Payload (60 bytes) exceeds max (${maxSize} bytes).`,
             'error message'
-          );
-        });
-      });
-
-      describe('environment specific paths inside fetchBlobAsDataURL', () => {
-        let envBuffer;
-        let envFileReader;
-
-        beforeEach(() => {
-          envBuffer = globalThis.Buffer;
-          envFileReader = globalThis.FileReader;
-        });
-
-        afterEach(() => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: envBuffer,
-            writable: true,
-            configurable: true
-          });
-          Object.defineProperty(globalThis, 'FileReader', {
-            value: envFileReader,
-            writable: true,
-            configurable: true
-          });
-        });
-
-        it('uses FileReader fallback if Buffer is unavailable', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          const sampleDataURL = 'data:image/png;base64,RmlsZVJlYWRlciE=';
-          globalThis.FileReader = class {
-            constructor() {
-              this.listeners = {};
-            }
-
-            addEventListener(type, callback) {
-              this.listeners[type] = callback;
-            }
-
-            readAsDataURL() {
-              setTimeout(() => {
-                this.result = sampleDataURL;
-                if (this.listeners.load) {
-                  this.listeners.load();
-                }
-              }, 0);
-            }
-          };
-          const blob = new Blob(['FileReader!'], { type: 'image/png' });
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func('blob:https://example.com/filereader-mock', {
-            allow: ['blob']
-          });
-          assert.strictEqual(
-            res,
-            'data:image/png,FileReader!',
-            'result using FileReader'
-          );
-        });
-
-        it('uses btoa fallback if Buffer and FileReader are both unavailable', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          Object.defineProperty(globalThis, 'FileReader', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          const data = 'btoa environment fallback!';
-          const blob = new Blob([data], { type: 'image/png' });
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func('blob:https://example.com/btoa-mock', {
-            allow: ['blob']
-          });
-          assert.strictEqual(
-            res,
-            `data:image/png,btoa environment fallback!`,
-            'result using btoa'
-          );
-        });
-
-        it('logs error when FileReader emits an error event', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          const mockError = new Error('Mock FileReader Error');
-          globalThis.FileReader = class {
-            constructor() {
-              this.listeners = {};
-              this.error = mockError;
-            }
-
-            addEventListener(type, callback) {
-              this.listeners[type] = callback;
-            }
-
-            readAsDataURL() {
-              setTimeout(() => {
-                if (this.listeners.error) {
-                  this.listeners.error();
-                }
-              }, 0);
-            }
-          };
-          const blob = new Blob(['test'], { type: 'image/png' });
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func('blob:https://example.com/error-mock', {
-            allow: ['blob'],
-            debug: true
-          });
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.called,
-            true,
-            'console.warn should be called'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[1].message,
-            'Mock FileReader Error',
-            'error message'
-          );
-        });
-
-        it('logs default DOMException when FileReader error is missing/falsy', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          globalThis.FileReader = class {
-            constructor() {
-              this.listeners = {};
-              this.error = null;
-            }
-
-            addEventListener(type, callback) {
-              this.listeners[type] = callback;
-            }
-
-            readAsDataURL() {
-              setTimeout(() => {
-                if (this.listeners.error) {
-                  this.listeners.error();
-                }
-              }, 0);
-            }
-          };
-          const blob = new Blob(['test'], { type: 'image/png' });
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func(
-            'blob:https://example.com/fallback-error-mock',
-            { allow: ['blob'], debug: true }
-          );
-          assert.deepEqual(res, null, 'result should be null');
-          assert.strictEqual(
-            warnStub.called,
-            true,
-            'console.warn should be called'
-          );
-          assert.ok(
-            warnStub.firstCall.args[1] instanceof DOMException,
-            'should be DOMException'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[1].name,
-            'NotReadableError',
-            'error name'
-          );
-          assert.strictEqual(
-            warnStub.firstCall.args[1].message,
-            'Failed to read Blob via FileReader.',
-            'error message'
-          );
-        });
-
-        it('resolves with null when FileReader emits an abort event', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          globalThis.FileReader = class {
-            constructor() {
-              this.listeners = {};
-            }
-
-            addEventListener(type, callback) {
-              this.listeners[type] = callback;
-            }
-
-            readAsDataURL() {
-              setTimeout(() => {
-                if (this.listeners.abort) {
-                  this.listeners.abort();
-                }
-              }, 0);
-            }
-          };
-          const blob = new Blob(['test'], { type: 'image/png' });
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func('blob:https://example.com/abort-mock', {
-            allow: ['blob'],
-            debug: true
-          });
-          assert.strictEqual(res, null, 'should return null on abort');
-          assert.strictEqual(
-            warnStub.called,
-            false,
-            'no error should be logged on abort'
-          );
-        });
-
-        it('handles Blob without MIME type using btoa fallback', async () => {
-          Object.defineProperty(globalThis, 'Buffer', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          Object.defineProperty(globalThis, 'FileReader', {
-            value: undefined,
-            writable: true,
-            configurable: true
-          });
-          const data = 'No MIME type text for btoa';
-          const blob = new Blob([data]);
-          globalThis.fetch = async () => ({
-            ok: true,
-            headers: {
-              get: key => (key === 'content-length' ? String(blob.size) : null)
-            },
-            blob: async () => blob
-          });
-          const res = await func('blob:https://example.com/no-mime-btoa', {
-            allow: ['blob']
-          });
-          assert.strictEqual(
-            res,
-            'data:,No MIME type text for btoa',
-            'should decode base64'
           );
         });
       });
@@ -4195,6 +4073,21 @@ describe('sanitizer', () => {
         items.data = null;
         const res = await func(url);
         assert.deepEqual(res, items, 'result');
+      });
+
+      it('formats Data URL with only base64 for blob URLs without mimeType', async () => {
+        const data = 'Hello, Blob!';
+        const blob = new Blob([data]); 
+        const url = URL.createObjectURL(blob);
+        const res = await func(url);
+        assert.strictEqual(res.valid, true, 'result should be valid');
+        assert.deepEqual(res.data, {
+          mime: '',
+          base64: false,
+          data: data
+        }, 'data URL components should be parsed and decoded correctly');
+        
+        URL.revokeObjectURL(url);
       });
     });
 

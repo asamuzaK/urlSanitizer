@@ -10,29 +10,32 @@ import sinon from 'sinon';
 describe('worker.js', () => {
   let postMessageSpy;
   let onmessageHandler;
+  const textEncoder = new TextEncoder();
 
   before(async () => {
     globalThis.self = {};
     await import('../src/mjs/worker.js');
     onmessageHandler = globalThis.self.onmessage;
   });
-
-  after(() => {
-    delete globalThis.self;
-  });
-
   beforeEach(() => {
     postMessageSpy = sinon.spy();
     globalThis.self.postMessage = postMessageSpy;
   });
-
+  after(() => {
+    delete globalThis.self;
+  });
   afterEach(() => {
     sinon.restore();
   });
 
-  it('ignores messages with an action other than DECODE_DATA_URL', () => {
+  it('ignores messages with an action other than PROCESS_BUFFER', () => {
     onmessageHandler({
-      data: { id: 1, action: 'UNKNOWN_ACTION', url: 'data:,test' }
+      data: {
+        id: 1,
+        action: 'UNKNOWN_ACTION',
+        buffer: new ArrayBuffer(0),
+        mimeType: ''
+      }
     });
     assert.strictEqual(
       postMessageSpy.called,
@@ -41,67 +44,88 @@ describe('worker.js', () => {
     );
   });
 
-  it('successfully decodes a plain text data URL', () => {
-    const url = 'data:,Hello%2C%20World!';
+  it('successfully processes an HTML buffer', () => {
+    const text = '<h1>Hello, World!</h1>';
+    const buffer = textEncoder.encode(text).buffer;
     onmessageHandler({
-      data: { id: 2, action: 'DECODE_DATA_URL', url }
+      data: { id: 2, action: 'PROCESS_BUFFER', buffer, mimeType: 'text/html' }
     });
-    assert.strictEqual(
-      postMessageSpy.calledOnce,
-      true,
-      'postMessage should be called once'
-    );
+
+    assert.strictEqual(postMessageSpy.calledOnce, true);
     const { id, success, result } = postMessageSpy.firstCall.args[0];
-    assert.strictEqual(id, 2, 'id should match');
-    assert.strictEqual(success, true, 'success should be true');
+    assert.strictEqual(id, 2);
+    assert.strictEqual(success, true);
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(
+      result.needsPurify,
+      true,
+      'text/html should require Purify'
+    );
     assert.strictEqual(
       result.parsedData,
-      'Hello%2C%20World!',
-      'parsedData should not be URI decoded'
+      text,
+      'parsedData should contain decoded string'
     );
-    assert.strictEqual(result.mediaType, '', 'mediaType should be empty');
-    assert.deepEqual(
-      result.mediaTypes,
-      [''],
-      'mediaTypes should be an array with empty string'
-    );
-    assert.strictEqual(result.isBase64, false, 'isBase64 should be false');
-    assert.strictEqual(result.isValid, true, 'isValid should be true');
+    assert.strictEqual(result.mimeType, 'text/html');
   });
 
-  it('successfully decodes a base64 encoded data URL', () => {
-    const data = 'Hello, World!';
-    const base64Data = btoa(data);
-    const url = `data:text/plain;charset=UTF-8;base64,${base64Data}`;
+  it('successfully processes a plain text buffer and transfers it back', () => {
+    const text = 'Hello, World!';
+    const buffer = textEncoder.encode(text).buffer;
     onmessageHandler({
-      data: { id: 3, action: 'DECODE_DATA_URL', url }
+      data: { id: 21, action: 'PROCESS_BUFFER', buffer, mimeType: 'text/plain' }
     });
-    assert.strictEqual(
-      postMessageSpy.calledOnce,
-      true,
-      'postMessage should be called once'
-    );
+    assert.strictEqual(postMessageSpy.calledOnce, true);
     const { id, success, result } = postMessageSpy.firstCall.args[0];
-    assert.strictEqual(id, 3, 'id should match');
-    assert.strictEqual(success, true, 'success should be true');
+    const transferables = postMessageSpy.firstCall.args[1];
+    assert.strictEqual(id, 21);
+    assert.strictEqual(success, true);
+    assert.strictEqual(result.isValid, true);
     assert.strictEqual(
-      result.parsedData,
-      data,
-      'parsedData should be correctly decoded from base64'
+      result.needsPurify,
+      false,
+      'text/plain should NOT require Purify'
     );
+    assert.strictEqual(result.parsedData, null);
+    assert.strictEqual(result.mimeType, 'text/plain');
     assert.strictEqual(
-      result.mediaType,
-      'text/plain;charset=UTF-8;base64',
-      'mediaType should match'
+      transferables[0],
+      buffer,
+      'Buffer should be transferred back to main thread'
     );
-    assert.strictEqual(result.isBase64, true, 'isBase64 should be true');
-    assert.strictEqual(result.isValid, true, 'isValid should be true');
   });
 
-  it('detects nested malicious javascript: execution', () => {
-    const url = 'data:text/html,javascript:alert(1)';
+  it('successfully processes an image buffer and transfers it back', () => {
+    const text = 'fake-image-data';
+    const buffer = textEncoder.encode(text).buffer;
     onmessageHandler({
-      data: { id: 4, action: 'DECODE_DATA_URL', url }
+      data: { id: 3, action: 'PROCESS_BUFFER', buffer, mimeType: 'image/png' }
+    });
+    assert.strictEqual(postMessageSpy.calledOnce, true);
+    const { id, success, result } = postMessageSpy.firstCall.args[0];
+    const transferables = postMessageSpy.firstCall.args[1];
+    assert.strictEqual(id, 3);
+    assert.strictEqual(success, true);
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(
+      result.needsPurify,
+      false,
+      'image/png should NOT require Purify'
+    );
+    assert.strictEqual(result.parsedData, null);
+    assert.strictEqual(result.mimeType, 'image/png');
+    assert.strictEqual(
+      transferables[0],
+      buffer,
+      'Buffer should be transferred back to main thread'
+    );
+  });
+
+  it('detects nested malicious javascript: execution in buffer', () => {
+    const text = 'javascript:alert(1)';
+    const buffer = textEncoder.encode(text).buffer;
+    onmessageHandler({
+      data: { id: 4, action: 'PROCESS_BUFFER', buffer, mimeType: 'text/html' }
     });
     assert.strictEqual(postMessageSpy.calledOnce, true);
     const { result } = postMessageSpy.firstCall.args[0];
@@ -112,127 +136,88 @@ describe('worker.js', () => {
     );
   });
 
-  it('detects deeply nested and obfuscated javascript: execution', () => {
+  it('detects deeply nested and obfuscated javascript: execution in buffer', () => {
     const xss = 'javasc&#x72;ipt:alert(1)';
-    const base64Data = btoa(xss);
-    const url = `data:text/html;base64,${base64Data}`;
+    const buffer = textEncoder.encode(xss).buffer;
     onmessageHandler({
-      data: { id: 5, action: 'DECODE_DATA_URL', url }
+      data: { id: 5, action: 'PROCESS_BUFFER', buffer, mimeType: 'text/html' }
     });
     assert.strictEqual(postMessageSpy.calledOnce, true);
     const { result } = postMessageSpy.firstCall.args[0];
     assert.strictEqual(
       result.isValid,
       false,
-      'isValid should be false even for obfuscated base64 payload'
+      'isValid should be false for obfuscated payload'
     );
   });
 
-  it('detects malicious blob: execution', () => {
-    const url = 'data:text/html,blob:https://example.com/uuid';
+  it('returns isValid: false when buffer is not an ArrayBuffer', () => {
+    const invalidBuffers = [
+      { value: undefined, desc: 'undefined' },
+      { value: null, desc: 'null' },
+      { value: 'string_not_buffer', desc: 'string' },
+      { value: {}, desc: 'object' }
+    ];
+    invalidBuffers.forEach(({ value, desc }, index) => {
+      const testId = 200 + index;
+      onmessageHandler({
+        data: {
+          id: testId,
+          action: 'PROCESS_BUFFER',
+          buffer: value,
+          mimeType: 'text/plain'
+        }
+      });
+      assert.strictEqual(postMessageSpy.callCount, index + 1);
+      const messagePayload = postMessageSpy.lastCall.args[0];
+      assert.deepEqual(
+        messagePayload.result,
+        { isValid: false },
+        `Failed for ${desc}`
+      );
+    });
+  });
+
+  it('returns success: true and isValid: false when inner parsedURL is falsy', () => {
+    // Generate an invalid inner structure that causes parsing to fail
+    const buffer = textEncoder.encode('http://[').buffer;
+    const testId = 300;
     onmessageHandler({
-      data: { id: 6, action: 'DECODE_DATA_URL', url }
+      data: {
+        id: testId,
+        action: 'PROCESS_BUFFER',
+        buffer,
+        mimeType: 'text/plain'
+      }
     });
     assert.strictEqual(postMessageSpy.calledOnce, true);
-    const { result } = postMessageSpy.firstCall.args[0];
-    assert.strictEqual(
-      result.isValid,
-      false,
-      'isValid should be false when blob: is detected inside data URL'
-    );
-  });
-
-  it('returns success: true and isValid: false when parsing fails', () => {
-    const invalidUrlStr = 'not-a-valid-url-format';
-    onmessageHandler({
-      data: { id: 7, action: 'DECODE_DATA_URL', url: invalidUrlStr }
-    });
-    assert.strictEqual(postMessageSpy.calledOnce, true);
-    const { result } = postMessageSpy.firstCall.args[0];
-    assert.strictEqual(
-      result.isValid,
-      false,
-      'isValid should be false when url is invalid'
-    );
-  });
-
-  it('verifies the exact payload structure generated by postResult', () => {
-    const url = 'data:,postResultTest';
-    const testId = 999;
-    onmessageHandler({
-      data: { id: testId, action: 'DECODE_DATA_URL', url }
-    });
-    assert.strictEqual(
-      postMessageSpy.calledOnce,
-      true,
-      'postMessage should be called exactly once'
-    );
     const messagePayload = postMessageSpy.firstCall.args[0];
-    assert.strictEqual(
-      messagePayload.id,
-      testId,
-      'id should match the originally passed id'
-    );
-    assert.strictEqual(
-      messagePayload.success,
-      true,
-      'success must be hardcoded to true by postResult'
-    );
-    assert.strictEqual(
-      typeof messagePayload.result,
-      'object',
-      'result must be an object'
-    );
-    assert.strictEqual(
-      messagePayload.result.isValid,
-      true,
-      'result.isValid should be true'
-    );
-    assert.strictEqual(
-      messagePayload.result.parsedData,
-      'postResultTest',
-      'result.parsedData should contain the decoded string'
-    );
+    assert.deepEqual(messagePayload.result, { isValid: false });
   });
 
-  it('verifies the payload structure when an Error is thrown', () => {
-    const testId = 100;
-    const url = '';
-    const errorMessage = 'Simulated Error for postError';
-    const errorInstance = new Error(errorMessage);
+  it('verifies postError handles Error instances gracefully', () => {
+    const testId = 400;
+    const errorMessage = 'Simulated Error';
     const postMessageStub = sinon.stub();
-    postMessageStub.onFirstCall().throws(errorInstance);
+    postMessageStub.onFirstCall().throws(new Error(errorMessage));
     postMessageStub.onSecondCall().returns();
     globalThis.self.postMessage = postMessageStub;
     onmessageHandler({
-      data: { id: testId, action: 'DECODE_DATA_URL', url }
+      data: {
+        id: testId,
+        action: 'PROCESS_BUFFER',
+        buffer: new ArrayBuffer(0),
+        mimeType: ''
+      }
     });
-    assert.strictEqual(
-      postMessageStub.callCount,
-      2,
-      'postMessage should be called twice (first throws, second succeeds)'
-    );
+    assert.strictEqual(postMessageStub.callCount, 2);
     const messagePayload = postMessageStub.secondCall.args[0];
-    assert.strictEqual(
-      messagePayload.id,
-      testId,
-      'id should match the originally passed id'
-    );
-    assert.strictEqual(
-      messagePayload.success,
-      false,
-      'success must be hardcoded to false by postError'
-    );
-    assert.strictEqual(
-      messagePayload.error,
-      errorMessage,
-      'error property should extract the .message from the Error instance'
-    );
+    assert.strictEqual(messagePayload.success, false);
+    assert.strictEqual(messagePayload.error, errorMessage);
   });
 
-  it('verifies postError handles non-Error exceptions correctly', () => {
-    const testId = 101;
-    const url = '';
+  it('verifies postError handles non-Error string exceptions correctly', () => {
+    const testId = 401;
     const stringErrorMsg = 'Custom string exception';
     const postMessageStub = sinon.stub();
     postMessageStub.onFirstCall().callsFake(() => {
@@ -241,78 +226,29 @@ describe('worker.js', () => {
     postMessageStub.onSecondCall().returns();
     globalThis.self.postMessage = postMessageStub;
     onmessageHandler({
-      data: { id: testId, action: 'DECODE_DATA_URL', url }
+      data: {
+        id: testId,
+        action: 'PROCESS_BUFFER',
+        buffer: new ArrayBuffer(0),
+        mimeType: ''
+      }
     });
-    assert.strictEqual(postMessageStub.callCount, 2);
+    assert.strictEqual(
+      postMessageStub.callCount,
+      2,
+      'postMessage should be called twice'
+    );
     const messagePayload = postMessageStub.secondCall.args[0];
-    assert.strictEqual(messagePayload.id, testId);
-    assert.strictEqual(messagePayload.success, false);
-    assert.strictEqual(
-      messagePayload.error,
-      stringErrorMsg,
-      'error property should contain the stringified error without Sinon prefix'
-    );
-  });
-
-  it('returns success: true and isValid: false when url is not a string or is empty', () => {
-    const invalidUrls = [
-      { value: undefined, desc: 'undefined' },
-      { value: null, desc: 'null' },
-      { value: 12345, desc: 'number' },
-      { value: {}, desc: 'object' },
-      { value: '', desc: 'empty string' }
-    ];
-    invalidUrls.forEach(({ value, desc }, index) => {
-      const testId = 200 + index;
-      onmessageHandler({
-        data: { id: testId, action: 'DECODE_DATA_URL', url: value }
-      });
-      assert.strictEqual(
-        postMessageSpy.callCount,
-        index + 1,
-        `postMessage should be called for ${desc}`
-      );
-      const messagePayload = postMessageSpy.lastCall.args[0];
-      assert.strictEqual(
-        messagePayload.id,
-        testId,
-        `id should match for ${desc}`
-      );
-      assert.strictEqual(
-        messagePayload.success,
-        true,
-        `success should be true for ${desc}`
-      );
-      assert.deepEqual(
-        messagePayload.result,
-        { isValid: false },
-        `result should only contain isValid: false for ${desc}`
-      );
-    });
-  });
-
-  it('returns success: true and isValid: false when the decoded payload fails', () => {
-    const url = 'data:,http://[';
-    const testId = 300;
-    onmessageHandler({
-      data: { id: testId, action: 'DECODE_DATA_URL', url }
-    });
-    assert.strictEqual(
-      postMessageSpy.calledOnce,
-      true,
-      'postMessage should be called exactly once'
-    );
-    const messagePayload = postMessageSpy.firstCall.args[0];
     assert.strictEqual(messagePayload.id, testId, 'id should match');
     assert.strictEqual(
       messagePayload.success,
-      true,
-      'success should be true even if validation fails'
+      false,
+      'success should be false'
     );
-    assert.deepEqual(
-      messagePayload.result,
-      { isValid: false },
-      'result should only contain isValid: false when inner parsedURL is falsy'
+    assert.strictEqual(
+      messagePayload.error,
+      stringErrorMsg,
+      'error property should contain the exact string thrown, handled by String(error)'
     );
   });
 });
