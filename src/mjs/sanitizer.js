@@ -179,11 +179,12 @@ export const getWorker = () => {
 };
 
 /**
- * Offloads the decoding and validation of a Data URL to a Web Worker.
- * @param {string} url - The Data URL string to decode and validate.
- * @returns {Promise<object>} A promise resolving to an object containing the extracted Data URL components and validation result.
+ * Offloads the processing and validation of a buffer to a Web Worker.
+ * @param {ArrayBuffer} buffer - The ArrayBuffer to process.
+ * @param {string} mimeType - The MIME type of the buffer.
+ * @returns {Promise<object>} A promise resolving to the processing result.
  */
-export const decodeDataURLViaWorker = url => {
+export const processBufferViaWorker = (buffer, mimeType) => {
   const worker = getWorker();
   if (!worker) {
     throw new Error('Worker is not available in this environment.');
@@ -191,8 +192,119 @@ export const decodeDataURLViaWorker = url => {
   return new Promise((resolve, reject) => {
     const id = ++workerMessageId;
     workerPendingTasks.set(id, { resolve, reject });
-    worker.postMessage({ id, action: 'DECODE_DATA_URL', url });
+    worker.postMessage({ id, action: 'PROCESS_BUFFER', buffer, mimeType }, [
+      buffer
+    ]);
   });
+};
+
+/**
+ * Encodes an ArrayBuffer to a Base64 string.
+ * @private
+ * @param {ArrayBuffer} buffer - The buffer to encode.
+ * @returns {string} The Base64 string.
+ */
+const encodeBufferToBase64 = buffer => {
+  if (IS_NODE && globalThis.Buffer) {
+    return globalThis.Buffer.from(buffer).toString('base64');
+  }
+  const uint8arr = new Uint8Array(buffer);
+  const chunks = [];
+  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
+  }
+  return btoa(chunks.join(''));
+};
+
+/* blob handlers */
+/**
+ * Reads a stream in chunks and generates an ArrayBuffer.
+ * @private
+ * @param {Response} response - The Response instance.
+ * @param {number} maxSize - The maximum allowed size in bytes.
+ * @returns {Promise<ArrayBuffer>} A promise resolving to the generated ArrayBuffer.
+ */
+const readStreamInChunksAsArrayBuffer = async (response, maxSize) => {
+  const reader = response.body.getReader();
+  const chunks = [];
+  try {
+    let accumulatedSize = 0;
+    while (accumulatedSize <= maxSize) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      accumulatedSize += value.byteLength;
+      if (accumulatedSize > maxSize) {
+        await reader.cancel('Size limit exceeded');
+        throw new DOMException(
+          `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`,
+          'NotReadableError'
+        );
+      }
+      chunks.push(value);
+    }
+    const combined = new Uint8Array(accumulatedSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return combined.buffer;
+  } finally {
+    reader.releaseLock();
+  }
+};
+
+/**
+ * Fetches a Blob URL and extracts its ArrayBuffer and MIME type.
+ * @param {string} url - The Blob URL to fetch.
+ * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
+ * @returns {Promise<{ buffer: ArrayBuffer, mimeType: string }>} A promise resolving to the buffer and MIME type.
+ */
+const fetchBlobAsArrayBuffer = async (url, maxBlobSize) => {
+  let maxSize = MAX_BLOB_SIZE;
+  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
+    maxSize = maxBlobSize;
+  }
+  const response = await fetch(url);
+  if (!response.ok) {
+    const truncatedURL = truncateURL(url);
+    let msg = `Failed to fetch ${truncatedURL}`;
+    if (Number.isInteger(response.status)) {
+      if (response.statusText) {
+        msg += `: ${response.status} ${response.statusText}`;
+      } else {
+        msg += `: ${response.status}`;
+      }
+    }
+    throw new Error(msg);
+  }
+  const contentLength = response.headers.get('content-length');
+  if (contentLength) {
+    const parsedLength = Number.parseInt(contentLength, DECI);
+    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
+      throw new DOMException(
+        `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`,
+        'NotReadableError'
+      );
+    }
+  }
+  const mimeType = response.headers.get('content-type') || '';
+  let buffer;
+  if (response.body) {
+    buffer = await readStreamInChunksAsArrayBuffer(response, maxSize);
+  } else {
+    const blob = await response.blob();
+    if (blob.size > maxSize) {
+      throw new DOMException(
+        `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
+        'NotReadableError'
+      );
+    }
+    buffer = await blob.arrayBuffer();
+  }
+  return { buffer, mimeType };
 };
 
 /**
@@ -452,42 +564,41 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Asynchronously decodes, verifies inner protocols, and purifies Data URLs.
+   * Asynchronously processes and purifies a buffer via Worker.
    * @private
-   * @param {object} urlObj - The URL object.
+   * @param {ArrayBuffer} buffer - The buffer.
+   * @param {string} mimeType - The MIME type.
    * @param {string} scheme - The URL scheme.
    * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
    * @returns {Promise<string|null>} Sanitized Data URL or null.
    */
-  async #sanitizeDataURLAsync(urlObj, scheme, ctx) {
+  async #sanitizeBufferAsync(buffer, mimeType, scheme, ctx) {
     try {
-      const { parsedData, mediaType, mediaTypes, isBase64, isValid } =
-        await decodeDataURLViaWorker(urlObj.href);
-      if (!isValid) {
+      const result = await processBufferViaWorker(buffer, mimeType);
+      if (!result.isValid) {
         return null;
       }
-      let sanitizedData = parsedData;
-      if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-        sanitizedData = this.#purify(parsedData, ctx);
-      }
-      if (sanitizedData) {
-        const { data } = extractDataURLComponents(
-          urlObj.pathname,
-          urlObj.search,
-          urlObj.hash
-        );
-        if (isBase64 && sanitizedData !== data) {
-          mediaTypes.pop();
+      let finalMimeType = result.mimeType || '';
+      if (result.needsPurify) {
+        const purified = this.#purify(result.parsedData, ctx);
+        if (!purified) {
+          return null;
         }
-        return `${scheme}:${mediaTypes.join(';')},${sanitizedData}`;
+        finalMimeType = finalMimeType.replace(/;\s*base64\s*$/i, '');
+        return `${scheme}:${finalMimeType},${purified}`;
+      } else {
+        const base64Data = encodeBufferToBase64(result.buffer);
+        if (!/;\s*base64\s*$/i.test(finalMimeType)) {
+          finalMimeType = finalMimeType ? `${finalMimeType};base64` : 'base64';
+        }
+        return `${scheme}:${finalMimeType},${base64Data}`;
       }
     } catch (e) {
       if (ctx.debug) {
-        logDebug('Failed to parse or sanitize data URL via Worker.', e);
+        logDebug('Failed to process buffer via Worker.', e);
       }
-      return this.#sanitizeDataURL(urlObj, scheme, ctx);
+      throw e;
     }
-    return null;
   }
 
   /**
@@ -646,6 +757,44 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Asynchronously sanitizes an ArrayBuffer and converts it to a Data URL.
+   * @param {ArrayBuffer} buffer - The target buffer.
+   * @param {string} mimeType - The MIME type of the buffer.
+   * @param {object} [opt] - Sanitization options.
+   * @returns {Promise<string|null>} The sanitized Data URL, or null.
+   */
+  async sanitizeBuffer(buffer, mimeType, opt = {}) {
+    if (!(buffer instanceof ArrayBuffer)) {
+      return null;
+    }
+    const options = { ...DEFAULT_OPTS, ...opt };
+    const ctx = new SanitizeContext(options, domPurify);
+    const { schemeMap } = this.#resolveSchemeRules(options, ctx);
+    if (!schemeMap.get('data')) {
+      return null;
+    }
+    if (typeof Worker !== 'undefined') {
+      try {
+        return await this.#sanitizeBufferAsync(buffer, mimeType, 'data', ctx);
+      } catch (e) {
+        if (options.debug) {
+          logDebug(
+            'Failed to sanitize buffer asynchronously. Falling back to sync.',
+            e
+          );
+        }
+      }
+    }
+    const base64Data = encodeBufferToBase64(buffer);
+    const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+    const urlObj = this.parse(dataUrl);
+    if (!urlObj) {
+      return null;
+    }
+    return this.#sanitizeDataURL(urlObj, 'data', ctx);
+  }
+
+  /**
    * Asynchronously sanitizes the Data URL.
    * @param {string} url - The URL string to sanitize.
    * @param {object} [opt] - Sanitization options.
@@ -655,10 +804,7 @@ export class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return null;
     }
-    const options = {
-      ...DEFAULT_OPTS,
-      ...opt
-    };
+    const options = { ...DEFAULT_OPTS, ...opt };
     const { maxLength } = options;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       throw new RangeError(
@@ -673,13 +819,26 @@ export class URLSanitizer extends URISchemes {
     if (scheme !== 'data') {
       return null;
     }
+    if (typeof Worker !== 'undefined') {
+      try {
+        const { buffer, mimeType } = await fetchBlobAsArrayBuffer(
+          urlObj.href,
+          options.maxBlobSize
+        );
+        return await this.sanitizeBuffer(buffer, mimeType, options);
+      } catch (e) {
+        if (options.debug) {
+          logDebug(
+            `Failed to fetch data URL as buffer. Falling back to sync.`,
+            e
+          );
+        }
+      }
+    }
     const ctx = new SanitizeContext(options, domPurify);
     const { schemeMap } = this.#resolveSchemeRules(options, ctx);
     if (!schemeMap.get(scheme)) {
       return null;
-    }
-    if (typeof Worker !== 'undefined') {
-      return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
     }
     return this.#sanitizeDataURL(urlObj, scheme, ctx);
   }
@@ -831,153 +990,6 @@ export class URLSanitizer extends URISchemes {
   }
 }
 
-/* blob handlers */
-/**
- * Converts Blob to Data URL from Buffer.
- * @private
- * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string>} A promise resolving to the Data URL.
- */
-const convertFromBuffer = async blob => {
-  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
-  const buffer = await blob.arrayBuffer();
-  const base64 = globalThis.Buffer.from(buffer).toString('base64');
-  return `data:${mimeStr},${base64}`;
-};
-
-/**
- * Converts Blob to Data URL from FileReader.
- * @private
- * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string|null>} A promise resolving to the Data URL, or null.
- */
-const convertFromFileReader = blob =>
-  new Promise((resolve, reject) => {
-    const reader = new globalThis.FileReader();
-    reader.addEventListener('error', () => {
-      const error =
-        reader.error ||
-        new DOMException(
-          'Failed to read Blob via FileReader.',
-          'NotReadableError'
-        );
-      reject(error);
-    });
-    reader.addEventListener('abort', () => resolve(null));
-    reader.addEventListener('load', () => resolve(reader.result));
-    reader.readAsDataURL(blob);
-  });
-
-/**
- * Converts Blob to Data URL from btoa.
- * @private
- * @param {Blob} blob - The target Blob object.
- * @returns {Promise<string>} A promise resolving to the Data URL.
- */
-const convertFromBtoa = async blob => {
-  const mimeStr = blob.type ? `${blob.type};base64` : 'base64';
-  const buffer = await blob.arrayBuffer();
-  const uint8arr = new Uint8Array(buffer);
-  const chunks = [];
-  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
-    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
-  }
-  return `data:${mimeStr},${btoa(chunks.join(''))}`;
-};
-
-/**
- * Reads a stream in chunks and generates a Blob.
- * @private
- * @param {Response} response - The Response instance.
- * @param {number} maxSize - The maximum allowed size in bytes.
- * @returns {Promise<Blob>} A promise resolving to the generated Blob.
- */
-const readStreamInChunks = async (response, maxSize) => {
-  const reader = response.body.getReader();
-  const chunks = [];
-  try {
-    let accumulatedSize = 0;
-    while (accumulatedSize <= maxSize) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      accumulatedSize += value.byteLength;
-      if (accumulatedSize > maxSize) {
-        await reader.cancel('Size limit exceeded');
-        throw new DOMException(
-          `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`,
-          'NotReadableError'
-        );
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  const type = response.headers.get('content-type');
-  if (type) {
-    return new Blob(chunks, { type });
-  }
-  return new Blob(chunks);
-};
-
-/**
- * Fetches a Blob URL and converts it to a Data URL.
- * @param {string} url - The Blob URL to fetch.
- * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
- * @returns {Promise<string>} A promise resolving to the Data URL.
- */
-const fetchBlobAsDataURL = async (url, maxBlobSize) => {
-  let maxSize = MAX_BLOB_SIZE;
-  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
-    maxSize = maxBlobSize;
-  }
-  const response = await fetch(url);
-  if (!response.ok) {
-    const truncatedURL = truncateURL(url);
-    let msg = `Failed to fetch ${truncatedURL}`;
-    if (Number.isInteger(response.status)) {
-      if (response.statusText) {
-        msg += `: ${response.status} ${response.statusText}`;
-      } else {
-        msg += `: ${response.status}`;
-      }
-    }
-    throw new Error(msg);
-  }
-  // Check content length if available.
-  const contentLength = response.headers.get('content-length');
-  if (contentLength) {
-    const parsedLength = Number.parseInt(contentLength, DECI);
-    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
-      throw new DOMException(
-        `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`,
-        'NotReadableError'
-      );
-    }
-  }
-  let blob;
-  // Use ReadableStream.
-  if (response.body) {
-    blob = await readStreamInChunks(response, maxSize);
-  } else {
-    blob = await response.blob();
-    if (blob.size > maxSize) {
-      throw new DOMException(
-        `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
-        'NotReadableError'
-      );
-    }
-  }
-  if (IS_NODE && globalThis.Buffer) {
-    return convertFromBuffer(blob);
-  } else if (globalThis.FileReader) {
-    return convertFromFileReader(blob);
-  }
-  return convertFromBtoa(blob);
-};
-
 /* URLSanitizer instance */
 const urlSanitizer = new URLSanitizer();
 
@@ -1037,6 +1049,22 @@ const normalizeSchemes = schemes =>
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
+/**
+ * Asynchronously sanitizes the given URL.
+ * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
+ * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
+ * @param {string} url - URL.
+ * @param {object} [opt] - options.
+ * @param {string[]} [opt.allow] - The array of schemes to allow.
+ * @param {string[]} [opt.deny] - The array of schemes to deny.
+ * @param {string[]} [opt.only] - The array of specific schemes to allow.
+ * @param {boolean} [opt.allowRelative] - Allow relative URLs.
+ * @param {boolean} [opt.debug] - Enable debug mode.
+ * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL after sanitization.
+ * @param {number} [opt.maxBlobSize] - The maximum allowed Blob size in bytes.
+ * @param {number} [opt.maxLength] - The maximum allowed URL length.
+ * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
+ */
 export const sanitizeURL = async (url, opt) => {
   const { options, scheme, earlyResult } = prepareSanitizeRoute(url, opt);
   if (earlyResult !== undefined) {
@@ -1046,13 +1074,20 @@ export const sanitizeURL = async (url, opt) => {
     const allow = normalizeSchemes(options.allow);
     const deny = normalizeSchemes(options.deny);
     const only = normalizeSchemes(options.only);
-    let data = null;
+    let sanitizedData = null;
     if (
       (allow.includes('blob') && !deny.includes('blob')) ||
       only.includes('blob')
     ) {
+      let fetchedBuffer = null;
+      let fetchedMimeType = '';
       try {
-        data = await fetchBlobAsDataURL(url, options.maxBlobSize);
+        const fetchResult = await fetchBlobAsArrayBuffer(
+          url,
+          options.maxBlobSize
+        );
+        fetchedBuffer = fetchResult.buffer;
+        fetchedMimeType = fetchResult.mimeType;
       } catch (e) {
         if (options.debug) {
           logDebug(
@@ -1061,7 +1096,7 @@ export const sanitizeURL = async (url, opt) => {
           );
         }
       }
-      if (data) {
+      if (fetchedBuffer) {
         if (only.length) {
           if (!only.includes('data')) {
             options.only = [...only, 'data'];
@@ -1072,15 +1107,17 @@ export const sanitizeURL = async (url, opt) => {
           }
           options.deny = deny.filter(s => s !== 'data');
         }
+        sanitizedData = await urlSanitizer.sanitizeBuffer(
+          fetchedBuffer,
+          fetchedMimeType,
+          options
+        );
       }
     }
     if (options.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
-    if (!data) {
-      return null;
-    }
-    return urlSanitizer.sanitizeDataURL(data, options);
+    return sanitizedData;
   } else if (scheme === 'data') {
     return urlSanitizer.sanitizeDataURL(url, options);
   }
@@ -1127,7 +1164,11 @@ export const inspectURL = async url => {
     const parsedURL = urlSanitizer.parse(url, null, true);
     if (parsedURL?.protocol === 'blob:') {
       try {
-        const dataURL = await fetchBlobAsDataURL(parsedURL.href);
+        const { buffer, mimeType } = await fetchBlobAsArrayBuffer(
+          parsedURL.href
+        );
+        const base64Data = encodeBufferToBase64(buffer);
+        const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
         const inspectedURLResult = urlSanitizer.inspect(dataURL);
         inspectedURLResult.input = url;
         return inspectedURLResult;
