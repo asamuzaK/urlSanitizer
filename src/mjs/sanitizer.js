@@ -73,11 +73,11 @@ const DEFAULT_OPTS = Object.freeze({
  * The properties except for input and valid are omitted for invalid URLs.
  * @typedef {object} InspectedURLResult
  * @property {string} input - The original URL input.
- * @property {boolean} valid - Indicates whether the URL passed sanitization rules.
+ * @property {boolean} valid - Indicates whether the URL passed rules.
  * @property {string|null} href - The sanitized URL, or null.
  * @property {boolean} [relative] - Indicates whether the input is a valid relative URL.
  * @property {string} [reason] - The reason why the URL is invalid.
- * @property {InspectedDataURL|null} [data] - The parsed result of a Data URL. Null if not a Data URL.
+ * @property {InspectedDataURL|null} [data] - The parsed result of a Data URL, or null.
  * @property {string} [origin] - The scheme, domain, and port.
  * @property {string} [protocol] - The protocol scheme.
  * @property {string} [username] - The specified username.
@@ -148,7 +148,7 @@ const workerPendingTasks = new Map();
 
 /**
  * Retrieves the singleton Web Worker instance.
- * @returns {Worker|null} The Web Worker instance, or null if Web Workers are not supported.
+ * @returns {Worker|null} The Web Worker instance, or null if not supported.
  */
 export const getWorker = () => {
   if (!workerInstance && typeof Worker !== 'undefined') {
@@ -183,7 +183,6 @@ export const getWorker = () => {
  * Offloads the decoding and validation of a Data URL to a Web Worker.
  * @param {string} url - The Data URL string to decode and validate.
  * @returns {Promise<object>} A promise resolving to an object containing the extracted Data URL components and validation result.
- * @throws {Error} Throws an error if the Web Worker is not available.
  */
 export const decodeDataURLViaWorker = url => {
   const worker = getWorker();
@@ -363,7 +362,7 @@ export class URLSanitizer extends URISchemes {
    * Validates if a normalized URI scheme is syntactically correct.
    * @private
    * @param {string} normalizedScheme - The normalized URI scheme to validate.
-   * @returns {boolean} True if the scheme satisfies the syntax and security requirements.
+   * @returns {boolean} True if the scheme satisfies the syntax and requirements.
    */
   #isValidScheme(normalizedScheme) {
     if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
@@ -454,6 +453,45 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Asynchronously decodes, verifies inner protocols, and purifies Data URLs.
+   * @private
+   * @param {object} urlObj - The URL object.
+   * @param {string} scheme - The URL scheme.
+   * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
+   * @returns {Promise<string|null>} Sanitized Data URL or null.
+   */
+  async #sanitizeDataURLAsync(urlObj, scheme, ctx) {
+    try {
+      const { parsedData, mediaType, mediaTypes, isBase64, isValid } =
+        await decodeDataURLViaWorker(urlObj.href);
+      if (!isValid) {
+        return null;
+      }
+      let sanitizedData = parsedData;
+      if (!mediaType || REG_MIME_DOM.test(mediaType)) {
+        sanitizedData = this.#purify(parsedData, ctx);
+      }
+      if (sanitizedData) {
+        const { data } = extractDataURLComponents(
+          urlObj.pathname,
+          urlObj.search,
+          urlObj.hash
+        );
+        if (isBase64 && sanitizedData !== data) {
+          mediaTypes.pop();
+        }
+        return `${scheme}:${mediaTypes.join(';')},${sanitizedData}`;
+      }
+    } catch (e) {
+      if (ctx.debug) {
+        logDebug('Failed to parse or sanitize data URL via Worker.', e);
+      }
+      return this.#sanitizeDataURL(urlObj, scheme, ctx);
+    }
+    return null;
+  }
+
+  /**
    * Decodes, verifies inner protocols, and purifies Data URLs.
    * @private
    * @param {object} urlObj - The URL object.
@@ -503,45 +541,6 @@ export class URLSanitizer extends URISchemes {
         mediaTypes.pop();
       }
       return `${scheme}:${mediaTypes.join(';')},${parsedData}`;
-    }
-    return null;
-  }
-
-  /**
-   * Asynchronously decodes, verifies inner protocols, and purifies Data URLs.
-   * @private
-   * @param {object} urlObj - The URL object.
-   * @param {string} scheme - The URL scheme.
-   * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
-   * @returns {Promise<string|null>} Sanitized Data URL or null.
-   */
-  async #sanitizeDataURLAsync(urlObj, scheme, ctx) {
-    try {
-      const { parsedData, mediaType, mediaTypes, isBase64, isValid } =
-        await decodeDataURLViaWorker(urlObj.href);
-      if (!isValid) {
-        return null;
-      }
-      let sanitizedData = parsedData;
-      if (!mediaType || REG_MIME_DOM.test(mediaType)) {
-        sanitizedData = this.#purify(parsedData, ctx);
-      }
-      if (sanitizedData) {
-        const { data } = extractDataURLComponents(
-          urlObj.pathname,
-          urlObj.search,
-          urlObj.hash
-        );
-        if (isBase64 && sanitizedData !== data) {
-          mediaTypes.pop();
-        }
-        return `${scheme}:${mediaTypes.join(';')},${sanitizedData}`;
-      }
-    } catch (e) {
-      if (ctx.debug) {
-        logDebug('Failed to parse or sanitize data URL via Worker.', e);
-      }
-      return this.#sanitizeDataURL(urlObj, scheme, ctx);
     }
     return null;
   }
@@ -747,7 +746,7 @@ export class URLSanitizer extends URISchemes {
           }
         }
       } else {
-        // Fallback for the valid relative URL without a base URL.
+        // URL which is invalid as an absolute URL, but valid as a relative URL.
         inspectedURL.valid = false;
         inspectedURL.relative = true;
         inspectedURL.href = sanitizedURL;
