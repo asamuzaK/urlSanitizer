@@ -678,7 +678,10 @@ export class URLSanitizer extends URISchemes {
     if (!schemeMap.get(scheme)) {
       return null;
     }
-    return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
+    if (typeof Worker !== 'undefined') {
+      return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
+    }
+    return this.#sanitizeDataURL(urlObj, scheme, ctx);
   }
 
   /**
