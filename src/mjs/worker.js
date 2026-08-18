@@ -1,5 +1,5 @@
 /**
- * sanitizer-worker.js
+ * worker.js
  */
 
 /* shared */
