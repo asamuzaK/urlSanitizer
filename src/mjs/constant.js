@@ -63,3 +63,9 @@ export const TYPE_FROM = 8;
  * @type {number}
  */
 export const TYPE_TO = -1;
+
+/**
+ * The dummy base URL.
+ * @type {string}
+ */
+export const DUMMY_BASE = 'http://dummy.local';

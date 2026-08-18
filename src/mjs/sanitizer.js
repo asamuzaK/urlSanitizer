@@ -20,6 +20,7 @@ import {
 import {
   CHUNK_SIZE,
   DECI,
+  DUMMY_BASE,
   MAX_BLOB_SIZE,
   MAX_NEST,
   MAX_URL_LENGTH
@@ -33,7 +34,6 @@ import {
   REG_TAG_QUOT,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
-const DUMMY_BASE = 'http://dummy.local';
 const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const URL_PROPS = Object.freeze([
   'href',
@@ -141,6 +141,55 @@ export class SanitizeContext {
   }
 }
 
+/* worker setup */
+let workerInstance = null;
+let workerMessageId = 0;
+const workerPendingTasks = new Map();
+
+/**
+ * Retrieves the singleton Web Worker instance.
+ * @returns {Worker|null} The Web Worker instance, or null if Web Workers are not supported.
+ */
+export const getWorker = () => {
+  if (!workerInstance && typeof Worker !== 'undefined') {
+    workerInstance = new Worker(
+      new URL('./sanitizer-worker.js', import.meta.url),
+      { type: 'module' }
+    );
+    workerInstance.addEventListener('message', evt => {
+      const { id, success, result, error } = evt.data;
+      const task = workerPendingTasks.get(id);
+      if (task) {
+        workerPendingTasks.delete(id);
+        if (success) {
+          task.resolve(result);
+        } else {
+          task.reject(new Error(error));
+        }
+      }
+    });
+  }
+  return workerInstance;
+};
+
+/**
+ * Offloads the decoding and validation of a Data URL to a Web Worker.
+ * @param {string} url - The Data URL string to decode and validate.
+ * @returns {Promise<object>} A promise resolving to an object containing the extracted Data URL components and validation result.
+ * @throws {Error} Throws an error if the Web Worker is not available.
+ */
+export const decodeDataURLViaWorker = url => {
+  const worker = getWorker();
+  if (!worker) {
+    throw new Error('Worker is not available in this environment.');
+  }
+  return new Promise((resolve, reject) => {
+    const id = ++workerMessageId;
+    workerPendingTasks.set(id, { resolve, reject });
+    worker.postMessage({ id, action: 'DECODE_DATA_URL', url });
+  });
+};
+
 /**
  * URL sanitizer
  */
@@ -154,7 +203,7 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Executes the core sanitization logic.
+   * Executes the sanitization logic.
    * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} opt - Sanitization options.
@@ -191,7 +240,28 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
-   * Internal recursive method for sanitization.
+   * Asynchronously executes the sanitization logic.
+   * @private
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} opt - Sanitization options.
+   * @returns {Promise<string|null>} The sanitized URL, or null.
+   */
+  async #executeSanitizeAsync(url, opt) {
+    if (!url || !isString(url)) {
+      return null;
+    }
+    const { maxLength } = opt;
+    if (Number.isInteger(maxLength) && url.length > maxLength) {
+      throw new RangeError(
+        `URL length ${url.length} exceeds max length ${maxLength}.`
+      );
+    }
+    const ctx = new SanitizeContext(opt, domPurify);
+    return this.#processAsync(url, opt, ctx);
+  }
+
+  /**
+   * Process recursive method for sanitization.
    * @private
    * @param {string} url - The URL string to sanitize.
    * @param {object} rules - The sanitization rules.
@@ -234,9 +304,46 @@ export class URLSanitizer extends URISchemes {
     ) {
       return null;
     }
-    // Sanitize based on URL type
     if (isDataURL) {
       return this.#sanitizeDataURL(urlObj, scheme, ctx);
+    }
+    return this.#sanitizeStandardURL(urlToSanitize);
+  }
+
+  /**
+   * Asynchronously process Data URLs.
+   * @private
+   * @param {string} url - The Data URL string to sanitize.
+   * @param {object} rules - The sanitization rules.
+   * @param {string[]} rules.allow - Allowed schemes.
+   * @param {string[]} rules.deny - Denied schemes.
+   * @param {string[]} rules.only - Exclusively allowed schemes.
+   * @param {SanitizeContext} ctx - Internal context for state.
+   * @returns {Promise<string|null>} The sanitized Data URL, or null.
+   */
+  async #processAsync(url, { allow, deny, only }, ctx) {
+    const { allowedSchemes, restrictScheme, schemeMap } =
+      this.#resolveSchemeRules({ allow, deny, only }, ctx);
+    const { isVerified, scheme, schemeParts, urlObj, urlToSanitize } = this.#parseAndVerifyURL(
+      url,
+      false,
+      allowedSchemes,
+      ctx
+    );
+    if (
+      !isVerified ||
+      !this.#isSchemeAllowed(
+        scheme,
+        schemeParts,
+        restrictScheme,
+        schemeMap,
+        false
+      )
+    ) {
+      return null;
+    }
+    if (scheme === 'data') {
+      return this.#sanitizeDataURLAsync(urlObj, scheme, ctx);
     }
     return this.#sanitizeStandardURL(urlToSanitize);
   }
@@ -455,6 +562,45 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Asynchronously decodes, verifies inner protocols, and purifies Data URLs.
+   * @private
+   * @param {object} urlObj - The URL object.
+   * @param {string} scheme - The URL scheme.
+   * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
+   * @returns {Promise<string|null>} Sanitized Data URL or null.
+   */
+  async #sanitizeDataURLAsync(urlObj, scheme, ctx) {
+    try {
+      const { parsedData, mediaType, mediaTypes, isBase64, isValid } =
+        await decodeDataURLViaWorker(urlObj.href);
+      if (!isValid) {
+        return null;
+      }
+      let sanitizedData = parsedData;
+      if (!mediaType || REG_MIME_DOM.test(mediaType)) {
+        sanitizedData = this.#purify(parsedData, ctx);
+      }
+      if (sanitizedData) {
+        const { data } = extractDataURLComponents(
+          urlObj.pathname,
+          urlObj.search,
+          urlObj.hash
+        );
+        if (isBase64 && sanitizedData !== data) {
+          mediaTypes.pop();
+        }
+        return `${scheme}:${mediaTypes.join(';')},${sanitizedData}`;
+      }
+    } catch (e) {
+      if (ctx.debug) {
+        logDebug('Failed to parse or sanitize data URL via Worker.', e);
+      }
+      return this.#sanitizeDataURL(urlObj, scheme, ctx);
+    }
+    return null;
+  }
+
+  /**
    * Purifies a URL-encoded DOM string to prevent XSS.
    * @private
    * @param {string} dom - The URL-encoded DOM string.
@@ -553,6 +699,20 @@ export class URLSanitizer extends URISchemes {
       ...opt
     };
     return this.#executeSanitize(url, options);
+  }
+
+  /**
+   * Asynchronously sanitizes the given URL.
+   * @param {string} url - The URL string to sanitize.
+   * @param {object} [opt] - Sanitization options.
+   * @returns {Promise<string|null>} The sanitized URL, or null.
+   */
+  async sanitizeAsync(url, opt = {}) {
+    const options = {
+      ...DEFAULT_OPTS,
+      ...opt
+    };
+    return this.#executeSanitizeAsync(url, options);
   }
 
   /**
@@ -853,6 +1013,31 @@ const fetchBlobAsDataURL = async (url, maxBlobSize) => {
 const urlSanitizer = new URLSanitizer();
 
 /**
+ * Normalizes options and evaluates preliminary scheme routing.
+ * @private
+ * @param {string} url - The URL string.
+ * @param {object} opt - User options.
+ * @returns {{ options: object, scheme: string|null, earlyResult: string|null|undefined }} Nomalized options, scheme, and earlyResult.
+ */
+const prepareSanitizeRoute = (url, opt = {}) => {
+  if (!url || !isString(url)) {
+    return { earlyResult: null };
+  }
+  const options = {
+    ...DEFAULT_OPTS,
+    ...opt
+  };
+  const scheme = urlSanitizer.getScheme(url);
+  if (scheme === null) {
+    if (options.allowRelative) {
+      return { earlyResult: urlSanitizer.sanitize(url, options) };
+    }
+    return { earlyResult: null };
+  }
+  return { options, scheme };
+};
+
+/**
  * Asynchronously sanitizes the given URL.
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
@@ -868,20 +1053,10 @@ const urlSanitizer = new URLSanitizer();
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
-export const sanitizeURL = async (url, opt = {}) => {
-  if (!url || !isString(url)) {
-    return null;
-  }
-  const options = {
-    ...DEFAULT_OPTS,
-    ...opt
-  };
-  const scheme = urlSanitizer.getScheme(url);
-  if (scheme === null) {
-    if (options.allowRelative) {
-      return urlSanitizer.sanitize(url, options);
-    }
-    return null;
+export const sanitizeURL = async (url, opt) => {
+  const { options, scheme, earlyResult } = prepareSanitizeRoute(url, opt);
+  if (earlyResult !== undefined) {
+    return earlyResult;
   }
   if (scheme === 'blob') {
     const allow = Array.isArray(options.allow) ? options.allow : [];
@@ -914,13 +1089,15 @@ export const sanitizeURL = async (url, opt = {}) => {
           }
           options.deny = options.deny.filter(s => s !== 'data');
         }
-        res = urlSanitizer.sanitize(data, options);
+        res = data;
       }
     }
     if (options.revokeObjectURL) {
       URL.revokeObjectURL(url);
     }
-    return res;
+    return res ? urlSanitizer.sanitizeAsync(res, options) : null;
+  } else if (scheme === 'data') {
+    return urlSanitizer.sanitizeAsync(url, options);
   }
   return urlSanitizer.sanitize(url, options);
 };
@@ -940,20 +1117,10 @@ export const sanitizeURL = async (url, opt = {}) => {
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
-export const sanitizeURLSync = (url, opt = {}) => {
-  if (!url || !isString(url)) {
-    return null;
-  }
-  const options = {
-    ...DEFAULT_OPTS,
-    ...opt
-  };
-  const scheme = urlSanitizer.getScheme(url);
-  if (scheme === null) {
-    if (options.allowRelative) {
-      return urlSanitizer.sanitize(url, options);
-    }
-    return null;
+export const sanitizeURLSync = (url, opt) => {
+  const { options, scheme, earlyResult } = prepareSanitizeRoute(url, opt);
+  if (earlyResult !== undefined) {
+    return earlyResult;
   }
   if (scheme === 'blob') {
     if (options.revokeObjectURL) {
