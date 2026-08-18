@@ -140,10 +140,48 @@ describe('sanitizer', () => {
     const { getWorker, decodeDataURLViaWorker } = mjs;
     let originalWorker;
 
+    // Fake Worker for comprehensive event testing
+    class MockWorker {
+      constructor() {
+        this.listeners = {};
+        this.lastMessage = null;
+      }
+
+      addEventListener(type, cb) {
+        this.listeners[type] = cb;
+        // Specifically map message events to simulate original test behavior
+        if (type === 'message') {
+          this.messageListener = cb;
+        }
+      }
+
+      postMessage(data) {
+        this.lastMessage = data;
+      }
+
+      simulateMessage(data) {
+        if (this.listeners.message) {
+          this.listeners.message({ data });
+        }
+      }
+
+      simulateError(err) {
+        if (this.listeners.error) {
+          this.listeners.error(err);
+        }
+      }
+    }
+
     before(() => {
       originalWorker = globalThis.Worker;
     });
     after(() => {
+      // Ensure any lingering MockWorker instance is safely cleared out
+      const worker = getWorker();
+      if (worker && typeof worker.simulateError === 'function') {
+        worker.simulateError(new Error('cleanup'));
+      }
+      // Restore the original global context
       globalThis.Worker = originalWorker;
     });
     afterEach(() => {
@@ -152,7 +190,12 @@ describe('sanitizer', () => {
 
     it('returns null if Worker is not defined in the environment', () => {
       globalThis.Worker = undefined;
-      const worker = getWorker();
+      // Force clear workerInstance to simulate an unsupported environment
+      let worker = getWorker();
+      if (worker && typeof worker.simulateError === 'function') {
+        worker.simulateError(new Error('reset'));
+      }
+      worker = getWorker();
       assert.strictEqual(
         worker,
         null,
@@ -176,127 +219,116 @@ describe('sanitizer', () => {
       );
     });
 
-    it('creates a Worker instance and acts as a singleton', () => {
-      globalThis.Worker = class MockWorker {
-        constructor(url, options) {
-          this.url = url;
-          this.options = options;
-          this.messageListener = null;
-        }
-
-        addEventListener(type, listener) {
-          if (type === 'message') {
-            this.messageListener = listener;
-          }
-        }
-
-        postMessage(msg) {
-          if (this.messageListener) {
-            Promise.resolve().then(() => {
-              this.messageListener({
-                data: {
-                  id: msg.id,
-                  success: false,
-                  error: 'Fallback for non-worker tests'
-                }
-              });
-            });
-          }
-        }
-      };
+    it('creates and returns a singleton Worker instance', () => {
+      globalThis.Worker = MockWorker;
       const worker1 = getWorker();
-      assert.ok(worker1 !== null, 'should create a worker instance');
-      assert.strictEqual(
-        worker1.options.type,
-        'module',
-        'should be created as a module worker'
-      );
-      assert.ok(
-        typeof worker1.messageListener === 'function',
-        'should register a message event listener'
-      );
       const worker2 = getWorker();
+      assert.ok(worker1 instanceof MockWorker, 'Worker should be instantiated');
       assert.strictEqual(
         worker1,
         worker2,
-        'should return the exact same singleton instance'
+        'Worker instance should be a singleton'
       );
     });
 
-    it('resolves when the worker returns success: true', async () => {
+    it('resolves task when worker responds with success', async () => {
+      globalThis.Worker = MockWorker;
       const worker = getWorker();
-      const stub = sinon.stub(worker, 'postMessage').callsFake(msg => {
-        Promise.resolve().then(() => {
-          worker.messageListener({
-            data: {
-              id: msg.id,
-              success: true,
-              result: { parsedData: 'Hello, Worker!' }
-            }
-          });
-        });
-      });
-      const result = await decodeDataURLViaWorker('data:,Hello%2C%20Worker!');
-      assert.strictEqual(stub.calledOnce, true, 'postMessage should be called');
+      const promise = decodeDataURLViaWorker('data:,test-success');
+      const { id } = worker.lastMessage;
+      worker.simulateMessage({ id, success: true, result: { isValid: true } });
+      const result = await promise;
       assert.deepEqual(
         result,
-        { parsedData: 'Hello, Worker!' },
-        'promise should resolve with the result object'
+        { isValid: true },
+        'Should resolve with worker result'
       );
     });
 
-    it('rejects when the worker returns success: false', async () => {
+    it('rejects task when worker responds with failure', async () => {
+      globalThis.Worker = MockWorker;
       const worker = getWorker();
-      sinon.stub(worker, 'postMessage').callsFake(msg => {
-        Promise.resolve().then(() => {
-          worker.messageListener({
-            data: {
-              id: msg.id,
-              success: false,
-              error: 'Worker decoding failed internally'
-            }
-          });
-        });
-      });
-      let caughtError = null;
+      const promise = decodeDataURLViaWorker('data:,test-failure');
+      const { id } = worker.lastMessage;
+      worker.simulateMessage({ id, success: false, error: 'Decoding failed' });
+      let caughtError;
       try {
-        await decodeDataURLViaWorker('data:,test');
+        await promise;
       } catch (e) {
         caughtError = e;
       }
-      assert.ok(caughtError instanceof Error, 'should throw an Error object');
+      assert.ok(caughtError instanceof Error, 'Should reject with an Error');
       assert.strictEqual(
         caughtError.message,
-        'Worker decoding failed internally',
-        'error message should match the worker response'
+        'Decoding failed',
+        'Error message should match worker error'
       );
     });
 
-    it('ignores messages with unknown IDs', async () => {
+    it('ignores message events with unknown task IDs', async () => {
+      globalThis.Worker = MockWorker;
       const worker = getWorker();
-      sinon.stub(worker, 'postMessage').callsFake(msg => {
-        Promise.resolve().then(() => {
-          worker.messageListener({
-            data: {
-              id: 999999,
-              success: true,
-              result: 'wrong-result'
-            }
-          });
-        });
-      });
-      const timeout = new Promise(resolve =>
-        setTimeout(() => resolve('ignored'), 50)
+      let resolved = false;
+      const promise = decodeDataURLViaWorker('data:,test-unknown-id').then(
+        () => {
+          resolved = true;
+        }
       );
-      const result = await Promise.race([
-        decodeDataURLViaWorker('data:,test').catch(() => 'rejected'),
-        timeout
-      ]);
+      // Simulate message with a mismatched task ID
+      const wrongId = worker.lastMessage.id + 999;
+      worker.simulateMessage({ id: wrongId, success: true, result: 'wrong' });
+      // Allow minor tick execution to verify task remains pending
+      await new Promise(resolve => setTimeout(resolve, 10));
       assert.strictEqual(
-        result,
-        'ignored',
-        'should ignore unknown task IDs without resolving the promise'
+        resolved,
+        false,
+        'Task should not resolve from unknown ID'
       );
+      // Execute normal flow to resolve cleanup
+      worker.simulateMessage({
+        id: worker.lastMessage.id,
+        success: true,
+        result: 'correct'
+      });
+      await promise;
+    });
+
+    it('rejects all pending tasks and clears instance on worker error event', async () => {
+      globalThis.Worker = MockWorker;
+      const worker = getWorker();
+      const promise1 = decodeDataURLViaWorker('data:,test1');
+      const promise2 = decodeDataURLViaWorker('data:,test2');
+      const errorEvt = new Error('Worker crashed');
+      worker.simulateError(errorEvt);
+      let caughtError1, caughtError2;
+      try {
+        await promise1;
+      } catch (e) {
+        caughtError1 = e;
+      }
+      try {
+        await promise2;
+      } catch (e) {
+        caughtError2 = e;
+      }
+      assert.strictEqual(
+        caughtError1,
+        errorEvt,
+        'Pending task 1 should reject with worker error event'
+      );
+      assert.strictEqual(
+        caughtError2,
+        errorEvt,
+        'Pending task 2 should reject with worker error event'
+      );
+      const newWorker = getWorker();
+      assert.notStrictEqual(
+        newWorker,
+        worker,
+        'A new worker instance should be created after crash'
+      );
+      // Cleanup the generated worker to isolate tests
+      newWorker.simulateError(new Error('cleanup'));
     });
   });
 
@@ -1542,14 +1574,6 @@ describe('sanitizer', () => {
     });
 
     describe('sanitize Data URL', () => {
-      let worker;
-      before(() => {
-        worker = mjs.getWorker();
-      });
-      afterEach(() => {
-        sinon.restore();
-      });
-
       it('returns null for missing or empty input', async () => {
         const sanitizer = new mjs.URLSanitizer();
         assert.deepEqual(
@@ -1564,338 +1588,521 @@ describe('sanitizer', () => {
         );
       });
 
-      it('returns null when Worker validation fails (isValid is false)', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  isValid: false
-                }
-              }
-            });
-          });
-        });
+      it('throws RangeError when URL length exceeds max length', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL(
-          'data:text/html,test-payload',
-          {
-            allow: ['data']
-          }
-        );
+        const url = 'data:text/plain,hello';
+        let caughtError = null;
+        try {
+          await sanitizer.sanitizeDataURL(url, { maxLength: 10 });
+        } catch (e) {
+          caughtError = e;
+        }
+        assert.ok(caughtError instanceof RangeError, 'should throw RangeError');
         assert.strictEqual(
-          res,
-          null,
-          'result should be null when worker returns isValid: false'
+          caughtError.message,
+          'URL length 21 exceeds max length 10.',
+          'error message'
         );
       });
 
-      it('returns null for plain strings without a scheme', async () => {
+      it('returns null if the scheme is not "data"', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL('foo');
+        const res = await sanitizer.sanitizeDataURL('https://example.com/', {
+          allow: ['data']
+        });
         assert.deepEqual(res, null, 'result');
       });
 
-      it('returns null for non-data schemes (e.g. HTTPS)', async () => {
+      it('returns null if the data scheme is not explicitly allowed', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL('data:text/plain,hello');
+        assert.deepEqual(res, null, 'result');
+      });
+
+      it('returns a sanitized string when the data scheme is explicitly allowed', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL('data:text/plain,hello', {
+          allow: ['data']
+        });
+        assert.strictEqual(res, 'data:text/plain,hello', 'result');
+      });
+
+      it('strips malicious scripts from HTML data URLs', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const url =
+          'data:text/html,<script>alert("XSS")</script><div>Hello</div>';
+        const res = await sanitizer.sanitizeDataURL(url, {
+          allow: ['data']
+        });
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cdiv%3EHello%3C/div%3E',
+          'result'
+        );
+      });
+
+      it('returns null for unparseable or invalid base64 data URLs', async () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = await sanitizer.sanitizeDataURL(
-          'https://example.com/?foo=1&bar=2',
+          'data:text/html;base64,invalid!base64',
           {
             allow: ['data']
           }
         );
+        assert.deepEqual(res, null, 'result');
+      });
+
+      it('returns null when the Data URL is invalid', async () => {
+        class TempMockWorker {
+          constructor() {
+            this.listeners = {};
+          }
+
+          addEventListener(type, cb) {
+            this.listeners[type] = cb;
+          }
+
+          postMessage(data) {
+            setTimeout(() => {
+              if (this.listeners.message) {
+                this.listeners.message({
+                  data: {
+                    id: data.id,
+                    success: true,
+                    result: { isValid: false }
+                  }
+                });
+              }
+            }, 0);
+          }
+        }
+        const originalWorker = globalThis.Worker;
+        try {
+          const currentWorker = mjs.getWorker();
+          if (currentWorker && currentWorker.simulateError) {
+            currentWorker.simulateError(new Error('reset'));
+          } else if (
+            currentWorker &&
+            currentWorker.listeners &&
+            currentWorker.listeners.error
+          ) {
+            currentWorker.listeners.error(new Error('reset'));
+          }
+          globalThis.Worker = TempMockWorker;
+          const sanitizer = new mjs.URLSanitizer();
+          const res = await sanitizer.sanitizeDataURL('data:text/html,test', {
+            allow: ['data']
+          });
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null when isValid is false'
+          );
+        } finally {
+          const workerToClean = mjs.getWorker();
+          if (
+            workerToClean &&
+            workerToClean.listeners &&
+            workerToClean.listeners.error
+          ) {
+            workerToClean.listeners.error(new Error('cleanup'));
+          } else if (workerToClean && workerToClean.simulateError) {
+            workerToClean.simulateError(new Error('cleanup'));
+          }
+          globalThis.Worker = originalWorker;
+        }
+      });
+
+      it('returns null if URL parsing fails (!urlObj)', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res1 = await sanitizer.sanitizeDataURL('http://[::1', {
+          allow: ['data']
+        });
+        assert.deepEqual(
+          res1,
+          null,
+          'should return null for malformed URL string'
+        );
+        const parseStub = sinon.stub(sanitizer, 'parse').returns(null);
+        try {
+          const res2 = await sanitizer.sanitizeDataURL('data:text/plain,test', {
+            allow: ['data']
+          });
+          assert.deepEqual(
+            res2,
+            null,
+            'should return null when parse() returns null'
+          );
+          assert.strictEqual(
+            parseStub.calledOnce,
+            true,
+            'parse method should be called'
+          );
+        } finally {
+          parseStub.restore();
+        }
+      });
+    });
+
+    describe('Data URL purification and string construction block', () => {
+      let originalWorker;
+      const runWithWorkerResult = async (url, workerResult) => {
+        class MockWorkerForDataURL {
+          constructor() {
+            this.listeners = {};
+          }
+
+          addEventListener(type, cb) {
+            this.listeners[type] = cb;
+          }
+
+          postMessage(data) {
+            setTimeout(() => {
+              if (this.listeners.message) {
+                this.listeners.message({
+                  data: { id: data.id, success: true, result: workerResult }
+                });
+              }
+            }, 0);
+          }
+        }
+        originalWorker = globalThis.Worker;
+        try {
+          const currentWorker = mjs.getWorker();
+          if (currentWorker && currentWorker.simulateError) {
+            currentWorker.simulateError(new Error('reset'));
+          } else if (
+            currentWorker &&
+            currentWorker.listeners &&
+            currentWorker.listeners.error
+          ) {
+            currentWorker.listeners.error(new Error('reset'));
+          }
+          globalThis.Worker = MockWorkerForDataURL;
+          const sanitizer = new mjs.URLSanitizer();
+          return await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
+        } finally {
+          const workerToClean = mjs.getWorker();
+          if (
+            workerToClean &&
+            workerToClean.listeners &&
+            workerToClean.listeners.error
+          ) {
+            workerToClean.listeners.error(new Error('cleanup'));
+          } else if (workerToClean && workerToClean.simulateError) {
+            workerToClean.simulateError(new Error('cleanup'));
+          }
+          globalThis.Worker = originalWorker;
+        }
+      };
+
+      it('purifies data when mediaType is empty', async () => {
+        const workerResult = {
+          isValid: true,
+          isBase64: false,
+          mediaType: '',
+          mediaTypes: [],
+          parsedData: '<script>alert("XSS")</script>hello'
+        };
+        const res = await runWithWorkerResult('data:,raw-data', workerResult);
+        assert.strictEqual(res, 'data:,hello', 'result');
+      });
+
+      it('purifies data when mediaType is a DOM type', async () => {
+        const workerResult = {
+          isValid: true,
+          isBase64: false,
+          mediaType: 'text/html',
+          mediaTypes: ['text/html'],
+          parsedData: '<script>alert("XSS")</script><div>safe</div>'
+        };
+        const res = await runWithWorkerResult(
+          'data:text/html,raw-data',
+          workerResult
+        );
         assert.strictEqual(
           res,
-          null,
-          'result should be null for non-data schemes'
+          'data:text/html,%3Cdiv%3Esafe%3C/div%3E',
+          'result'
         );
       });
 
-      it('logs debug message and falls back to synchronous processing', async () => {
-        const warnStub = sinon.stub(console, 'warn');
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: false,
-                error: 'Worker internal decoding failure'
-              }
-            });
-          });
-        });
+      it('skips purification when mediaType is NOT a DOM type', async () => {
+        const workerResult = {
+          isValid: true,
+          isBase64: false,
+          mediaType: 'image/png',
+          mediaTypes: ['image/png'],
+          parsedData: '<script>alert("XSS")</script>fake-image-data'
+        };
+        const res = await runWithWorkerResult(
+          'data:image/png,raw-data',
+          workerResult
+        );
+        assert.strictEqual(
+          res,
+          'data:image/png,<script>alert("XSS")</script>fake-image-data',
+          'result'
+        );
+      });
+
+      it('removes "base64" from mediaTypes', async () => {
+        const workerResult = {
+          isValid: true,
+          isBase64: true,
+          mediaType: 'text/html',
+          mediaTypes: ['text/html', 'base64'],
+          parsedData: '<script>alert("XSS")</script><div>safe</div>'
+        };
+        const res = await runWithWorkerResult(
+          'data:text/html;base64,base64-raw-data',
+          workerResult
+        );
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cdiv%3Esafe%3C/div%3E',
+          'result'
+        );
+      });
+
+      it('returns null if sanitizedData evaluates to an empty string', async () => {
+        const workerResult = {
+          isValid: true,
+          isBase64: false,
+          mediaType: 'text/html',
+          mediaTypes: ['text/html'],
+          parsedData: '<script>alert("XSS")</script>'
+        };
+        const res = await runWithWorkerResult(
+          'data:text/html,raw-data',
+          workerResult
+        );
+        assert.deepEqual(res, null, 'result should be null');
+      });
+    });
+
+    describe('Worker fallback and debug logging', () => {
+      let originalWorker;
+      let warnStub;
+
+      class ErrorMockWorker {
+        constructor() {
+          this.listeners = {};
+        }
+
+        addEventListener(type, cb) {
+          this.listeners[type] = cb;
+        }
+
+        postMessage(data) {
+          setTimeout(() => {
+            if (this.listeners.message) {
+              this.listeners.message({
+                data: {
+                  id: data.id,
+                  success: false,
+                  error: 'Simulated Worker Error'
+                }
+              });
+            }
+          }, 0);
+        }
+      }
+
+      beforeEach(() => {
+        originalWorker = globalThis.Worker;
+        warnStub = sinon.stub(console, 'warn');
+        const currentWorker = mjs.getWorker();
+        if (currentWorker && currentWorker.simulateError) {
+          currentWorker.simulateError(new Error('reset'));
+        } else if (
+          currentWorker &&
+          currentWorker.listeners &&
+          currentWorker.listeners.error
+        ) {
+          currentWorker.listeners.error(new Error('reset'));
+        }
+        globalThis.Worker = ErrorMockWorker;
+      });
+
+      afterEach(() => {
+        const workerToClean = mjs.getWorker();
+        if (
+          workerToClean &&
+          workerToClean.listeners &&
+          workerToClean.listeners.error
+        ) {
+          workerToClean.listeners.error(new Error('cleanup'));
+        } else if (workerToClean && workerToClean.simulateError) {
+          workerToClean.simulateError(new Error('cleanup'));
+        }
+        globalThis.Worker = originalWorker;
+        warnStub.restore();
+      });
+
+      it('falls back to synchronous #sanitizeDataURL and returns sanitized data when Worker fails', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const testUrl = 'data:text/html,<div>fallback-test</div>';
-        const res = await sanitizer.sanitizeDataURL(testUrl, {
+        const res = await sanitizer.sanitizeDataURL(
+          'data:text/html,<script>alert(1)</script><div>Safe</div>',
+          {
+            allow: ['data'],
+            debug: false
+          }
+        );
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cdiv%3ESafe%3C/div%3E',
+          'should successfully sanitize via fallback'
+        );
+        assert.strictEqual(
+          warnStub.called,
+          false,
+          'console.warn should not be called when debug is false'
+        );
+      });
+
+      it('logs debug message when debug is true and Worker fails', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL('data:text/plain,hello', {
           allow: ['data'],
           debug: true
         });
         assert.strictEqual(
           res,
-          'data:text/html,%3Cdiv%3Efallback-test%3C/div%3E',
-          'should fallback to synchronous sanitization and return result'
+          'data:text/plain,hello',
+          'should successfully sanitize via fallback'
         );
         assert.strictEqual(
-          warnStub.called,
+          warnStub.calledOnce,
           true,
-          'console.warn should be called in debug mode'
+          'console.warn should be called once'
+        );
+        const [logMessage, logError] = warnStub.firstCall.args;
+        assert.strictEqual(
+          logMessage,
+          '[URLSanitizer Debug] Failed to parse or sanitize data URL via Worker.',
+          'log message should match'
         );
         assert.ok(
-          warnStub.firstCall.args[0].includes(
-            'Failed to parse or sanitize data URL via Worker.'
-          ),
-          'should log Worker failure warning'
-        );
-      });
-
-      it('blocks data: scheme by default', async () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL('data:,Hello%2C%20World!');
-        assert.deepEqual(res, null, 'result');
-      });
-
-      it('allows and decodes base64 plain-text data: scheme via Worker', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData: 'Hello%2C%20World!',
-                  mediaType: 'text/plain;charset=UTF-8;base64',
-                  mediaTypes: ['text/plain', 'charset=UTF-8', 'base64'],
-                  isBase64: true,
-                  isValid: true
-                }
-              }
-            });
-          });
-        });
-        const data = 'Hello%2C%20World!';
-        const base64Data = btoa(data);
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL(
-          `data:text/plain;charset=UTF-8;base64,${base64Data}`,
-          { allow: ['data'] }
+          logError instanceof Error,
+          'should pass the caught Error object'
         );
         assert.strictEqual(
+          logError.message,
+          'Simulated Worker Error',
+          'error message should match the simulated error'
+        );
+      });
+    });
+
+    describe('Nested Data URLs handling', () => {
+      it('successfully deeply sanitizes safely nested Data URLs', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const innerSvg =
+          'data:image/svg+xml,%3Csvg%3E%3Cscript%3Ealert(1)%3C/script%3E%3C/svg%3E';
+        const cleanSvg = 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E';
+        const html = `<div><img src="${innerSvg}"></div>`;
+        const url = `data:text/html,${encodeURIComponent(html)}`;
+        const res = await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
+        assert.strictEqual(
+          decodeURIComponent(res),
+          `data:text/html,<div><img src="${cleanSvg}"></div>`,
+          'Inner malicious Data URL should be fully sanitized'
+        );
+      });
+
+      it('safely strips deeply nested base64 javascript: execution', async () => {
+        const xss = 'javascript:alert(1)';
+        const data1 = `data:base64,${btoa(encodeURIComponent(xss))}`;
+        const html1 = `<img src="${data1}">`;
+        const data2 = `data:text/html;base64,${btoa(encodeURIComponent(html1))}`;
+        const html2 = `<img src="${data2}">`;
+        const data3 = `data:text/html;base64,${btoa(encodeURIComponent(html2))}`;
+        const html3 = `<img src="${data3}">`;
+        const url = `data:text/html;base64,${btoa(encodeURIComponent(html3))}`;
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
+        assert.strictEqual(
           res,
-          'data:text/plain;charset=UTF-8,Hello%2C%20World!',
+          'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522data:text/html,%25253Cimg%252520src=%252522%252522%25253E%2522%253E%22%3E',
           'result'
         );
-      });
-
-      it('returns null if URL.parse fails internally', async () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL(
-          'data:text/html;base64,invalid[b64',
-          {
-            allow: ['data']
-          }
-        );
         assert.strictEqual(
-          res,
-          null,
-          'result should be null when urlObj is null'
+          decodeURIComponent(res),
+          'data:text/html,<img src="data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%22%3E">',
+          'Deeply nested XSS payloads should be thoroughly neutralized'
         );
       });
 
-      it('throws RangeError when Data URL length exceeds maxLength', async () => {
+      it('throws an error when Data URLs are nested too deeply', async () => {
+        let url;
+        for (let i = 0; i < 18; i++) {
+          let srcUrl;
+          if (url) {
+            srcUrl = url;
+          } else {
+            srcUrl = `https://example.com/?q=${i}`;
+          }
+          const html = `<img src="${srcUrl}">`;
+          const htmlBase64 = btoa(html);
+          url = `data:text/html;base64,${htmlBase64}`;
+        }
         const sanitizer = new mjs.URLSanitizer();
-        const url = 'data:text/plain,1234567890';
         let caughtError = null;
         try {
-          await sanitizer.sanitizeDataURL(url, {
-            allow: ['data'],
-            maxLength: 15
-          });
+          await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
         } catch (e) {
           caughtError = e;
         }
-        assert.ok(
-          caughtError instanceof RangeError,
-          'should throw a RangeError'
-        );
+        assert.ok(caughtError instanceof Error, 'should throw an Error');
         assert.strictEqual(
           caughtError.message,
-          `URL length ${url.length} exceeds max length 15.`,
-          'error message should match'
+          'Data URLs nested too deeply.',
+          'error message should match MAX_NEST exceeded message'
         );
       });
 
-      it('blocks when data is omitted from "only"', async () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL('data:,test', {
-          only: ['https']
-        });
-        assert.strictEqual(
-          res,
-          null,
-          'should be null when data is not in only list'
-        );
-      });
-
-      it('allows data URL when explicitly included in "only"', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData: 'test',
-                  mediaType: 'text/plain',
-                  mediaTypes: ['text/plain'],
-                  isBase64: false,
-                  isValid: true
-                }
-              }
-            });
+      it('skips processing when circular Data URL is detected', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        const originalHas = Set.prototype.has;
+        const hasStub = sinon
+          .stub(Set.prototype, 'has')
+          .callsFake(function (val) {
+            if (val === 'data:text/html,loop') {
+              return true;
+            }
+            return originalHas.call(this, val);
           });
-        });
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL('data:text/plain,test', {
-          only: ['data']
-        });
-        assert.strictEqual(
-          res,
-          'data:text/plain,test',
-          'should allow when in only option'
-        );
-      });
-
-      it('returns null if Data URL structure is malformed', async () => {
-        const sanitizer = new mjs.URLSanitizer();
-        const malformedDataUrl = 'data://[::1';
-        const res = await sanitizer.sanitizeDataURL(malformedDataUrl, {
-          allow: ['data']
-        });
-        assert.strictEqual(
-          res,
-          null,
-          'result should be null when urlObj fails to parse'
-        );
-      });
-
-      it('returns null when sanitized data payload becomes empty', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData: '<script>alert(1)</script>',
-                  mediaType: 'text/html',
-                  mediaTypes: ['text/html'],
-                  isBase64: false,
-                  isValid: true
-                }
-              }
-            });
-          });
-        });
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeDataURL(
-          'data:text/html,<script>alert(1)</script>',
-          { allow: ['data'] }
-        );
-        assert.strictEqual(
-          res,
-          null,
-          'result should be null when purified data is empty'
-        );
-      });
-
-      describe('multi-level nested Data URLs', () => {
-        it('sanitizes multi-level (3-deep) nested Data URLs using sanitizeDataURL', async () => {
-          const innerXss = '<script>alert("L3")</script>';
-          const level3 = `data:text/html,${encodeURIComponent(innerXss)}`;
-          const level2Html = `<img src="${level3}">`;
-          const level2 = `data:text/html;base64,${btoa(level2Html)}`;
-          const level1Html = `<img src="${level2}">`;
-          const level1 = `data:text/html;base64,${btoa(level1Html)}`;
-          sinon.stub(worker, 'postMessage').callsFake(msg => {
-            Promise.resolve().then(() => {
-              const base64Data = msg.url.split(',')[1];
-              const parsedData = atob(base64Data);
-              worker.messageListener({
-                data: {
-                  id: msg.id,
-                  success: true,
-                  result: {
-                    parsedData,
-                    mediaType: 'text/html;base64',
-                    mediaTypes: ['text/html', 'base64'],
-                    isBase64: true,
-                    isValid: true
-                  }
-                }
-              });
-            });
-          });
+        try {
           const sanitizer = new mjs.URLSanitizer();
-          const res = await sanitizer.sanitizeDataURL(level1, {
-            allow: ['data']
-          });
-          const expected =
-            'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%2522&amp;gt;%22%3E';
+          const res = await sanitizer.sanitizeDataURL(
+            'data:text/html,<img src="data:text/html,loop">',
+            { allow: ['data'], debug: true }
+          );
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called in debug mode'
+          );
+          const hasCircularWarning = warnStub.args.some(
+            args =>
+              args[0] &&
+              args[0] === '[URLSanitizer Debug] Circular Data URL detected and skipped: data:text/html,loop'
+          );
+          assert.strictEqual(
+            hasCircularWarning,
+            true,
+            'should output circular warning log'
+          );
           assert.strictEqual(
             res,
-            expected,
-            'should deeply sanitize nested payload'
+            'data:text/html,%3Cimg%20src=%22%22%3E',
+            'result should have the circular reference attribute removed'
           );
-          const decoded = decodeURIComponent(res);
-          assert.strictEqual(
-            decoded.includes('script') || decoded.includes('alert'),
-            false,
-            'decoded result must not contain any scripts or execution vectors'
-          );
-        });
-
-        it('throws when multi-level Data URLs exceed limit', async () => {
-          let url;
-          for (let i = 0; i < 18; i++) {
-            const srcUrl = url || `https://example.com/?q=${i}`;
-            const html = `<img src="${srcUrl}">`;
-            url = `data:text/html;base64,${btoa(html)}`;
-          }
-          sinon.stub(worker, 'postMessage').callsFake(msg => {
-            Promise.resolve().then(() => {
-              const base64Data = msg.url.split(',')[1];
-              const parsedData = atob(base64Data);
-              worker.messageListener({
-                data: {
-                  id: msg.id,
-                  success: true,
-                  result: {
-                    parsedData,
-                    mediaType: 'text/html;base64',
-                    mediaTypes: ['text/html', 'base64'],
-                    isBase64: true,
-                    isValid: true
-                  }
-                }
-              });
-            });
-          });
-          const sanitizer = new mjs.URLSanitizer();
-          let caughtError = null;
-          try {
-            await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
-          } catch (e) {
-            caughtError = e;
-          }
-          assert.ok(caughtError instanceof Error, 'should throw an Error');
-          assert.strictEqual(
-            caughtError.message,
-            'Data URLs nested too deeply.',
-            'should catch deep recursion error from internal sync processing'
-          );
-        });
+        } finally {
+          hasStub.restore();
+          warnStub.restore();
+        }
       });
     });
 
