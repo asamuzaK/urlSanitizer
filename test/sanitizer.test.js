@@ -1564,6 +1564,34 @@ describe('sanitizer', () => {
         );
       });
 
+      it('returns null when Worker validation fails (isValid is false)', async () => {
+        sinon.stub(worker, 'postMessage').callsFake(msg => {
+          Promise.resolve().then(() => {
+            worker.messageListener({
+              data: {
+                id: msg.id,
+                success: true,
+                result: {
+                  isValid: false
+                }
+              }
+            });
+          });
+        });
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL(
+          'data:text/html,test-payload',
+          {
+            allow: ['data']
+          }
+        );
+        assert.strictEqual(
+          res,
+          null,
+          'result should be null when worker returns isValid: false'
+        );
+      });
+
       it('returns null for plain strings without a scheme', async () => {
         const sanitizer = new mjs.URLSanitizer();
         const res = await sanitizer.sanitizeDataURL('foo');
@@ -1582,6 +1610,43 @@ describe('sanitizer', () => {
           res,
           null,
           'result should be null for non-data schemes'
+        );
+      });
+
+      it('logs debug message and falls back to synchronous processing', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        sinon.stub(worker, 'postMessage').callsFake(msg => {
+          Promise.resolve().then(() => {
+            worker.messageListener({
+              data: {
+                id: msg.id,
+                success: false,
+                error: 'Worker internal decoding failure'
+              }
+            });
+          });
+        });
+        const sanitizer = new mjs.URLSanitizer();
+        const testUrl = 'data:text/html,<div>fallback-test</div>';
+        const res = await sanitizer.sanitizeDataURL(testUrl, {
+          allow: ['data'],
+          debug: true
+        });
+        assert.strictEqual(
+          res,
+          'data:text/html,%3Cdiv%3Efallback-test%3C/div%3E',
+          'should fallback to synchronous sanitization and return result'
+        );
+        assert.strictEqual(
+          warnStub.called,
+          true,
+          'console.warn should be called in debug mode'
+        );
+        assert.ok(
+          warnStub.firstCall.args[0].includes(
+            'Failed to parse or sanitize data URL via Worker.'
+          ),
+          'should log Worker failure warning'
         );
       });
 
@@ -1712,6 +1777,36 @@ describe('sanitizer', () => {
           res,
           null,
           'result should be null when urlObj fails to parse'
+        );
+      });
+
+      it('returns null when sanitized data payload becomes empty', async () => {
+        sinon.stub(worker, 'postMessage').callsFake(msg => {
+          Promise.resolve().then(() => {
+            worker.messageListener({
+              data: {
+                id: msg.id,
+                success: true,
+                result: {
+                  parsedData: '<script>alert(1)</script>',
+                  mediaType: 'text/html',
+                  mediaTypes: ['text/html'],
+                  isBase64: false,
+                  isValid: true
+                }
+              }
+            });
+          });
+        });
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL(
+          'data:text/html,<script>alert(1)</script>',
+          { allow: ['data'] }
+        );
+        assert.strictEqual(
+          res,
+          null,
+          'result should be null when purified data is empty'
         );
       });
 
