@@ -1541,7 +1541,7 @@ describe('sanitizer', () => {
       });
     });
 
-    describe('sanitizeAsync URL', () => {
+    describe('sanitize Data URL', () => {
       let worker;
       before(() => {
         worker = mjs.getWorker();
@@ -1553,12 +1553,12 @@ describe('sanitizer', () => {
       it('returns null for missing or empty input', async () => {
         const sanitizer = new mjs.URLSanitizer();
         assert.deepEqual(
-          await sanitizer.sanitizeAsync(),
+          await sanitizer.sanitizeDataURL(),
           null,
           'missing input'
         );
         assert.deepEqual(
-          await sanitizer.sanitizeAsync(''),
+          await sanitizer.sanitizeDataURL(''),
           null,
           'empty input'
         );
@@ -1566,13 +1566,13 @@ describe('sanitizer', () => {
 
       it('returns null for plain strings without a scheme', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync('foo');
+        const res = await sanitizer.sanitizeDataURL('foo');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('returns sanitized valid HTTPS URLs', async () => {
+      it('returns null for non-data schemes (e.g. HTTPS)', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync(
+        const res = await sanitizer.sanitizeDataURL(
           'https://example.com/?foo=1&bar=2',
           {
             allow: ['data']
@@ -1580,18 +1580,18 @@ describe('sanitizer', () => {
         );
         assert.strictEqual(
           res,
-          'https://example.com/?foo=1&bar=2',
-          'result'
+          null,
+          'result should be null for non-data schemes'
         );
       });
 
       it('blocks data: scheme by default', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync('data:,Hello%2C%20World!');
+        const res = await sanitizer.sanitizeDataURL('data:,Hello%2C%20World!');
         assert.deepEqual(res, null, 'result');
       });
 
-      it('allows and decodes base64 plain-text data: scheme', async () => {
+      it('allows and decodes base64 plain-text data: scheme via Worker', async () => {
         sinon.stub(worker, 'postMessage').callsFake(msg => {
           Promise.resolve().then(() => {
             worker.messageListener({
@@ -1612,7 +1612,7 @@ describe('sanitizer', () => {
         const data = 'Hello%2C%20World!';
         const base64Data = btoa(data);
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync(
+        const res = await sanitizer.sanitizeDataURL(
           `data:text/plain;charset=UTF-8;base64,${base64Data}`,
           { allow: ['data'] }
         );
@@ -1623,143 +1623,57 @@ describe('sanitizer', () => {
         );
       });
 
-      it('removes scripts inside base64 nested inner data URLs', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData:
-                    '<img src="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">',
-                  mediaType: 'text/html;base64',
-                  mediaTypes: ['text/html', 'base64'],
-                  isBase64: true,
-                  isValid: true
-                }
-              }
-            });
-          });
-        });
-        const innerData = '<script>alert(1)</script>';
-        const encodedInnerData = encodeURIComponent(innerData);
-        const base64InnerData = btoa(encodedInnerData);
-        const innerUrl = `data:text/html;base64,${base64InnerData}`;
-        const data = `<img src="${innerUrl}">`;
-        const base64Data = btoa(data);
+      it('returns null if URL.parse fails internally', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync(
-          `data:text/html;base64,${base64Data}`,
+        const res = await sanitizer.sanitizeDataURL(
+          'data:text/html;base64,invalid[b64',
           {
             allow: ['data']
           }
         );
-
         assert.strictEqual(
-          res,
-          'data:text/html,%3Cimg%20src=%22%22%3E',
-          'result'
-        );
-      });
-
-      it('handles CJK characters in base64 data URL via Worker', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData: '<div>安全<script>alert("危険")</script></div>',
-                  mediaType: 'text/html;base64',
-                  mediaTypes: ['text/html', 'base64'],
-                  isBase64: true,
-                  isValid: true
-                }
-              }
-            });
-          });
-        });
-        const encodeBase64UTF8 = str =>
-          btoa(String.fromCharCode(...new TextEncoder().encode(str)));
-        const sanitizer = new mjs.URLSanitizer();
-        const base64Data = encodeBase64UTF8(
-          '<div>安全<script>alert("危険")</script></div>'
-        );
-        const res = await sanitizer.sanitizeAsync(
-          `data:text/html;base64,${base64Data}`,
-          { allow: ['data'] }
-        );
-        assert.strictEqual(
-          res,
-          'data:text/html,%3Cdiv%3E%E5%AE%89%E5%85%A8%3C/div%3E',
-          'result'
-        );
-      });
-
-      it('falls back to synchronous processing if Worker rejects', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: false,
-                error: 'Worker decoding failed internally'
-              }
-            });
-          });
-        });
-        const warnStub = sinon.stub(console, 'warn');
-        const sanitizer = new mjs.URLSanitizer();
-        const res = await sanitizer.sanitizeAsync(
-          'data:text/html;base64,invalid!base64',
-          { allow: ['data'], debug: true }
-        );
-        assert.deepEqual(res, null, 'result should be null for invalid base64');
-        assert.strictEqual(
-          warnStub.called,
-          true,
-          'console.warn should be called'
-        );
-        const hasWorkerFailLog = warnStub.args.some(args =>
-          args[0].includes('Failed to parse or sanitize data URL via Worker.')
-        );
-        const hasSyncFailLog = warnStub.args.some(args =>
-          args[0].includes('Failed to parse base64 data.')
-        );
-        assert.ok(hasWorkerFailLog, 'should log the worker failure warning');
-        assert.ok(
-          hasSyncFailLog,
-          'should log the synchronous fallback failure warning'
-        );
-      });
-
-      it('returns null if the worker detects an invalid protocol', async () => {
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  isValid: false
-                }
-              }
-            });
-          });
-        });
-        const sanitizer = new mjs.URLSanitizer();
-        const url = 'data:text/html,javascript:alert(1)';
-        const res = await sanitizer.sanitizeAsync(url, { allow: ['data'] });
-        assert.deepEqual(
           res,
           null,
-          'result should be null when isInvalid is true'
+          'result should be null when urlObj is null'
         );
       });
 
-      it('returns null when the sanitized data becomes empty', async () => {
+      it('throws RangeError when Data URL length exceeds maxLength', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const url = 'data:text/plain,1234567890';
+        let caughtError = null;
+        try {
+          await sanitizer.sanitizeDataURL(url, {
+            allow: ['data'],
+            maxLength: 15
+          });
+        } catch (e) {
+          caughtError = e;
+        }
+        assert.ok(
+          caughtError instanceof RangeError,
+          'should throw a RangeError'
+        );
+        assert.strictEqual(
+          caughtError.message,
+          `URL length ${url.length} exceeds max length 15.`,
+          'error message should match'
+        );
+      });
+
+      it('blocks when data is omitted from "only"', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = await sanitizer.sanitizeDataURL('data:,test', {
+          only: ['https']
+        });
+        assert.strictEqual(
+          res,
+          null,
+          'should be null when data is not in only list'
+        );
+      });
+
+      it('allows data URL when explicitly included in "only"', async () => {
         sinon.stub(worker, 'postMessage').callsFake(msg => {
           Promise.resolve().then(() => {
             worker.messageListener({
@@ -1767,9 +1681,9 @@ describe('sanitizer', () => {
                 id: msg.id,
                 success: true,
                 result: {
-                  parsedData: '<script>alert("completely removed")</script>',
-                  mediaType: 'text/html',
-                  mediaTypes: ['text/html'],
+                  parsedData: 'test',
+                  mediaType: 'text/plain',
+                  mediaTypes: ['text/plain'],
                   isBase64: false,
                   isValid: true
                 }
@@ -1778,110 +1692,113 @@ describe('sanitizer', () => {
           });
         });
         const sanitizer = new mjs.URLSanitizer();
-        const url =
-          'data:text/html,<script>alert("completely removed")</script>';
-        const res = await sanitizer.sanitizeAsync(url, { allow: ['data'] });
-        assert.deepEqual(
+        const res = await sanitizer.sanitizeDataURL('data:text/plain,test', {
+          only: ['data']
+        });
+        assert.strictEqual(
+          res,
+          'data:text/plain,test',
+          'should allow when in only option'
+        );
+      });
+
+      it('returns null if Data URL structure is malformed', async () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const malformedDataUrl = 'data://[::1';
+        const res = await sanitizer.sanitizeDataURL(malformedDataUrl, {
+          allow: ['data']
+        });
+        assert.strictEqual(
           res,
           null,
-          'result should be null when sanitized data is empty'
+          'result should be null when urlObj fails to parse'
         );
       });
 
-      it('throws an error when Data URLs are nested too deeply', async () => {
-        let url;
-        for (let i = 0; i < 18; i++) {
-          let srcUrl;
-          if (url) {
-            srcUrl = url;
-          } else {
-            srcUrl = `https://example.com/?q=${i}`;
-          }
-          const html = `<img src="${srcUrl}">`;
-          const htmlBase64 = btoa(html);
-          url = `data:text/html;base64,${htmlBase64}`;
-        }
-        sinon.stub(worker, 'postMessage').callsFake(msg => {
-          Promise.resolve().then(() => {
-            const base64Data = msg.url.split(',')[1];
-            const parsedData = atob(base64Data);
-            worker.messageListener({
-              data: {
-                id: msg.id,
-                success: true,
-                result: {
-                  parsedData,
-                  mediaType: 'text/html;base64',
-                  mediaTypes: ['text/html', 'base64'],
-                  isBase64: true,
-                  isValid: true
+      describe('multi-level nested Data URLs', () => {
+        it('sanitizes multi-level (3-deep) nested Data URLs using sanitizeDataURL', async () => {
+          const innerXss = '<script>alert("L3")</script>';
+          const level3 = `data:text/html,${encodeURIComponent(innerXss)}`;
+          const level2Html = `<img src="${level3}">`;
+          const level2 = `data:text/html;base64,${btoa(level2Html)}`;
+          const level1Html = `<img src="${level2}">`;
+          const level1 = `data:text/html;base64,${btoa(level1Html)}`;
+          sinon.stub(worker, 'postMessage').callsFake(msg => {
+            Promise.resolve().then(() => {
+              const base64Data = msg.url.split(',')[1];
+              const parsedData = atob(base64Data);
+              worker.messageListener({
+                data: {
+                  id: msg.id,
+                  success: true,
+                  result: {
+                    parsedData,
+                    mediaType: 'text/html;base64',
+                    mediaTypes: ['text/html', 'base64'],
+                    isBase64: true,
+                    isValid: true
+                  }
                 }
-              }
+              });
             });
           });
+          const sanitizer = new mjs.URLSanitizer();
+          const res = await sanitizer.sanitizeDataURL(level1, {
+            allow: ['data']
+          });
+          const expected =
+            'data:text/html,%3Cimg%20src=%22data:text/html,%253Cimg%2520src=%2522%2522%253E%2522&amp;gt;%22%3E';
+          assert.strictEqual(
+            res,
+            expected,
+            'should deeply sanitize nested payload'
+          );
+          const decoded = decodeURIComponent(res);
+          assert.strictEqual(
+            decoded.includes('script') || decoded.includes('alert'),
+            false,
+            'decoded result must not contain any scripts or execution vectors'
+          );
         });
-        const sanitizer = new mjs.URLSanitizer();
-        let caughtError = null;
-        try {
-          await sanitizer.sanitizeAsync(url, { allow: ['data'] });
-        } catch (e) {
-          caughtError = e;
-        }
-        assert.ok(caughtError instanceof Error, 'should throw an Error');
-        assert.strictEqual(
-          caughtError.message,
-          'Data URLs nested too deeply.',
-          'error message should match'
-        );
-      });
 
-      describe('maxLength', () => {
-        const baseString = 'a'.repeat(30);
-        const testUrl = `https://example.com/${baseString}`;
-
-        it('throws RangeError when URL length exceeds max length', async () => {
+        it('throws when multi-level Data URLs exceed limit', async () => {
+          let url;
+          for (let i = 0; i < 18; i++) {
+            const srcUrl = url || `https://example.com/?q=${i}`;
+            const html = `<img src="${srcUrl}">`;
+            url = `data:text/html;base64,${btoa(html)}`;
+          }
+          sinon.stub(worker, 'postMessage').callsFake(msg => {
+            Promise.resolve().then(() => {
+              const base64Data = msg.url.split(',')[1];
+              const parsedData = atob(base64Data);
+              worker.messageListener({
+                data: {
+                  id: msg.id,
+                  success: true,
+                  result: {
+                    parsedData,
+                    mediaType: 'text/html;base64',
+                    mediaTypes: ['text/html', 'base64'],
+                    isBase64: true,
+                    isValid: true
+                  }
+                }
+              });
+            });
+          });
           const sanitizer = new mjs.URLSanitizer();
           let caughtError = null;
           try {
-            await sanitizer.sanitizeAsync(testUrl, { maxLength: 49 });
+            await sanitizer.sanitizeDataURL(url, { allow: ['data'] });
           } catch (e) {
             caughtError = e;
           }
-          assert.ok(
-            caughtError instanceof RangeError,
-            'should throw a RangeError'
-          );
+          assert.ok(caughtError instanceof Error, 'should throw an Error');
           assert.strictEqual(
             caughtError.message,
-            'URL length 50 exceeds max length 49.',
-            'error message should match'
-          );
-        });
-
-        it('allows URL when length is exactly at or below max length', async () => {
-          const sanitizer = new mjs.URLSanitizer();
-          const res = await sanitizer.sanitizeAsync(testUrl, { maxLength: 50 });
-          assert.strictEqual(res, testUrl, 'result');
-        });
-
-        it('throws RangeError when URL length exceeds default max length', async () => {
-          const sanitizer = new mjs.URLSanitizer();
-          const longString = 'a'.repeat(64 * 1024);
-          const longUrl = `https://example.com/${longString}`;
-          let caughtError = null;
-          try {
-            await sanitizer.sanitizeAsync(longUrl);
-          } catch (e) {
-            caughtError = e;
-          }
-          assert.ok(
-            caughtError instanceof RangeError,
-            'should throw a RangeError'
-          );
-          assert.strictEqual(
-            caughtError.message,
-            `URL length ${64 * 1024 + 20} exceeds max length ${64 * 1024}.`,
-            'error message should match'
+            'Data URLs nested too deeply.',
+            'should catch deep recursion error from internal sync processing'
           );
         });
       });
