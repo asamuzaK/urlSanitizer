@@ -1049,22 +1049,6 @@ const normalizeSchemes = schemes =>
  * @param {number} [opt.maxLength] - The maximum allowed URL length.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
-/**
- * Asynchronously sanitizes the given URL.
- * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
- * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
- * @param {string} url - URL.
- * @param {object} [opt] - options.
- * @param {string[]} [opt.allow] - The array of schemes to allow.
- * @param {string[]} [opt.deny] - The array of schemes to deny.
- * @param {string[]} [opt.only] - The array of specific schemes to allow.
- * @param {boolean} [opt.allowRelative] - Allow relative URLs.
- * @param {boolean} [opt.debug] - Enable debug mode.
- * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL after sanitization.
- * @param {number} [opt.maxBlobSize] - The maximum allowed Blob size in bytes.
- * @param {number} [opt.maxLength] - The maximum allowed URL length.
- * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
- */
 export const sanitizeURL = async (url, opt) => {
   const { options, scheme, earlyResult } = prepareSanitizeRoute(url, opt);
   if (earlyResult !== undefined) {
