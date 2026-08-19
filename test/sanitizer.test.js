@@ -308,6 +308,124 @@ describe('sanitizer', () => {
       assert.strictEqual(sanitizer instanceof URLSanitizer, true, 'instance');
     });
 
+    describe('prepareOptions', () => {
+      it('returns { isValid: false } for missing or non-string URL input', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        assert.deepEqual(
+          sanitizer.prepareOptions(),
+          { isValid: false },
+          'undefined input'
+        );
+        assert.deepEqual(
+          sanitizer.prepareOptions(null),
+          { isValid: false },
+          'null input'
+        );
+        assert.deepEqual(
+          sanitizer.prepareOptions(123),
+          { isValid: false },
+          'number input'
+        );
+        assert.deepEqual(
+          sanitizer.prepareOptions({}),
+          { isValid: false },
+          'object input'
+        );
+      });
+
+      it('returns default options and the scheme for a valid absolute URL', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.prepareOptions('https://example.com');
+        assert.strictEqual(
+          res.scheme,
+          'https',
+          'should extract scheme correctly'
+        );
+        assert.strictEqual(
+          res.options.allowRelative,
+          false,
+          'allowRelative should default to false'
+        );
+        assert.strictEqual(
+          res.options.debug,
+          false,
+          'debug should default to false'
+        );
+        assert.strictEqual(
+          res.isValid,
+          undefined,
+          'isValid should remain undefined for standard valid flow'
+        );
+      });
+
+      it('merges custom user options with DEFAULT_OPTS', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const customOpts = {
+          debug: true,
+          allowRelative: true,
+          allow: ['http']
+        };
+        const res = sanitizer.prepareOptions('http://example.com', customOpts);
+        assert.strictEqual(
+          res.scheme,
+          'http',
+          'should extract scheme correctly'
+        );
+        assert.strictEqual(
+          res.options.debug,
+          true,
+          'should override debug option'
+        );
+        assert.strictEqual(
+          res.options.allowRelative,
+          true,
+          'should override allowRelative option'
+        );
+        assert.deepEqual(
+          res.options.allow,
+          ['http'],
+          'should override allow option array'
+        );
+        assert.strictEqual(
+          res.options.revokeObjectURL,
+          false,
+          'should retain un-overridden defaults'
+        );
+      });
+
+      it('returns { isValid: false } for relative URLs when allowRelative is false', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.prepareOptions('/path/to/resource');
+        assert.deepEqual(
+          res,
+          { isValid: false },
+          'should reject relative URL by default'
+        );
+      });
+
+      it('returns options and null scheme for relative URLs when allowRelative is true', () => {
+        const sanitizer = new mjs.URLSanitizer();
+        const res = sanitizer.prepareOptions('/path/to/resource', {
+          allowRelative: true
+        });
+        assert.strictEqual(
+          res.scheme,
+          null,
+          'scheme should be null for relative URLs'
+        );
+        assert.strictEqual(
+          res.options.allowRelative,
+          true,
+          'allowRelative option should be preserved'
+        );
+        assert.strictEqual(
+          res.isValid,
+          undefined,
+          'isValid should be undefined, permitting the flow'
+        );
+      });
+    });
+
     describe('sanitize URL', () => {
       it('returns null for empty input', () => {
         const sanitizer = new URLSanitizer();
@@ -1651,13 +1769,21 @@ describe('sanitizer', () => {
         globalThis.Worker = undefined;
         const sanitizer = new mjs.URLSanitizer();
         const buffer = new ArrayBuffer(8);
-        const parseStub = sinon.stub(sanitizer, 'parse').returns(null);
+        const parseStub = sinon.stub(URL, 'parse').returns(null);
         try {
           const res = await sanitizer.sanitizeBuffer(buffer, 'image/png', {
             allow: ['data']
           });
-          assert.strictEqual(res, null, 'result should be null when parse() returns null');
-          assert.strictEqual(parseStub.called, true, 'parse method should have been called');
+          assert.strictEqual(
+            res,
+            null,
+            'result should be null when URL.parse() returns null'
+          );
+          assert.strictEqual(
+            parseStub.called,
+            true,
+            'URL.parse should have been called'
+          );
         } finally {
           parseStub.restore();
           globalThis.Worker = originalWorker;
@@ -1805,34 +1931,16 @@ describe('sanitizer', () => {
         }
       });
 
-      it('returns null if URL parsing fails (!urlObj)', async () => {
+      it('returns null if URL parsing fails', async () => {
         const sanitizer = new mjs.URLSanitizer();
-        const res1 = await sanitizer.sanitizeDataURL('http://[::1', {
+        const res = await sanitizer.sanitizeDataURL('http://[::1', {
           allow: ['data']
         });
         assert.deepEqual(
-          res1,
+          res,
           null,
           'should return null for malformed URL string'
         );
-        const parseStub = sinon.stub(sanitizer, 'parse').returns(null);
-        try {
-          const res2 = await sanitizer.sanitizeDataURL('data:text/plain,test', {
-            allow: ['data']
-          });
-          assert.deepEqual(
-            res2,
-            null,
-            'should return null when parse() returns null'
-          );
-          assert.strictEqual(
-            parseStub.calledOnce,
-            true,
-            'parse method should be called'
-          );
-        } finally {
-          parseStub.restore();
-        }
       });
     });
 
@@ -1882,7 +1990,7 @@ describe('sanitizer', () => {
         }
       };
 
-      it('purifies data when it requires DOMPurify (needsPurify: true)', async () => {
+      it('purifies data when it requires DOMPurify', async () => {
         const workerResult = {
           isValid: true,
           needsPurify: true,
@@ -1911,7 +2019,7 @@ describe('sanitizer', () => {
         );
       });
 
-      it('skips purification and encodes to base64 when needsPurify is false (e.g. images)', async () => {
+      it('skips purification and encodes to base64', async () => {
         const rawString = '<script>alert("XSS")</script>fake-image-data';
         const buffer = new TextEncoder().encode(rawString).buffer;
         const workerResult = {
@@ -1970,15 +2078,15 @@ describe('sanitizer', () => {
         const workerResult = {
           isValid: true,
           needsPurify: false,
-          mimeType: '', // 空のMIMEタイプをシミュレート
-          buffer: buffer
+          mimeType: '',
+          buffer
         };
         const res = await runWithWorkerResult('data:,raw-data', workerResult);
-        
+
         const expectedBase64 = btoa(rawString);
         assert.strictEqual(
-          res, 
-          `data:base64,${expectedBase64}`, 
+          res,
+          `data:base64,${expectedBase64}`,
           'result should set finalMimeType exactly to "base64"'
         );
       });
@@ -1992,12 +2100,15 @@ describe('sanitizer', () => {
           isValid: true,
           needsPurify: false,
           mimeType: 'image/jpeg;base64',
-          buffer: buffer
+          buffer
         };
-        const res = await runWithWorkerResult(`data:image/jpeg;base64,${validBase64}`, workerResult);
+        const res = await runWithWorkerResult(
+          `data:image/jpeg;base64,${validBase64}`,
+          workerResult
+        );
         assert.strictEqual(
-          res, 
-          `data:image/jpeg;base64,${validBase64}`, 
+          res,
+          `data:image/jpeg;base64,${validBase64}`,
           'result should not duplicate the base64 flag'
         );
       });
@@ -2129,16 +2240,25 @@ describe('sanitizer', () => {
             debug: true
           });
           assert.strictEqual(
-            res, 
-            'data:text/plain,hello', 
+            res,
+            'data:text/plain,hello',
             'should successfully sanitize via sync fallback'
           );
-          assert.strictEqual(warnStub.called, true, 'console.warn should be called');
-          const hasCorrectLog = warnStub.args.some(args => 
-            args[0] === '[URLSanitizer Debug] Failed to fetch data URL as buffer. Falling back to sync.'
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
           );
-          assert.strictEqual(hasCorrectLog, true, 'should include the correct debug message');
-          
+          const hasCorrectLog = warnStub.args.some(
+            args =>
+              args[0] ===
+              '[URLSanitizer Debug] Failed to fetch data URL as buffer. Falling back to sync.'
+          );
+          assert.strictEqual(
+            hasCorrectLog,
+            true,
+            'should include the correct debug message'
+          );
         } finally {
           globalThis.fetch = originalFetch;
         }
@@ -4077,16 +4197,20 @@ describe('sanitizer', () => {
 
       it('formats Data URL with only base64 for blob URLs without mimeType', async () => {
         const data = 'Hello, Blob!';
-        const blob = new Blob([data]); 
+        const blob = new Blob([data]);
         const url = URL.createObjectURL(blob);
         const res = await func(url);
         assert.strictEqual(res.valid, true, 'result should be valid');
-        assert.deepEqual(res.data, {
-          mime: '',
-          base64: false,
-          data: data
-        }, 'data URL components should be parsed and decoded correctly');
-        
+        assert.deepEqual(
+          res.data,
+          {
+            mime: '',
+            base64: false,
+            data
+          },
+          'data URL components should be parsed and decoded correctly'
+        );
+
         URL.revokeObjectURL(url);
       });
     });
