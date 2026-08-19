@@ -68,29 +68,57 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
 /**
+ * Normalizes the URL string using NFKC.
+ * @param {string} url - The URL string to normalize.
+ * @param {boolean} [isScheme] - True if the given `url` is a scheme.
+ * @returns {string|null} The normalized URL string, or null.
+ */
+export const normalizeURL = (url, isScheme = false) => {
+  if (!isString(url)) {
+    return null;
+  }
+  const normalized = url.normalize('NFKC');
+  if (isScheme) {
+    return normalized.trim().toLowerCase().replace(/:$/, '');
+  }
+  return normalized;
+};
+
+/**
+ * Parses a URL string with a fallback.
+ * @param {string} url - The URL string to parse.
+ * @param {string} [base] - The base URL string.
+ * @param {boolean} [normalize] - Indicates whether to normalize the URI.
+ * @returns {URL|null} The parsed URL object, or null.
+ */
+export const parseURL = (url, base, normalize = false) => {
+  if (!isString(url) || url === '') {
+    return null;
+  }
+  let urlStr = url;
+  let baseStr = base && isString(base) ? base : '';
+  if (normalize) {
+    urlStr = normalizeURL(urlStr);
+    if (baseStr) {
+      baseStr = normalizeURL(baseStr);
+    }
+  }
+  if (typeof URL.parse === 'function') {
+    return baseStr ? URL.parse(urlStr, baseStr) : URL.parse(urlStr);
+  }
+  try {
+    return baseStr ? new URL(urlStr, baseStr) : new URL(urlStr);
+  } catch {
+    return null;
+  }
+};
+
+/**
  * URI schemes
  */
 export class URISchemes {
   /* private fields */
   #schemes = new Set(uriSchemes);
-
-  /**
-   * Parses a URI/URL string with a fallback.
-   * @private
-   * @param {string} uri - The URI/URL string to parse.
-   * @param {string} [base] - The base URL string.
-   * @returns {URL|null} The parsed URL object, or null.
-   */
-  #parseURL(uri, base) {
-    if (typeof URL.parse === 'function') {
-      return base !== undefined ? URL.parse(uri, base) : URL.parse(uri);
-    }
-    try {
-      return base !== undefined ? new URL(uri, base) : new URL(uri);
-    } catch {
-      return null;
-    }
-  }
 
   /**
    * Gets the list of registered URI schemes.
@@ -139,14 +167,7 @@ export class URISchemes {
    * @returns {string|null} The normalized URI string, or null.
    */
   normalize(uri, isScheme = false) {
-    if (!isString(uri)) {
-      return null;
-    }
-    const normalized = uri.normalize('NFKC');
-    if (isScheme) {
-      return normalized.trim().toLowerCase().replace(/:$/, '');
-    }
-    return normalized;
+    return normalizeURL(uri, isScheme);
   }
 
   /**
@@ -157,20 +178,7 @@ export class URISchemes {
    * @returns {URL|null} The parsed URL object, or null.
    */
   parse(uri, base, normalize = false) {
-    if (!isString(uri)) {
-      return null;
-    }
-    if (normalize) {
-      const normalized = this.normalize(uri);
-      if (base && isString(base)) {
-        return this.#parseURL(normalized, this.normalize(base));
-      }
-      return this.#parseURL(normalized);
-    }
-    if (base && isString(base)) {
-      return this.#parseURL(uri, base);
-    }
-    return this.#parseURL(uri);
+    return parseURL(uri, base, normalize);
   }
 
   /**

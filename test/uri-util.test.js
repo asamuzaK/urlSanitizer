@@ -11,6 +11,146 @@ import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
 import * as mjs from '../src/mjs/uri-util.js';
 
 describe('uri-util', () => {
+  describe('normalize URL', () => {
+    const func = mjs.normalizeURL;
+
+    it('returns null if the given url is not a string', () => {
+      assert.strictEqual(func(123), null, 'result for number');
+      assert.strictEqual(func(null), null, 'result for null');
+      assert.strictEqual(func(undefined), null, 'result for undefined');
+      assert.strictEqual(func({}), null, 'result for object');
+    });
+
+    it('returns the same string for already normalized scheme', () => {
+      const res = func('https');
+      assert.strictEqual(res, 'https', 'result');
+    });
+
+    it('converts uppercase characters to lowercase', () => {
+      const res = func('HTTPS', true);
+      assert.strictEqual(res, 'https', 'result');
+    });
+
+    it('trims leading and trailing whitespaces', () => {
+      const res = func('  http  ', true);
+      assert.strictEqual(res, 'http', 'result');
+    });
+
+    it('trims whitespaces and converts to lowercase simultaneously', () => {
+      const res = func('  Moz-Extension  ', true);
+      assert.strictEqual(res, 'moz-extension', 'result');
+    });
+
+    it('normalizes the URL string using NFKC', () => {
+      // Fullwidth string: 'ｈｔｔｐｓ：／／ｅｘａｍｐｌｅ．ｃｏｍ'
+      const fullwidthUrl =
+        '\uFF48\uFF54\uFF54\uFF50\uFF53\uFF1A\uFF0F\uFF0F\uFF45\uFF58\uFF41\uFF4D\uFF50\uFF4C\uFF45\uFF0E\uFF43\uFF4F\uFF4D';
+      const res = func(fullwidthUrl);
+      assert.strictEqual(res, 'https://example.com', 'result');
+    });
+  });
+
+  describe('parse URL', () => {
+    const func = mjs.parseURL;
+
+    it('returns null if url is not a string', () => {
+      assert.strictEqual(func(123), null, 'result for number');
+      assert.strictEqual(func(null), null, 'result for null');
+      assert.strictEqual(func(undefined), null, 'result for undefined');
+    });
+
+    it('returns null for an invalid URL string', () => {
+      assert.strictEqual(func('not-a-valid-url'), null, 'result');
+    });
+
+    it('returns a parsed URL object for a relative URL with base URL', () => {
+      const res = func('/path?query=1#hash', 'https://example.com');
+      assert.ok(res instanceof URL, 'returns a URL instance');
+      assert.strictEqual(res.protocol, 'https:', 'protocol');
+      assert.strictEqual(res.hostname, 'example.com', 'hostname');
+      assert.strictEqual(res.pathname, '/path', 'pathname');
+    });
+
+    it('returns a parsed URL object for a valid URL', () => {
+      const res = func('https://example.com/path?query=1#hash');
+      assert.ok(res instanceof URL, 'returns a URL instance');
+      assert.strictEqual(res.protocol, 'https:', 'protocol');
+      assert.strictEqual(res.hostname, 'example.com', 'hostname');
+      assert.strictEqual(res.pathname, '/path', 'pathname');
+    });
+
+    it('returns a parsed URL object for normalized URL', () => {
+      const res = func(
+        'ＨＴＴＰＳ://example.com/path?query=1#hash',
+        null,
+        true
+      );
+      assert.ok(res instanceof URL, 'returns a URL instance');
+      assert.strictEqual(res.protocol, 'https:', 'protocol');
+      assert.strictEqual(res.hostname, 'example.com', 'hostname');
+      assert.strictEqual(res.pathname, '/path', 'pathname');
+    });
+
+    it('returns a parsed URL object for normalized relative URL', () => {
+      const res = func('/path?query=1#hash', 'ＨＴＴＰＳ://example.com', true);
+      assert.ok(res instanceof URL, 'returns a URL instance');
+      assert.strictEqual(res.protocol, 'https:', 'protocol');
+      assert.strictEqual(res.hostname, 'example.com', 'hostname');
+      assert.strictEqual(res.pathname, '/path', 'pathname');
+    });
+  });
+
+  describe('parse URL fallback', () => {
+    const func = mjs.parseURL;
+    let originalURLParse;
+    beforeEach(() => {
+      originalURLParse = globalThis.URL.parse;
+    });
+    afterEach(() => {
+      globalThis.URL.parse = originalURLParse;
+    });
+
+    it('uses URL.parse when available (modern environments)', () => {
+      let isParseCalled = false;
+      globalThis.URL.parse = (url, base) => {
+        isParseCalled = true;
+        return base !== undefined
+          ? new globalThis.URL(url, base)
+          : new globalThis.URL(url);
+      };
+      const res = func('https://example.com/modern');
+      assert.strictEqual(isParseCalled, true, 'URL.parse should be executed');
+      assert.ok(res instanceof URL, 'returns a URL instance');
+      assert.strictEqual(res.href, 'https://example.com/modern', 'href');
+    });
+
+    it('falls back to new URL() when URL.parse is not available', () => {
+      globalThis.URL.parse = undefined;
+      const res = func('https://example.com/fallback');
+      assert.ok(
+        res instanceof globalThis.URL,
+        'returns a URL instance via fallback'
+      );
+      assert.strictEqual(res.href, 'https://example.com/fallback', 'href');
+    });
+
+    it('falls back to new URL(uri, base)', () => {
+      globalThis.URL.parse = undefined;
+      const res = func('/path', 'https://example.com');
+      assert.ok(
+        res instanceof globalThis.URL,
+        'returns a URL instance via fallback'
+      );
+      assert.strictEqual(res.href, 'https://example.com/path', 'href');
+    });
+
+    it('returns null if fallback throws an error for invalid URI', () => {
+      globalThis.URL.parse = undefined;
+      const res = func('/invalid-without-base');
+      assert.strictEqual(res, null, 'returns null on fallback error');
+    });
+  });
+
   describe('get URL encoded string', () => {
     const func = mjs.getURLEncodedString;
 
