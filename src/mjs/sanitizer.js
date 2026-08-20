@@ -5,8 +5,8 @@
 /* shared */
 import { domPurify } from './dompurify.js';
 import { getType, logDebug, isString } from './common.js';
+import { URISchemes } from './scheme.js';
 import {
-  URISchemes,
   escapeURLEncodedHTMLChars,
   extractDataURLComponents,
   getSchemeParts,
@@ -16,7 +16,7 @@ import {
   parseURLEncodedNumCharRef,
   trimTrailingEmptyQueryAndHash,
   truncateURL
-} from './uri-util.js';
+} from './utility.js';
 
 /* constants */
 import {
