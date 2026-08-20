@@ -3,11 +3,8 @@
  */
 
 /* shared */
-import {
-  URISchemes,
-  getSchemeParts,
-  parseURLEncodedNumCharRef
-} from './uri-util.js';
+import { URISchemes } from './scheme.js';
+import { getSchemeParts, parseURLEncodedNumCharRef } from './utility.js';
 
 /* constants */
 import { DUMMY_BASE } from './constant.js';

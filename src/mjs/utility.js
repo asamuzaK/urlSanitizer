@@ -1,9 +1,8 @@
 /**
- * uri-util.js
+ * utility.js
  */
 
 /* shared */
-import uriSchemes from '../lib/iana/uri-schemes.json' with { type: 'json' };
 import { getType, isString } from './common.js';
 
 /* constants */
@@ -20,8 +19,6 @@ import {
   REG_NUM_REF,
   REG_PCT_ENC,
   REG_QUERY,
-  REG_SCHEME_EXT,
-  REG_SCRIPT,
   REG_URL_ENC
 } from './regexp.js';
 import {
@@ -68,160 +65,50 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
 /**
- * URI schemes
+ * Normalizes the URL string using NFKC.
+ * @param {string} url - The URL string to normalize.
+ * @param {boolean} [isScheme] - True if the given `url` is a scheme.
+ * @returns {string|null} The normalized URL string, or null.
  */
-export class URISchemes {
-  /* private fields */
-  #schemes = new Set(uriSchemes);
-
-  /**
-   * Parses a URI/URL string with a fallback.
-   * @private
-   * @param {string} uri - The URI/URL string to parse.
-   * @param {string} [base] - The base URL string.
-   * @returns {URL|null} The parsed URL object, or null.
-   */
-  #parseURL(uri, base) {
-    if (typeof URL.parse === 'function') {
-      return base !== undefined ? URL.parse(uri, base) : URL.parse(uri);
-    }
-    try {
-      return base !== undefined ? new URL(uri, base) : new URL(uri);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Gets the list of registered URI schemes.
-   * @see {@link https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml}
-   * - Historical schemes are omitted.
-   * - The 'moz-extension' scheme is added by default.
-   * @returns {string[]} An array of registered schemes.
-   */
-  get() {
-    return [...this.#schemes];
-  }
-
-  /**
-   * Extracts the scheme from URI.
-   * @param {string} uri - The URI string.
-   * @returns {string|null} The extracted scheme, or null.
-   */
-  getScheme(uri) {
-    if (!isString(uri)) {
-      return null;
-    }
-    const parsed = this.parse(uri);
-    if (parsed) {
-      return this.normalize(parsed.protocol, true);
-    }
+export const normalizeURL = (url, isScheme = false) => {
+  if (!isString(url)) {
     return null;
   }
-
-  /**
-   * Checks if the specified scheme is currently registered.
-   * @param {string} scheme - The target scheme.
-   * @returns {boolean} True if the scheme is registered.
-   */
-  has(scheme) {
-    const normalized = this.normalize(scheme, true);
-    if (normalized) {
-      return this.#schemes.has(normalized);
-    }
-    return false;
+  const normalized = url.normalize('NFKC');
+  if (isScheme) {
+    return normalized.trim().toLowerCase().replace(/:$/, '');
   }
+  return normalized;
+};
 
-  /**
-   * Normalizes the URI string using NFKC.
-   * @param {string} uri - The URI string to normalize.
-   * @param {boolean} [isScheme] - True if the URI is a scheme.
-   * @returns {string|null} The normalized URI string, or null.
-   */
-  normalize(uri, isScheme = false) {
-    if (!isString(uri)) {
-      return null;
-    }
-    const normalized = uri.normalize('NFKC');
-    if (isScheme) {
-      return normalized.trim().toLowerCase().replace(/:$/, '');
-    }
-    return normalized;
+/**
+ * Parses a URL string with a fallback.
+ * @param {string} url - The URL string to parse.
+ * @param {string} [base] - The base URL string.
+ * @param {boolean} [normalize] - Indicates whether to normalize the URI.
+ * @returns {URL|null} The parsed URL object, or null.
+ */
+export const parseURL = (url, base, normalize = false) => {
+  if (!isString(url) || url === '') {
+    return null;
   }
-
-  /**
-   * Parses the URI/URL string.
-   * @param {string} uri - The URI/URL string.
-   * @param {string} [base] - The base URL string.
-   * @param {boolean} [normalize] - Indicates whether to normalize the URI.
-   * @returns {URL|null} The parsed URL object, or null.
-   */
-  parse(uri, base, normalize = false) {
-    if (!isString(uri)) {
-      return null;
+  let urlStr = url;
+  let baseStr = base && isString(base) ? base : '';
+  if (normalize) {
+    urlStr = normalizeURL(urlStr);
+    if (baseStr) {
+      baseStr = normalizeURL(baseStr);
     }
-    if (normalize) {
-      const normalized = this.normalize(uri);
-      if (base && isString(base)) {
-        return this.#parseURL(normalized, this.normalize(base));
-      }
-      return this.#parseURL(normalized);
-    }
-    if (base && isString(base)) {
-      return this.#parseURL(uri, base);
-    }
-    return this.#parseURL(uri);
   }
-
-  /**
-   * Verifies if the given URI is valid and its scheme is allowed.
-   * @param {string} uri - The URI string to verify.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @returns {boolean} True if the URI is valid and permitted.
-   */
-  verifyURI(uri, schemes) {
-    if (!isString(uri)) {
-      return false;
-    }
-    const parsedUrl = this.parse(uri);
-    if (!parsedUrl) {
-      return false;
-    }
-    return this.verifyScheme(parsedUrl.protocol, schemes, true);
+  if (typeof URL.parse === 'function') {
+    return baseStr ? URL.parse(urlStr, baseStr) : URL.parse(urlStr);
   }
-
-  /**
-   * Verifies if the scheme is valid and allowed.
-   * @param {string} scheme - A scheme or URL.protocol to verify.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @param {boolean} [allowCustom] - True if web+*, ext+* schemes are allowed.
-   * @returns {boolean} True if the parsed URL is valid and permitted.
-   */
-  verifyScheme(scheme, schemes, allowCustom = false) {
-    if (!isString(scheme)) {
-      return false;
-    }
-    const normalized = this.normalize(scheme, true);
-    const parts = normalized.split('+');
-    const isScript = parts.some(s => REG_SCRIPT.test(s));
-    if (isScript) {
-      return false;
-    }
-    if (!schemes) {
-      schemes = this.#schemes;
-    }
-    if (schemes.has(normalized)) {
-      return true;
-    }
-    if (parts.length > 1) {
-      return (
-        (allowCustom && REG_SCHEME_EXT.test(normalized)) ||
-        parts.every(s => schemes.has(s))
-      );
-    }
-    return false;
+  try {
+    return baseStr ? new URL(urlStr, baseStr) : new URL(urlStr);
+  } catch {
+    return null;
   }
-}
+};
 
 /**
  * Extracts an array of schemes.

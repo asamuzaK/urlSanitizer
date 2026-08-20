@@ -5,16 +5,18 @@
 /* shared */
 import { domPurify } from './dompurify.js';
 import { getType, logDebug, isString } from './common.js';
+import { URISchemes } from './scheme.js';
 import {
-  URISchemes,
   escapeURLEncodedHTMLChars,
   extractDataURLComponents,
   getSchemeParts,
+  normalizeURL,
   parseBase64,
+  parseURL,
   parseURLEncodedNumCharRef,
   trimTrailingEmptyQueryAndHash,
   truncateURL
-} from './uri-util.js';
+} from './utility.js';
 
 /* constants */
 import {
@@ -346,7 +348,7 @@ export class URLSanitizer extends URISchemes {
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
-      const urlObj = this.parse(url, null, true);
+      const urlObj = parseURL(url, null, true);
       if (urlObj) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
@@ -440,7 +442,7 @@ export class URLSanitizer extends URISchemes {
       if (Array.isArray(deny) && deny.length) {
         for (const item of deny) {
           if (isString(item)) {
-            const normalized = this.normalize(item, true);
+            const normalized = normalizeURL(item, true);
             if (normalized) {
               schemeMap.set(normalized, false);
             }
@@ -460,7 +462,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is successfully registered.
    */
   #registerScheme(item, allowedSchemes, schemeMap) {
-    const normalizedScheme = this.normalize(item, true);
+    const normalizedScheme = normalizeURL(item, true);
     if (!this.#isValidScheme(normalizedScheme)) {
       return false;
     }
@@ -494,13 +496,13 @@ export class URLSanitizer extends URISchemes {
    * @returns {object} Parsed URL properties and flags.
    */
   #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
-    const urlObj = this.parse(url, null, true);
+    const urlObj = parseURL(url, null, true);
     let isVerified = this.verifyScheme(urlObj?.protocol, allowedSchemes);
     let isRelative = false;
     let relativePath = '';
     // Handle Relative URLs
     if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const dummyURL = this.parse(url, DUMMY_BASE);
+      const dummyURL = parseURL(url, DUMMY_BASE);
       if (dummyURL) {
         if (
           dummyURL.protocol === 'http:' &&
@@ -526,7 +528,7 @@ export class URLSanitizer extends URISchemes {
         urlToSanitize: relativePath
       };
     }
-    const scheme = this.normalize(urlObj.protocol, true);
+    const scheme = normalizeURL(urlObj.protocol, true);
     return {
       isRelative,
       isVerified,
@@ -628,7 +630,7 @@ export class URLSanitizer extends URISchemes {
     }
     try {
       const decodedData = parseURLEncodedNumCharRef(parsedData).trim();
-      const parsedURL = this.parse(decodedData, DUMMY_BASE);
+      const parsedURL = parseURL(decodedData, DUMMY_BASE);
       if (!parsedURL) {
         return null;
       }
@@ -697,7 +699,7 @@ export class URLSanitizer extends URISchemes {
     if (!evt.attrValue || !/^\s*data:/i.test(evt.attrValue)) {
       return;
     }
-    const urlObj = this.parse(evt.attrValue, null, true);
+    const urlObj = parseURL(evt.attrValue, null, true);
     if (!urlObj || urlObj.protocol !== 'data:') {
       return;
     }
@@ -787,7 +789,7 @@ export class URLSanitizer extends URISchemes {
     }
     const base64Data = encodeBufferToBase64(buffer);
     const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
-    const urlObj = this.parse(dataUrl);
+    const urlObj = parseURL(dataUrl);
     if (!urlObj) {
       return null;
     }
@@ -811,11 +813,11 @@ export class URLSanitizer extends URISchemes {
         `URL length ${url.length} exceeds max length ${maxLength}.`
       );
     }
-    const urlObj = this.parse(url);
+    const urlObj = parseURL(url);
     if (!urlObj) {
       return null;
     }
-    const scheme = this.normalize(urlObj.protocol, true);
+    const scheme = normalizeURL(urlObj.protocol, true);
     if (scheme !== 'data') {
       return null;
     }
@@ -879,10 +881,10 @@ export class URLSanitizer extends URISchemes {
     }
     if (sanitizedURL) {
       // Reparse the sanitized string to safely extract updated properties.
-      const urlObj = this.parse(sanitizedURL);
+      const urlObj = parseURL(sanitizedURL);
       inspectedURL.valid = true;
       if (urlObj) {
-        const scheme = this.normalize(urlObj.protocol, true);
+        const scheme = normalizeURL(urlObj.protocol, true);
         if (scheme === 'data') {
           const { mediaTypes, data, isBase64 } = extractDataURLComponents(
             urlObj.pathname,
@@ -934,7 +936,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme is registered.
    */
   has(scheme) {
-    const normalizedScheme = this.normalize(scheme, true);
+    const normalizedScheme = normalizeURL(scheme, true);
     if (normalizedScheme) {
       return this.#allowedSchemes.has(normalizedScheme);
     }
@@ -950,7 +952,7 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
-    const normalizedScheme = this.normalize(scheme, true);
+    const normalizedScheme = normalizeURL(scheme, true);
     if (!this.#isValidScheme(normalizedScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
@@ -967,7 +969,7 @@ export class URLSanitizer extends URISchemes {
     if (!isString(scheme)) {
       return false;
     }
-    const normalizedScheme = this.normalize(scheme, true);
+    const normalizedScheme = normalizeURL(scheme, true);
     return this.#allowedSchemes.delete(normalizedScheme);
   }
 
