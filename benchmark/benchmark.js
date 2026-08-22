@@ -12,7 +12,7 @@ import { sanitizeURL } from '../src/index.js';
 const normalUrl = 'https://www.example.com/path/to/page?query=1#top';
 const xssUrl = 'javascript:alert("XSS")';
 const xssHtml = '<div><script>alert("XSS");</script></div>';
-const httpsXssUrl = `https://www.example.com/?query=${xssHtml}`;
+const httpsXssUrl = `https://www.example.com/"onmouseover="alert(1)"?query=${xssHtml}`;
 const dataUrl = `data:text/html;base64,${btoa(xssHtml)}`;
 const blobUrl = URL.createObjectURL(new Blob([xssHtml], { type: 'text/html' }));
 const invalidUrl = 'not-a-valid-URL';
@@ -53,9 +53,7 @@ const logHttpsXss = await getOutputs(httpsXssUrl);
 group(`2. HTTPS XSS URL:${logHttpsXss}`, () => {
   bench('url-sanitizer', async () => await sanitizeURL(httpsXssUrl, sanitizeOpt));
   bench('@braintree/sanitize-url', async () => await braintreeSanitize(httpsXssUrl));
-  bench('strict-url-sanitise', async () => {
-    try { await strictUrlSanitise(httpsXssUrl); } catch (e) {}
-  });
+  bench('strict-url-sanitise', async () => await strictUrlSanitise(httpsXssUrl));
 });
 
 const logXss = await getOutputs(xssUrl);
