@@ -12,6 +12,8 @@ import { URLSanitizer } from './mjs/sanitize.js';
  * @typedef {import('./mjs/sanitize.js').InspectedURLResult} InspectedURLResult
  */
 
+export { URLSanitizer };
+
 /* URLSanitizer instance */
 const sanitizer = new URLSanitizer();
 
