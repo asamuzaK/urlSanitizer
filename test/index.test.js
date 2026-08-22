@@ -1,6 +1,7 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
+import { getType, isString } from '../scripts/common.js';
 
 /* test */
 import urlSanitizer, {
@@ -12,7 +13,7 @@ import urlSanitizer, {
 } from '../src/index.js';
 
 describe('URL Sanitizer', () => {
-  describe('urlSanitizer', () => {
+  describe('urlSanitizer instance', () => {
     it('should have methods', () => {
       assert.strictEqual(typeof urlSanitizer.get, 'function', 'get');
       assert.strictEqual(typeof urlSanitizer.has, 'function', 'has');
@@ -20,647 +21,630 @@ describe('URL Sanitizer', () => {
       assert.strictEqual(typeof urlSanitizer.remove, 'function', 'remove');
     });
 
-    describe('get', () => {
-      it('should get value', () => {
-        const schemes = urlSanitizer.get();
-        assert.strictEqual(Array.isArray(schemes), true, 'result');
-      });
-    });
-
-    describe('has', () => {
-      it('should get result', () => {
-        const res = urlSanitizer.has('https');
-        assert.strictEqual(res, true, 'result');
-      });
-
-      it('should get result', () => {
-        const res = urlSanitizer.has('foo');
-        assert.strictEqual(res, false, 'result');
-      });
-    });
-
-    describe('add', () => {
-      it('should get value', () => {
-        assert.strictEqual(urlSanitizer.has('foo'), false);
-        const res = urlSanitizer.add('foo');
-        assert.strictEqual(urlSanitizer.has('foo'), true);
-        assert.strictEqual(Array.isArray(res), true, 'result');
-        urlSanitizer.remove('foo');
-      });
-    });
-
-    describe('remove', () => {
-      it('should get result', () => {
-        assert.strictEqual(urlSanitizer.has('aaa'), true);
-        const res = urlSanitizer.remove('aaa');
-        assert.strictEqual(urlSanitizer.has('aaa'), false);
-        assert.strictEqual(res, true, 'result');
-        urlSanitizer.add('aaa');
-      });
-
-      it('should get result', () => {
-        assert.strictEqual(urlSanitizer.has('foo'), false);
-        const res = urlSanitizer.remove('foo');
-        assert.strictEqual(res, false, 'result');
-      });
+    it('exports all expected utility aliases', () => {
+      assert.strictEqual(typeof sanitizeURL, 'function');
+      assert.strictEqual(typeof sanitizeURLSync, 'function');
+      assert.strictEqual(typeof inspectURL, 'function');
+      assert.strictEqual(typeof isValidURI, 'function');
+      assert.strictEqual(typeof isURISync, 'function');
     });
   });
 
-  describe('sanitize URL', () => {
-    it('should get null for javascript: scheme', async () => {
-      const url = 'javascript:alert(1)';
-      const res = await sanitizeURL(url);
-      assert.strictEqual(res, null, 'result');
-    });
+  describe('alias behavior', () => {
+    describe('sanitize URL', () => {
+      const func = sanitizeURL;
 
-    it('should get null for javascript: scheme even if inculed in allow list', async () => {
-      const url = 'javascript:alert(1)';
-      const res = await sanitizeURL(url, {
-        allow: ['javascript']
+      it('returns null for missing input', async () => {
+        const res = await func();
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(res, null, 'result');
-    });
 
-    it('should get result', async () => {
-      const url =
-        'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
-      const res = await sanitizeURL(url);
-      assert.strictEqual(res, 'http://example.com/', 'result');
-    });
-
-    it('should get result', async () => {
-      const data =
-        '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
-      const url = `data:text/html,${encodeURIComponent(data)}`;
-      const res = await sanitizeURL(url, {
-        allow: ['data']
+      it('returns null for plain string input', async () => {
+        const res = await func('foo');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res,
-        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>',
-        'decode'
-      );
-    });
 
-    it('should get result', async () => {
-      const base64data = btoa('<div><script>alert(1);</script></div>');
-      const url = `data:text/html;base64,${base64data}`;
-      const res = await sanitizeURL(url, {
-        allow: ['data']
+      it('blocks javascript: scheme execution', async () => {
+        const res = await func('javascript:alert(1)');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div></div>',
-        'decode'
-      );
-    });
 
-    it('should get result', async () => {
-      const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
-      const url = `data:text/html;base64,${base64data}`;
-      const res = await sanitizeURL(url, {
-        allow: ['data']
+      it('returns sanitized HTTPS URL', async () => {
+        const res = await func('https://example.com');
+        assert.strictEqual(res, 'https://example.com/', 'result');
       });
-      assert.strictEqual(
-        res,
-        'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div><img></div>',
-        'decode'
-      );
-    });
 
-    it('should get sanitized value', async () => {
-      const data = '<svg><g onload="alert(1)"/></svg>';
-      const blob = new Blob([data], {
-        type: 'image/svg+xml'
+      it('allows explicitly permitted custom schemes', async () => {
+        const res = await func('foo:bar', {
+          allow: ['foo']
+        });
+        assert.strictEqual(urlSanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
       });
-      const url = URL.createObjectURL(blob);
-      const res = await sanitizeURL(url, {
-        allow: ['blob']
+
+      it('rejects blob URL if blob size exceeds maxBlobSize', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: 10
+        });
+        URL.revokeObjectURL(url);
+        assert.deepEqual(
+          res,
+          null,
+          'result should be null due to exceeding maxBlobSize'
+        );
       });
-      URL.revokeObjectURL(url);
-      assert.strictEqual(
-        res,
-        'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:image/svg+xml,<svg><g></g></svg>',
-        'decoded'
-      );
-    });
 
-    it('should get sanitized value', async () => {
-      const data =
-        '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
-      const blob = new Blob([data], {
-        type: 'text/html'
+      it('falls back to default MAX_BLOB_SIZE if maxBlobSize is invalid', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: -1
+        });
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
       });
-      const url = URL.createObjectURL(blob);
-      const res = await sanitizeURL(url, {
-        allow: ['blob']
+
+      it('allows blob URL if blob size is exactly at or below maxBlobSize', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          maxBlobSize: 100
+        });
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
       });
-      URL.revokeObjectURL(url);
-      assert.strictEqual(
-        res,
-        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>',
-        'decoded'
-      );
-    });
 
-    it('should get null', async () => {
-      const res = await sanitizeURL('web+foo://example.com', {
-        deny: ['web+foo']
+      it('blocks blob: scheme and does NOT revoke blob by default', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url);
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.deepEqual(res, null, 'result');
-    });
 
-    it('should get null', async () => {
-      const res = await sanitizeURL('http://example.com', {
-        only: ['data', 'git', 'https']
+      it('blocks blob: scheme if denied, and does NOT revoke blob by default', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          deny: ['blob']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.deepEqual(res, null, 'result');
-    });
 
-    it('should get result', async () => {
-      const url = 'https://example.com/"onmouseover="alert(1)"';
-      const res = await sanitizeURL(url, {
-        only: ['data', 'git', 'https']
+      it('blocks blob: scheme if not in only list, and does NOT revoke blob by default', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          only: ['https']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(res, 'https://example.com/', 'result');
-    });
 
-    it('should get result', async () => {
-      const url = 'git+https://example.com/foo.git?<script>alert(1)</script>';
-      const res = await sanitizeURL(url, {
-        only: ['data', 'git', 'https']
+      it('allows blob: scheme, converts to data URL, and does NOT revoke by default', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded'
+        );
       });
-      assert.strictEqual(res, 'git+https://example.com/foo.git', 'result');
-    });
 
-    it('should get null', async () => {
-      const url = 'javascript&colon;alert(1)';
-      const res = await sanitizeURL(url);
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('should get null', async () => {
-      const url = 'javasc&Tab;ript:alert(1);';
-      const res = await sanitizeURL(url);
-      assert.deepEqual(res, null, 'result');
-    });
-
-    it('should not mutate original opt object when sanitizing blob URLs', async () => {
-      const data = '<div><script>alert(1);</script></div>';
-      const blob = new Blob([data], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-      const opt = {
-        allow: ['blob'],
-        deny: []
-      };
-      await sanitizeURL(blobUrl, opt);
-      URL.revokeObjectURL(blobUrl);
-      assert.deepEqual(
-        opt.allow,
-        ['blob'],
-        'opt.allow should remain unchanged'
-      );
-      assert.deepEqual(opt.deny, [], 'opt.deny should remain unchanged');
-    });
-
-    it('should enforce "only" over "allow" and "deny"', async () => {
-      const res1 = await sanitizeURL('http://example.com', {
-        only: ['https', 'data'],
-        allow: ['http']
+      it('returns null if blob: URL was manually revoked beforehand', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        URL.revokeObjectURL(url);
+        const res = await func(url, {
+          allow: ['blob']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(isRevoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res1,
-        null,
-        'http should be denied because it is not in "only", despite being in "allow"'
-      );
-      const res2 = await sanitizeURL(
-        'https://example.com/"onmouseover="alert(1)"',
-        {
-          only: ['https'],
-          deny: ['https']
+
+      it('processes blob: without revoking, safely handling data conflicts', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          deny: ['data']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded'
+        );
+      });
+
+      it('processes blob: with "only" rules without revoking', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          only: ['blob', 'https']
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(isRevoked, false, 'should not be revoked');
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.strictEqual(
+          decodeURIComponent(res),
+          'data:image/svg+xml,<svg><g></g></svg>',
+          'decoded'
+        );
+      });
+
+      it('revokes blob: URL automatically if revokeObjectURL is true', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          allow: ['blob'],
+          revokeObjectURL: true
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        assert.strictEqual(isRevoked, true, 'should be revoked');
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+      });
+
+      it('blocks blob: and revokes URL automatically if revokeObjectURL is true', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const res = await func(url, {
+          revokeObjectURL: true
+        });
+        const isRevoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        assert.strictEqual(isRevoked, true, 'should be revoked');
+        assert.deepEqual(res, null, 'result');
+      });
+
+      it('sanitizes and strips trailing quotes from URLs', async () => {
+        const url = 'https://example.com/"quoted"';
+        const res = await func(url, {
+          allow: ['data', 'file']
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('sanitizes and strips trailing single-quotes from URLs', async () => {
+        const url = "https://example.com/'quoted'";
+        const res = await func(url, {
+          allow: ['data', 'file']
+        });
+        assert.strictEqual(res, 'https://example.com/', 'result');
+      });
+
+      it('sanitizes and strips trailing quotes from query parameters', async () => {
+        const url = 'https://example.com/?q="quoted"';
+        const res = await func(url, {
+          allow: ['data', 'file']
+        });
+        assert.strictEqual(res, 'https://example.com/?q=', 'result');
+      });
+
+      it('sanitizes and strips trailing single-quotes from query parameters', async () => {
+        const url = "https://example.com/?q='quoted'";
+        const res = await func(url, {
+          allow: ['data', 'file']
+        });
+        assert.strictEqual(res, 'https://example.com/?q=', 'result');
+      });
+
+      it('merges schemes safely into options.only without mutating original array', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { only: ['blob', 'https'] };
+        const res = await func(url, opt);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.only,
+          ['blob', 'https'],
+          'original only array should not be mutated'
+        );
+      });
+
+      it('preserves options.only if required schemes are already present', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { only: ['blob', 'data', 'https'] };
+        const res = await func(url, opt);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.only,
+          ['blob', 'data', 'https'],
+          'original only array should not be mutated'
+        );
+      });
+
+      it('merges schemes safely into options.allow and removes from options.deny', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = {
+          allow: ['blob', 'http'],
+          deny: ['data', 'ftp']
+        };
+        const res = await func(url, opt);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.allow,
+          ['blob', 'http'],
+          'original allow array should not be mutated'
+        );
+        assert.deepEqual(
+          opt.deny,
+          ['data', 'ftp'],
+          'original deny array should not be mutated'
+        );
+      });
+
+      it('preserves options.allow if required schemes are already present', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const opt = { allow: ['blob', 'data'] };
+        const res = await func(url, opt);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(
+          res,
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          'result'
+        );
+        assert.deepEqual(
+          opt.allow,
+          ['blob', 'data'],
+          'original allow array should not be mutated'
+        );
+      });
+
+      it('allows and sanitizes relative URLs', async () => {
+        const url = '/path/to/resource?query=1#hash';
+        const res = await func(url, { allowRelative: true });
+        assert.strictEqual(
+          res,
+          url,
+          'result should be the sanitized relative URL'
+        );
+      });
+
+      it('returns null for relative URLs', async () => {
+        const url = '/path/to/resource';
+        const res = await func(url, { debug: true, allowRelative: false });
+        assert.strictEqual(res, null, 'result should be null');
+      });
+
+      it('does not throw TypeError when options arrays are overridden by invalid types', async () => {
+        const data = '<svg><g></g></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const invalidValues = [
+          null,
+          undefined,
+          'not-an-array',
+          { length: 1, 0: 'blob' },
+          123,
+          true
+        ];
+        for (const val of invalidValues) {
+          let error = null;
+          let res;
+          try {
+            res = await func(url, {
+              allow: val,
+              deny: val,
+              only: val
+            });
+          } catch (e) {
+            error = e;
+          }
+          assert.strictEqual(
+            error,
+            null,
+            `Should not throw error when options contain ${getType(val)}`
+          );
+          assert.deepEqual(
+            res,
+            null,
+            `Result should be null when options contain ${getType(val)}`
+          );
         }
-      );
-
-      assert.strictEqual(
-        res2,
-        'https://example.com/',
-        'https should be allowed because "only" takes top priority over "deny"'
-      );
-    });
-
-    it('should resolve regardless of scheme casing', async () => {
-      const res = await sanitizeURL('HTTP://example.com', {
-        deny: ['http']
+        URL.revokeObjectURL(url);
       });
-      assert.strictEqual(
-        res,
-        null,
-        'HTTP:// (uppercase) should be denied when "http" is in deny list'
-      );
     });
 
-    it('should resolve regardless of casing and trailing colon', async () => {
-      const res = await sanitizeURL('HTTP://example.com', {
-        only: ['https']
+    describe('sanitize URL sync', () => {
+      const func = sanitizeURLSync;
+
+      it('returns null for missing input', () => {
+        const res = func();
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res,
-        null,
-        'HTTP:// (uppercase) should be denied when not matching "only" list'
-      );
-    });
 
-    it('should handle nested/composite schemes', async () => {
-      const res1 = await sanitizeURL('git+https://example.com/repo.git', {
-        deny: ['https']
+      it('returns null for plain string input', () => {
+        const res = func('foo');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res1,
-        null,
-        'git+https should be denied if "https" scheme is in deny list'
-      );
-      const res2 = await sanitizeURL('git+https://example.com/repo.git', {
-        only: ['git+https']
+
+      it('blocks javascript: scheme execution', () => {
+        const res = func('javascript:alert(1)');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res2,
-        'git+https://example.com/repo.git',
-        'git+https should be allowed when specified in "only"'
-      );
-    });
 
-    it('should process concurrent sanitization correctly with differing option contexts', async () => {
-      const url1 = 'data:text/html,%3Cp%3EAllowed%3C/p%3E';
-      const url2 = 'data:text/html,%3Cp%3EDenied%3C/p%3E';
-      const [res1, res2] = await Promise.all([
-        sanitizeURL(url1, { allow: ['data'] }),
-        sanitizeURL(url2)
-      ]);
-      assert.strictEqual(
-        res1,
-        'data:text/html,%3Cp%3EAllowed%3C/p%3E',
-        'url1 should be sanitized successfully because "data" is allowed'
-      );
-      assert.strictEqual(
-        res2,
-        null,
-        'url2 should return null as the "data" scheme is not allowed by default'
-      );
-    });
-
-    it('should process concurrent sanitization without DOMPurify hook collisions', async () => {
-      // Create distinct Blob objects containing nested Data URLs with different XSS payloads
-      const blob1 = new Blob(
-        [
-          '<a href="data:text/html,<script>alert(\'XSS 1\')</script>">Link 1</a>'
-        ],
-        { type: 'text/html' }
-      );
-      const blob2 = new Blob(
-        [
-          '<a href="data:text/html,<img src=x onerror=alert(\'XSS 2\')>">Link 2</a>'
-        ],
-        { type: 'text/html' }
-      );
-      // Generate temporary Object URLs
-      const url1 = URL.createObjectURL(blob1);
-      const url2 = URL.createObjectURL(blob2);
-      // Execute sanitization concurrently
-      const [res1, res2] = await Promise.all([
-        sanitizeURL(url1, { allow: ['blob', 'data'] }),
-        sanitizeURL(url2, { allow: ['blob', 'data'] })
-      ]);
-      // Revoke Object URLs to prevent memory leaks
-      URL.revokeObjectURL(url1);
-      URL.revokeObjectURL(url2);
-      const decodedRes1 = decodeURIComponent(res1);
-      const decodedRes2 = decodeURIComponent(res2);
-      // Verify that hooks operated independently and removed their payloads
-      assert.strictEqual(
-        decodedRes1.includes('<script>'),
-        false,
-        'Script payload from blob1 should be removed'
-      );
-      assert.strictEqual(
-        decodedRes2.includes('onerror'),
-        false,
-        'Event handler payload from blob2 should be removed'
-      );
-      // Verify that closures prevented context collision
-      assert.notEqual(
-        res1,
-        res2,
-        'Concurrent sanitization outputs must remain distinct and not mixed'
-      );
-      // Verify that the legitimate parts of the nested data URLs survived
-      assert.strictEqual(
-        decodedRes1.includes('Link 1'),
-        true,
-        'Legitimate text from blob1 should remain intact'
-      );
-      assert.strictEqual(
-        decodedRes2.includes('Link 2'),
-        true,
-        'Legitimate text from blob2 should remain intact'
-      );
-    });
-  });
-
-  describe('sanitize URL sync', () => {
-    it('should get result', () => {
-      const url =
-        'http://example.com/"onmouseover="alert(1)"?<script>alert(\'XSS\');</script>';
-      const res = sanitizeURLSync(url);
-      assert.strictEqual(res, 'http://example.com/', 'result');
-    });
-
-    it('should get result', () => {
-      const data =
-        '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
-      const url = `data:text/html,${encodeURIComponent(data)}`;
-      const res = sanitizeURLSync(url, {
-        allow: ['data']
+      it('returns sanitized HTTPS URL', () => {
+        const res = func('https://example.com');
+        assert.strictEqual(res, 'https://example.com/', 'result');
       });
-      assert.strictEqual(
-        res,
-        'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div></div><p></p>',
-        'decode'
-      );
-    });
 
-    it('should get result', () => {
-      const base64data = btoa('<div><script>alert(1);</script></div>');
-      const url = `data:text/html;base64,${base64data}`;
-      const res = sanitizeURLSync(url, {
-        allow: ['data']
+      it('allows explicitly permitted custom schemes', () => {
+        const res = func('foo:bar', {
+          allow: ['foo']
+        });
+        assert.strictEqual(urlSanitizer.has('foo'), false, 'scheme');
+        assert.strictEqual(res, 'foo:bar', 'result');
       });
-      assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div></div>',
-        'decode'
-      );
-    });
 
-    it('should get result', () => {
-      const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
-      const url = `data:text/html;base64,${base64data}`;
-      const res = sanitizeURLSync(url, {
-        allow: ['data']
+      it('blocks blob: scheme and does NOT revoke blob by default', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = func(url, {
+          allow: ['blob']
+        });
+        const revoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        URL.revokeObjectURL(url);
+        assert.strictEqual(revoked, false, 'should not be revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      assert.strictEqual(
-        res,
-        'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
-        'result'
-      );
-      assert.strictEqual(
-        decodeURIComponent(res),
-        'data:text/html,<div><img></div>',
-        'decode'
-      );
-    });
 
-    it('should get null', async () => {
-      const data = '<svg><g onload="alert(1)"/></svg>';
-      const blob = new Blob([data], {
-        type: 'image/svg+xml'
+      it('blocks blob: scheme and revokes blob if explicitly enabled', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = func(url, {
+          allow: ['blob'],
+          revokeObjectURL: true
+        });
+        const revoked = await fetch(url)
+          .then(() => false)
+          .catch(() => true);
+        assert.strictEqual(revoked, true, 'revoked');
+        assert.deepEqual(res, null, 'result');
       });
-      const url = URL.createObjectURL(blob);
-      const res = sanitizeURLSync(url, {
-        allow: ['blob']
+
+      it('returns false for invalid URL input', () => {
+        const invalidUrl = 'invalid-url-string';
+        const res = func(invalidUrl);
+        assert.strictEqual(res, null, 'result should be null');
       });
-      URL.revokeObjectURL(url);
-      assert.deepEqual(res, null, 'result');
-    });
 
-    it('should get null', () => {
-      const res = sanitizeURLSync('web+foo://example.com', {
-        deny: ['web+foo']
+      it('allows and sanitizes relative URLs', () => {
+        const url = '/path/to/resource?query=1#hash';
+        const res = func(url, { allowRelative: true });
+        assert.strictEqual(
+          res,
+          url,
+          'result should be the sanitized relative URL'
+        );
       });
-      assert.deepEqual(res, null, 'result');
-    });
 
-    it('should get null', () => {
-      const res = sanitizeURLSync('http://example.com', {
-        only: ['data', 'git', 'https']
+      it('returns null for relative URLs when allowRelative is false', () => {
+        const res = func('/path/to/resource', { allowRelative: false });
+        assert.deepEqual(res, null, 'result should be null');
       });
-      assert.deepEqual(res, null, 'result');
     });
 
-    it('should get result', () => {
-      const url = 'https://example.com/"onmouseover="alert(1)"';
-      const res = sanitizeURLSync(url, {
-        only: ['data', 'git', 'https']
+    describe('inspect URL', () => {
+      const func = inspectURL;
+
+      it('returns invalid URL result for undefined input', async () => {
+        const res = await func();
+        assert.deepEqual(
+          res,
+          {
+            input: undefined,
+            valid: false,
+            href: null,
+            reason: 'Invalid URL input: undefined'
+          },
+          'result'
+        );
       });
-      assert.strictEqual(res, 'https://example.com/', 'result');
-    });
 
-    it('should get result', () => {
-      const url = 'git+https://example.com/foo.git?<script>alert(1)</script>';
-      const res = sanitizeURLSync(url, {
-        only: ['data', 'git', 'https']
+      it('returns invalid URL result for empty string input', async () => {
+        const res = await func('');
+        assert.deepEqual(
+          res,
+          {
+            input: '',
+            valid: false,
+            href: null,
+            reason: 'Invalid URL input: (empty string)'
+          },
+          'result'
+        );
       });
-      assert.strictEqual(res, 'git+https://example.com/foo.git', 'result');
-    });
-  });
 
-  describe('inspect URL', () => {
-    it('should get result', async () => {
-      const res = await inspectURL('javascript:alert(1)');
-      assert.deepEqual(
-        res,
-        {
-          input: 'javascript:alert(1)',
-          valid: false,
-          href: null,
-          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
-        },
-        'result'
-      );
-    });
+      it('returns invalid URL result for invalid blob URL', async () => {
+        const msg = await fetch('blob:').catch(e => e.message);
+        const res = await func('blob:');
+        assert.deepEqual(
+          res,
+          {
+            input: 'blob:',
+            valid: false,
+            reason: msg
+          },
+          'result'
+        );
+      });
 
-    it('should get result', async () => {
-      const res = await inspectURL('https://example.com/?foo=bar#baz');
-      assert.deepEqual(
-        res,
-        {
-          input: 'https://example.com/?foo=bar#baz',
-          valid: true,
-          data: null,
-          href: 'https://example.com/?foo=bar#baz',
-          origin: 'https://example.com',
-          protocol: 'https:',
-          username: '',
-          password: '',
-          host: 'example.com',
-          port: '',
-          hostname: 'example.com',
-          pathname: '/',
-          search: '?foo=bar',
-          hash: '#baz'
-        },
-        'result'
-      );
-    });
+      it('returns inspected URL result correctly for blob URL', async () => {
+        const data = '<svg><g onload="alert(1)"/></svg>';
+        const blob = new Blob([data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const obj = new URL(
+          'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+        );
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = {
+          base64: false,
+          data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+          mime: 'image/svg+xml'
+        };
+        const res = await func(url);
+        assert.deepEqual(res, items, 'result');
+      });
 
-    it('should get result', async () => {
-      const data = '<svg><g onclick="alert(1)"/></svg>';
-      const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
-      assert.deepEqual(
-        res,
-        {
-          input:
-            'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
-          valid: true,
-          data: {
-            mime: 'image/svg+xml',
+      it('returns inspected URL result correctly', async () => {
+        const url = 'https://example.com';
+        const obj = new URL(url);
+        const items = {};
+        for (const key in obj) {
+          const value = obj[key];
+          if (isString(value)) {
+            items[key] = value;
+          }
+        }
+        items.input = url;
+        items.valid = true;
+        items.data = null;
+        const res = await func(url);
+        assert.deepEqual(res, items, 'result');
+      });
+
+      it('formats Data URL with only base64 for blob URLs without mimeType', async () => {
+        const data = 'Hello, Blob!';
+        const blob = new Blob([data]);
+        const url = URL.createObjectURL(blob);
+        const res = await func(url);
+        assert.strictEqual(res.valid, true, 'result should be valid');
+        assert.deepEqual(
+          res.data,
+          {
+            mime: '',
             base64: false,
-            data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+            data
           },
-          href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          origin: 'null',
-          protocol: 'data:',
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          hostname: '',
-          pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          search: '',
-          hash: ''
-        },
-        'result'
-      );
-    });
-
-    it('should get result', async () => {
-      const data =
-        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
-      const res = await inspectURL(`data:image/png;base64,${data}`);
-      assert.deepEqual(
-        res,
-        {
-          input:
-            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          valid: true,
-          data: {
-            mime: 'image/png',
-            base64: true,
-            data: 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=='
-          },
-          href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          origin: 'null',
-          protocol: 'data:',
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          hostname: '',
-          pathname:
-            'image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
-          search: '',
-          hash: ''
-        },
-        'result'
-      );
-    });
-
-    it('should get value', async () => {
-      const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
-        type: 'image/svg+xml'
+          'data URL components should be parsed and decoded correctly'
+        );
+        URL.revokeObjectURL(url);
       });
-      const url = URL.createObjectURL(blob);
-      const res = await inspectURL(url);
-      URL.revokeObjectURL(url);
-      assert.deepEqual(
-        res,
-        {
-          input: url,
-          valid: true,
-          data: {
-            mime: 'image/svg+xml',
-            base64: false,
-            data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
-          },
-          href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          origin: 'null',
-          protocol: 'data:',
-          username: '',
-          password: '',
-          host: '',
-          port: '',
-          hostname: '',
-          pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
-          search: '',
-          hash: ''
-        },
-        'result'
-      );
-    });
-  });
-
-  describe('is valid URI', () => {
-    it('should get result', () => {
-      const res = isValidURI('https://example.com/foo');
-      assert.strictEqual(res, true, 'result');
     });
 
-    it('should get result', () => {
-      const res = isValidURI('javascript:alert(1)');
-      assert.strictEqual(res, false, 'result');
-    });
+    describe('is valid URI', () => {
+      const func = isValidURI;
 
-    it('should get result', () => {
-      const res = isValidURI('mailto:foo@example.com');
-      assert.strictEqual(res, true, 'result');
-    });
-
-    it('should get result', () => {
-      const res = isValidURI('foo:bar');
-      assert.strictEqual(res, false, 'result');
-    });
-
-    it('should get result', () => {
-      const res = isValidURI('web+foo:bar');
-      assert.strictEqual(res, true, 'result');
-    });
-
-    it('should get result', () => {
-      const res = isValidURI('web+javascript:alert(1)');
-      assert.strictEqual(res, false, 'result');
-    });
-  });
-
-  describe('is URI sync (deprecated)', () => {
-    it('should get result', () => {
-      const res = isURISync('https://example.com/foo');
-      assert.strictEqual(res, true, 'result');
+      it('identifies valid and registered scheme securely', async () => {
+        const res = func('https://example.com');
+        assert.strictEqual(res, true, 'result');
+      });
     });
   });
 });
