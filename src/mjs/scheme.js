@@ -68,6 +68,26 @@ export class URISchemes {
   }
 
   /**
+   * Normalizes an array of scheme strings.
+   * Filters out non-string items and trims/lowercases valid schemes.
+   * @param {string[]} schemes - An array of scheme strings to normalize.
+   * @returns {string[]} An array of normalized scheme strings, or an empty array if invalid.
+   */
+  normalizeSchemes(schemes) {
+    if (Array.isArray(schemes)) {
+      const normalizedSchemes = [];
+      for (const scheme of schemes) {
+        const normalized = normalizeURL(scheme, true);
+        if (normalized) {
+          normalizedSchemes.push(normalized);
+        }
+      }
+      return normalizedSchemes;
+    }
+    return [];
+  }
+
+  /**
    * Parses the URI/URL string.
    * @param {string} uri - The URI/URL string.
    * @param {string} [base] - The base URL string.

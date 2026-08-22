@@ -165,6 +165,51 @@ describe('scheme', () => {
       });
     });
 
+    describe('normalize schemes', () => {
+      it('returns an empty array if schemes is not an array', () => {
+        const schemes = new URISchemes();
+        assert.deepEqual(
+          schemes.normalizeSchemes(123),
+          [],
+          'result for number'
+        );
+        assert.deepEqual(schemes.normalizeSchemes(null), [], 'result for null');
+        assert.deepEqual(
+          schemes.normalizeSchemes(undefined),
+          [],
+          'result for undefined'
+        );
+        assert.deepEqual(schemes.normalizeSchemes({}), [], 'result for object');
+      });
+
+      it('returns an empty array for an empty array input', () => {
+        const schemes = new URISchemes();
+        assert.deepEqual(schemes.normalizeSchemes([]), [], 'result');
+      });
+
+      it('normalizes valid schemes in an array', () => {
+        const schemes = new URISchemes();
+        const input = ['  HTTP  ', 'HTTPS:', ' Moz-Extension '];
+        const res = schemes.normalizeSchemes(input);
+        assert.deepEqual(
+          res,
+          ['http', 'https', 'moz-extension'],
+          'should trim, lower-case, and strip trailing colons'
+        );
+      });
+
+      it('filters out non-string items and invalid scheme inputs', () => {
+        const schemes = new URISchemes();
+        const input = ['https', null, 123, undefined, '', 'http'];
+        const res = schemes.normalizeSchemes(input);
+        assert.deepEqual(
+          res,
+          ['https', 'http'],
+          'should ignore non-string and empty values'
+        );
+      });
+    });
+
     describe('parse URL', () => {
       it('returns null if url is not a string', () => {
         const schemes = new URISchemes();
