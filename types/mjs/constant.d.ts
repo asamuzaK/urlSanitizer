@@ -8,3 +8,4 @@ export declare const MAX_URL_LENGTH: number;
 export declare const TRUNCATE_LENGTH: number;
 export declare const TYPE_FROM: number;
 export declare const TYPE_TO: number;
+export declare const DUMMY_BASE: string;
