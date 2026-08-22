@@ -8,7 +8,7 @@ import fc from 'fast-check';
 import { describe, it } from 'mocha';
 
 /* test target */
-import { sanitizeURL, sanitizeURLSync } from '../src/mjs/sanitizer.js';
+import { sanitizeURL, sanitizeURLSync } from '../src/index.js';
 
 describe('Fuzz Testing (Property-based Testing)', () => {
   describe('sanitizeURLSync', () => {
