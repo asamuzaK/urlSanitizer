@@ -184,7 +184,10 @@ export class URLSanitizer extends URISchemes {
    * @returns {boolean} True if the scheme satisfies the syntax and requirements.
    */
   #isValidScheme(normalizedScheme) {
-    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
+    if (
+      !isString(normalizedScheme) ||
+      REG_SCRIPT_OR_BLOB.test(normalizedScheme)
+    ) {
       return false;
     }
     const schemeParts = normalizedScheme.split('+');
