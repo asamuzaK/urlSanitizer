@@ -515,6 +515,14 @@ export class SanitizeFilter {
     }
     const base64Data = encodeBufferToBase64(buffer);
     const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+    if (
+      Number.isInteger(options.maxLength) &&
+      dataUrl.length > options.maxLength
+    ) {
+      throw new RangeError(
+        `URL length ${dataUrl.length} exceeds max length ${options.maxLength}.`
+      );
+    }
     const urlObj = parseURL(dataUrl);
     if (!urlObj) {
       return null;
