@@ -597,6 +597,24 @@ describe('filter', () => {
         }
       });
 
+      it('throws RangeError when constructed URL length exceeds max length', async () => {
+        const buffer = new Uint8Array(50).buffer;
+        let caughtError = null;
+        try {
+          await filter.sanitizeBuffer(buffer, 'image/png', new Set(), {
+            allow: ['data'],
+            maxLength: 30
+          });
+        } catch (e) {
+          caughtError = e;
+        }
+        assert.ok(caughtError instanceof RangeError, 'should throw RangeError');
+        assert.ok(
+          caughtError.message.includes('exceeds max length 30.'),
+          'error message'
+        );
+      });
+
       describe('Data URL construction based on mimeType', () => {
         it('constructs Data URL with mimeType when mimeType is provided', async () => {
           const base64Png =
