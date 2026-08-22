@@ -676,4 +676,58 @@ describe('uri-util', () => {
       assert.strictEqual(res.isBase64, false, 'isBase64');
     });
   });
+
+  describe('encode buffer to base64', () => {
+    const func = mjs.encodeBufferToBase64;
+
+    it('encodes an ArrayBuffer to a base64 string', () => {
+      const text = 'Hello, World!';
+      const buffer = new TextEncoder().encode(text).buffer;
+      const res = func(buffer);
+      assert.strictEqual(res, 'SGVsbG8sIFdvcmxkIQ==', 'result');
+    });
+
+    describe('environment specific encoding optimizations', () => {
+      it('encodes using Buffer when available in Node.js', () => {
+        assert.ok(
+          globalThis.Buffer,
+          'Buffer should be available in this environment'
+        );
+        const text = 'Node.js Buffer encoding';
+        const buffer = new TextEncoder().encode(text).buffer;
+        const res = func(buffer);
+        assert.strictEqual(res, 'Tm9kZS5qcyBCdWZmZXIgZW5jb2Rpbmc=', 'result');
+      });
+
+      it('encodes using Uint8Array fallback when Buffer is unavailable', () => {
+        const originalBuffer = globalThis.Buffer;
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        try {
+          assert.strictEqual(
+            globalThis.Buffer,
+            undefined,
+            'Buffer should be hidden'
+          );
+          const text = 'Fallback Uint8Array encoding';
+          const buffer = new TextEncoder().encode(text).buffer;
+          const res = func(buffer);
+          assert.strictEqual(
+            res,
+            'RmFsbGJhY2sgVWludDhBcnJheSBlbmNvZGluZw==',
+            'result'
+          );
+        } finally {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: originalBuffer,
+            writable: true,
+            configurable: true
+          });
+        }
+      });
+    });
+  });
 });

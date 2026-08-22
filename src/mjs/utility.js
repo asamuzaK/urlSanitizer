@@ -8,6 +8,7 @@ import { getType, isString } from './common.js';
 /* constants */
 import {
   BYTE_RANGE,
+  CHUNK_SIZE,
   DECI,
   HEX,
   MAX_NEST,
@@ -305,4 +306,22 @@ export const parseBase64 = data => {
   } catch {
     return cleanData;
   }
+};
+
+/**
+ * Encodes an ArrayBuffer to a Base64 string.
+ * @private
+ * @param {ArrayBuffer} buffer - The buffer to encode.
+ * @returns {string} The Base64 string.
+ */
+export const encodeBufferToBase64 = buffer => {
+  if (IS_NODE && globalThis.Buffer) {
+    return globalThis.Buffer.from(buffer).toString('base64');
+  }
+  const uint8arr = new Uint8Array(buffer);
+  const chunks = [];
+  for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));
+  }
+  return btoa(chunks.join(''));
 };
