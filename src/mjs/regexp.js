@@ -3,6 +3,18 @@
  */
 
 /**
+ * Matches HTML-encoded ampersands.
+ * @type {RegExp}
+ */
+export const REG_AMP = /&amp;/gi;
+
+/**
+ * Matches ampersand that may begin an HTML entity reference.
+ * @type {RegExp}
+ */
+export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
+
+/**
  * Matches and captures the charset parameter in a media type string.
  * @type {RegExp}
  */
@@ -32,6 +44,12 @@ export const REG_MIME_TEXT = /^text\/[\w#&.;+-]+/i;
  * @type {RegExp}
  */
 export const REG_NUM_REF = /&#(x0*[\dA-F]{1,2}|0*\d{1,3});?/gi;
+
+/**
+ * Matches one or more consecutive percent-encoded sequences (%20, %E3%81%82).
+ * @type {RegExp}
+ */
+export const REG_PCT_ENC = /(?:%[\dA-F]{2})+/gi;
 
 /**
  * Matches a trailing empty query string (?), ensuring it is not part of a hash.
@@ -73,28 +91,17 @@ export const REG_TAG_QUOT =
   /["'<>]|%(?:22|27|3C|3E)|&(?:apos|lt|gt|quot|#0*(?:34|39|60|62)|#x0*(?:22|27|3C|3E));/i;
 
 /**
+ * Matches unsafe URL characters. REG_TAG_QUOT | REG_AMP_ENC
+ * @type {RegExp}
+ */
+export const REG_UNSAFE_URL_CHAR =
+  /["'<>]|%(?:22|27|3C|3E)|&(?:apos|lt|gt|quot|#0*(?:34|39|60|62)|#x0*(?:22|27|3C|3E));|&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
+
+/**
  * Matches a percent-encoded character (%XX).
  * @type {RegExp}
  */
 export const REG_URL_ENC = /^%[\dA-F]{2}$/i;
-
-/**
- * Matches one or more consecutive percent-encoded sequences (%20, %E3%81%82).
- * @type {RegExp}
- */
-export const REG_PCT_ENC = /(?:%[\dA-F]{2})+/gi;
-
-/**
- * Matches HTML-encoded ampersands.
- * @type {RegExp}
- */
-export const REG_AMP = /&amp;/gi;
-
-/**
- * Matches ampersand that may begin an HTML entity reference.
- * @type {RegExp}
- */
-export const REG_AMP_ENC = /&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
 
 /**
  * Matches invalid relative URL patterns.
