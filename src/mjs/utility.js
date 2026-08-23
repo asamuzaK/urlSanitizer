@@ -12,6 +12,7 @@ import {
   DECI,
   HEX,
   MAX_NEST,
+  MAX_URL_LENGTH,
   TRUNCATE_LENGTH
 } from './constant.js';
 import {
@@ -50,6 +51,7 @@ const IS_NODE = globalThis.process?.versions?.node !== undefined;
 const NON_TEXT_PATTERN = `[${[...NON_TEXT_CHAR_CODES.values()].join('')}]`;
 const REG_NON_TEXT = new RegExp(NON_TEXT_PATTERN);
 const REG_NON_TEXT_G = new RegExp(NON_TEXT_PATTERN, 'g');
+const SHARED_BUFFER = new Uint8Array(MAX_URL_LENGTH);
 
 /* typedef */
 /**
@@ -262,10 +264,17 @@ export const extractDataURLComponents = (pathname, search = '', hash = '') => {
       isBase64: false
     };
   }
-  const mediaType = pathname.slice(0, comma);
-  const data = `${pathname.slice(comma + 1)}${search}${hash}`;
+  const mediaType = pathname.substring(0, comma);
+  const dataPart = pathname.substring(comma + 1);
+  const data =
+    search === '' && hash === '' ? dataPart : dataPart + search + hash;
   const mediaTypes = mediaType.split(';');
-  const isBase64 = /^base64$/i.test(mediaTypes.at(-1));
+  const lastType = mediaTypes[mediaTypes.length - 1];
+  const isBase64 =
+    lastType !== undefined &&
+    lastType.length === 6 &&
+    lastType.toLowerCase() === 'base64';
+
   return { mediaType, mediaTypes, data, isBase64 };
 };
 
@@ -278,12 +287,17 @@ export const parseBase64 = data => {
   if (!isString(data)) {
     throw new TypeError(`Expected String but got ${getType(data)}.`);
   }
-  const cleanData = data.replace(/\s/g, '');
   let binStr;
+  let cleanData = data;
   try {
-    binStr = atob(cleanData);
+    binStr = atob(data);
   } catch {
-    throw new Error(`Invalid base64 data: ${truncateURL(data)}`);
+    cleanData = data.replace(/\s/g, '');
+    try {
+      binStr = atob(cleanData);
+    } catch {
+      throw new Error(`Invalid base64 data: ${truncateURL(data)}`);
+    }
   }
   let bytes;
   if (IS_NODE && globalThis.Buffer) {
@@ -292,7 +306,11 @@ export const parseBase64 = data => {
     bytes = globalThis.Buffer.from(binStr, 'latin1');
   } else {
     const len = binStr.length;
-    bytes = new Uint8Array(len);
+    if (len <= MAX_URL_LENGTH) {
+      bytes = SHARED_BUFFER.subarray(0, len);
+    } else {
+      bytes = new Uint8Array(len);
+    }
     for (let i = 0; i < len; i++) {
       bytes[i] = binStr.charCodeAt(i);
     }
