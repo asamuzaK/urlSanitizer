@@ -19,31 +19,16 @@ import {
 } from './utility.js';
 
 /* constants */
+import { DUMMY_BASE, MAX_NEST } from './constant.js';
 import {
-  DUMMY_BASE,
-  MAX_BLOB_SIZE,
-  MAX_NEST,
-  MAX_URL_LENGTH
-} from './constant.js';
-import {
+  REG_AMP_ENC,
   REG_MIME_DOM,
   REG_SCHEME,
   REG_SCRIPT,
   REG_SCRIPT_OR_BLOB,
   REG_TAG_QUOT,
-  REG_UNSAFE_URL_CHAR,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
-const DEFAULT_OPTS = Object.freeze({
-  allow: Object.freeze([]),
-  deny: Object.freeze([]),
-  only: Object.freeze([]),
-  allowRelative: false,
-  debug: false,
-  revokeObjectURL: false,
-  maxBlobSize: MAX_BLOB_SIZE,
-  maxLength: MAX_URL_LENGTH
-});
 
 /**
  * Context manager for the sanitization process.
@@ -102,6 +87,16 @@ export class SanitizeContext {
  * An executor for sanitization filters.
  */
 export class SanitizeFilter {
+  /* private fields */
+  #defaultOpts;
+
+  /**
+   * @param {object} opt - The default sanitization options
+   */
+  constructor(opt) {
+    this.#defaultOpts = opt;
+  }
+
   /**
    * Process recursive method for sanitization.
    * @private
@@ -432,14 +427,22 @@ export class SanitizeFilter {
    * @returns {string} The sanitized URL.
    */
   #sanitizeStandardURL(urlToSanitize) {
-    const match = REG_UNSAFE_URL_CHAR.exec(urlToSanitize);
-    if (!match) {
+    let minIndex = urlToSanitize.length;
+    let matched = false;
+    const patterns = [REG_TAG_QUOT, REG_AMP_ENC];
+    for (let i = 0; i < patterns.length; i++) {
+      const match = patterns[i].exec(urlToSanitize);
+      if (match && match.index < minIndex) {
+        minIndex = match.index;
+        matched = true;
+      }
+    }
+    if (!matched) {
       return urlToSanitize;
     }
-    let truncateIndex = match.index;
+    let truncateIndex = minIndex;
     const lastChar = urlToSanitize.charCodeAt(truncateIndex - 1);
-    // charCodeAt(63): '?', charCodeAt(38): '&'.
-    if (lastChar === 63 || lastChar === 38) {
+    if (lastChar === 63 /* ? */ || lastChar === 38 /* & */) {
       truncateIndex--;
     }
     return urlToSanitize.substring(0, truncateIndex);
@@ -448,25 +451,13 @@ export class SanitizeFilter {
   /**
    * Sanitizes the URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @param {object} [opt] - Sanitization options.
-   * @param {string[]} [opt.allow] - An array of schemes to allow.
-   * @param {string[]} [opt.deny] - An array of schemes to deny.
-   * @param {string[]} [opt.only] - An array of specific schemes to allow.
-   * @param {boolean} [opt.allowRelative] - Allow relative URLs.
-   * @param {boolean} [opt.debug] - Flag to enable debug mode.
-   * @param {number} [opt.maxLength] - The maximum allowed URL length.
+   * @param {object} options - Sanitization options.
    * @returns {string|null} The sanitized URL, or null.
    */
-  sanitize(url, schemes, opt = {}) {
+  sanitize(url, options = this.#defaultOpts) {
     if (!url || !isString(url)) {
       return null;
     }
-    const options = {
-      ...DEFAULT_OPTS,
-      ...opt,
-      schemes: schemes instanceof Set ? schemes : new Set(schemes || [])
-    };
     const { allow, allowRelative, deny, maxLength, only } = options;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
@@ -497,19 +488,13 @@ export class SanitizeFilter {
    * Asynchronously sanitizes an ArrayBuffer and converts it to a Data URL.
    * @param {ArrayBuffer} buffer - The target buffer.
    * @param {string} mimeType - The MIME type of the buffer.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @param {object} [opt] - Sanitization options.
+   * @param {object} options - Sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
-  async sanitizeBuffer(buffer, mimeType, schemes, opt = {}) {
+  async sanitizeBuffer(buffer, mimeType, options = this.#defaultOpts) {
     if (!(buffer instanceof ArrayBuffer)) {
       return null;
     }
-    const options = {
-      ...DEFAULT_OPTS,
-      ...opt,
-      schemes: schemes instanceof Set ? schemes : new Set(schemes || [])
-    };
     const ctx = new SanitizeContext(options, domPurify);
     const { schemeMap } = this.#resolveSchemeRules(options, ctx);
     if (!schemeMap.get('data')) {
@@ -535,19 +520,13 @@ export class SanitizeFilter {
   /**
    * Asynchronously sanitizes the Data URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {Set<string>} [schemes] - The set of allowed schemes.
-   * @param {object} [opt] - Sanitization options.
+   * @param {object} options - Sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
-  async sanitizeDataURL(url, schemes, opt = {}) {
+  async sanitizeDataURL(url, options = this.#defaultOpts) {
     if (!url || !isString(url)) {
       return null;
     }
-    const options = {
-      ...DEFAULT_OPTS,
-      ...opt,
-      schemes: schemes instanceof Set ? schemes : new Set(schemes || [])
-    };
     const { maxLength } = options;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       throw new RangeError(

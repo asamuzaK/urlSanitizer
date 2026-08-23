@@ -169,12 +169,17 @@ const fetchBlobAsArrayBuffer = async (url, maxBlobSize) => {
 export class URLSanitizer extends URISchemes {
   /* private fields */
   #allowedSchemes;
+  #defaultOpts;
   #filter;
 
   constructor() {
     super();
     this.#allowedSchemes = new Set(super.get());
-    this.#filter = new SanitizeFilter();
+    this.#defaultOpts = {
+      ...DEFAULT_OPTS,
+      schemes: this.#allowedSchemes
+    };
+    this.#filter = new SanitizeFilter(this.#defaultOpts);
   }
 
   /**
@@ -208,7 +213,7 @@ export class URLSanitizer extends URISchemes {
     }
     const { allow, deny, only, ...restOpts } = opt;
     const options = {
-      ...DEFAULT_OPTS,
+      ...this.#defaultOpts,
       ...restOpts,
       allow: this.normalizeSchemes(allow),
       deny: this.normalizeSchemes(deny),
@@ -244,8 +249,8 @@ export class URLSanitizer extends URISchemes {
     let sanitizedURL;
     let invalidReason = null;
     try {
-      sanitizedURL = this.#filter.sanitize(url, [...this.#allowedSchemes], {
-        ...DEFAULT_OPTS,
+      sanitizedURL = this.#filter.sanitize(url, {
+        ...this.#defaultOpts,
         allow: ['data'],
         allowRelative: true
       });
@@ -417,7 +422,6 @@ export class URLSanitizer extends URISchemes {
           sanitizedData = await this.#filter.sanitizeBuffer(
             fetchedBuffer,
             fetchedMimeType,
-            this.#allowedSchemes,
             options
           );
         }
@@ -427,9 +431,9 @@ export class URLSanitizer extends URISchemes {
       }
       return sanitizedData;
     } else if (scheme === 'data') {
-      return this.#filter.sanitizeDataURL(url, this.#allowedSchemes, options);
+      return this.#filter.sanitizeDataURL(url, options);
     }
-    return this.#filter.sanitize(url, this.#allowedSchemes, options);
+    return this.#filter.sanitize(url, options);
   }
 
   /**
@@ -458,7 +462,7 @@ export class URLSanitizer extends URISchemes {
       }
       return null;
     }
-    return this.#filter.sanitize(url, this.#allowedSchemes, options);
+    return this.#filter.sanitize(url, options);
   }
 
   /**
