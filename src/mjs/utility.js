@@ -307,10 +307,10 @@ export const parseBase64 = data => {
     bytes = globalThis.Buffer.from(binStr, 'latin1');
   } else {
     const len = binStr.length;
-    if (len <= MAX_URL_LENGTH) {
-      bytes = SHARED_BUFFER.subarray(0, len);
-    } else {
+    if (len > MAX_URL_LENGTH) {
       bytes = new Uint8Array(len);
+    } else {
+      bytes = SHARED_BUFFER.subarray(0, len);
     }
     for (let i = 0; i < len; i++) {
       bytes[i] = binStr.charCodeAt(i);
