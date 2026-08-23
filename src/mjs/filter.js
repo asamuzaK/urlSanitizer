@@ -26,12 +26,12 @@ import {
   MAX_URL_LENGTH
 } from './constant.js';
 import {
-  REG_AMP_ENC,
   REG_MIME_DOM,
   REG_SCHEME,
   REG_SCRIPT,
   REG_SCRIPT_OR_BLOB,
   REG_TAG_QUOT,
+  REG_UNSAFE_URL_CHAR,
   REG_VERIFY_RELATIVE
 } from './regexp.js';
 const DEFAULT_OPTS = Object.freeze({
@@ -432,15 +432,17 @@ export class SanitizeFilter {
    * @returns {string} The sanitized URL.
    */
   #sanitizeStandardURL(urlToSanitize) {
-    let sanitized = urlToSanitize;
-    const patterns = [REG_TAG_QUOT, REG_AMP_ENC];
-    for (const pattern of patterns) {
-      const match = pattern.exec(sanitized);
-      if (match) {
-        sanitized = sanitized.substring(0, match.index).replace(/[?&]$/, '');
-      }
+    const match = REG_UNSAFE_URL_CHAR.exec(urlToSanitize);
+    if (!match) {
+      return urlToSanitize;
     }
-    return sanitized;
+    let truncateIndex = match.index;
+    const lastChar = urlToSanitize.charCodeAt(truncateIndex - 1);
+    // charCodeAt(63): '?', charCodeAt(38): '&'.
+    if (lastChar === 63 || lastChar === 38) {
+      truncateIndex--;
+    }
+    return urlToSanitize.substring(0, truncateIndex);
   }
 
   /**
