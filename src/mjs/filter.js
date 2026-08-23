@@ -421,7 +421,7 @@ export class SanitizeFilter {
   }
 
   /**
-   * Sanitizes URLs by stripping out trailing queries or problematic characters.
+   * Sanitizes URLs by stripping out problematic characters.
    * @private
    * @param {string} urlToSanitize - The absolute/relative URL.
    * @returns {string} The sanitized URL.
@@ -429,11 +429,18 @@ export class SanitizeFilter {
   #sanitizeStandardURL(urlToSanitize) {
     let minIndex = urlToSanitize.length;
     let matched = false;
-    const patterns = [REG_TAG_QUOT, REG_AMP_ENC];
-    for (const pattern of patterns) {
-      const match = pattern.exec(urlToSanitize);
-      if (match && match.index < minIndex) {
-        minIndex = match.index;
+    const matchTagQuot = REG_TAG_QUOT.exec(urlToSanitize);
+    if (matchTagQuot) {
+      minIndex = matchTagQuot.index;
+      matched = true;
+    }
+    if (urlToSanitize.indexOf('&') > -1) {
+      const matchAmp = REG_AMP_ENC.exec(urlToSanitize);
+      if (matchAmp) {
+        const matchAmpIndex = matchAmp.index;
+        if (matchAmpIndex < minIndex) {
+          minIndex = matchAmpIndex;
+        }
         matched = true;
       }
     }
