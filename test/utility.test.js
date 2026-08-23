@@ -340,6 +340,34 @@ describe('uri-util', () => {
           });
         }
       });
+
+      it('decodes base64 using Uint8Array when data exceeds max length', () => {
+        const originalBuffer = globalThis.Buffer;
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        try {
+          assert.strictEqual(
+            globalThis.Buffer,
+            undefined,
+            'Buffer should be hidden'
+          );
+          const len = 64 * 1024 + 1; // 65537
+          const largeText = 'a'.repeat(len);
+          const base64Data = btoa(largeText);
+          const res = func(base64Data);
+          assert.strictEqual(res.length, len, 'result length matches');
+          assert.strictEqual(res, largeText, 'result content matches');
+        } finally {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: originalBuffer,
+            writable: true,
+            configurable: true
+          });
+        }
+      });
     });
   });
 
