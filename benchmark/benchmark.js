@@ -8,13 +8,15 @@ import { sanitizeUrl as braintreeSanitize } from '@braintree/sanitize-url';
 import { sanitizeUrl as strictUrlSanitise } from 'strict-url-sanitise';
 import { sanitizeURL } from '../src/index.js';
 
+/* XSS HTML */
+const XSS_HTML = '<div><script>alert("XSS");</script></div>';
+
 /* XSS URLs */
 const normalUrl = 'https://www.example.com/path/to/page?query=1#top';
 const xssUrl = 'javascript:alert("XSS")';
-const xssHtml = '<div><script>alert("XSS");</script></div>';
-const httpsXssUrl = `https://www.example.com/"onmouseover="alert(1)"?query=${xssHtml}`;
-const dataUrl = `data:text/html;base64,${btoa(xssHtml)}`;
-const blobUrl = URL.createObjectURL(new Blob([xssHtml], { type: 'text/html' }));
+const httpsXssUrl = `https://www.example.com/?query=${XSS_HTML}"onmouseover="alert(1)"`;
+const dataUrl = `data:text/html;base64,${btoa(XSS_HTML)}`;
+const blobUrl = URL.createObjectURL(new Blob([XSS_HTML], { type: 'text/html' }));
 const invalidUrl = 'not-a-valid-URL';
 
 const sanitizeOpt = { allow: ['blob', 'data'] };
