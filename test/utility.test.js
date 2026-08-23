@@ -727,13 +727,52 @@ describe('uri-util', () => {
         assert.strictEqual(res, 'Tm9kZS5qcyBCdWZmZXIgZW5jb2Rpbmc=', 'result');
       });
 
-      it('encodes using Uint8Array fallback when Buffer is unavailable', () => {
+      it('encodes using Uint8Array.prototype.toBase64 when available', () => {
         const originalBuffer = globalThis.Buffer;
+        const originalToBase64 = Uint8Array.prototype.toBase64;
+        let isCalled = false;
         Object.defineProperty(globalThis, 'Buffer', {
           value: undefined,
           writable: true,
           configurable: true
         });
+        // eslint-disable-next-line no-extend-native
+        Uint8Array.prototype.toBase64 = function () {
+          isCalled = true;
+          return 'mocked-base64-string';
+        };
+        try {
+          const text = 'toBase64 encoding';
+          const buffer = new TextEncoder().encode(text).buffer;
+          const res = func(buffer);
+          assert.strictEqual(isCalled, true, 'toBase64 should be executed');
+          assert.strictEqual(res, 'mocked-base64-string', 'result');
+        } finally {
+          Object.defineProperty(globalThis, 'Buffer', {
+            value: originalBuffer,
+            writable: true,
+            configurable: true
+          });
+          if (originalToBase64) {
+            // eslint-disable-next-line no-extend-native
+            Uint8Array.prototype.toBase64 = originalToBase64;
+          } else {
+            delete Uint8Array.prototype.toBase64;
+          }
+        }
+      });
+
+      it('encodes using Uint8Array fallback when Buffer is unavailable', () => {
+        const originalBuffer = globalThis.Buffer;
+        const originalToBase64 = Uint8Array.prototype.toBase64;
+        Object.defineProperty(globalThis, 'Buffer', {
+          value: undefined,
+          writable: true,
+          configurable: true
+        });
+        if (originalToBase64) {
+          delete Uint8Array.prototype.toBase64;
+        }
         try {
           assert.strictEqual(
             globalThis.Buffer,
@@ -754,6 +793,10 @@ describe('uri-util', () => {
             writable: true,
             configurable: true
           });
+          if (originalToBase64) {
+            // eslint-disable-next-line no-extend-native
+            Uint8Array.prototype.toBase64 = originalToBase64;
+          }
         }
       });
     });

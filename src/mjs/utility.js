@@ -269,7 +269,7 @@ export const extractDataURLComponents = (pathname, search = '', hash = '') => {
   const data =
     search === '' && hash === '' ? dataPart : dataPart + search + hash;
   const mediaTypes = mediaType.split(';');
-  const lastType = mediaTypes[mediaTypes.length - 1];
+  const lastType = mediaTypes.at(-1);
   const isBase64 =
     lastType !== undefined &&
     lastType.length === 6 &&
@@ -337,6 +337,9 @@ export const encodeBufferToBase64 = buffer => {
     return globalThis.Buffer.from(buffer).toString('base64');
   }
   const uint8arr = new Uint8Array(buffer);
+  if (typeof uint8arr.toBase64 === 'function') {
+    return uint8arr.toBase64();
+  }
   const chunks = [];
   for (let i = 0; i < uint8arr.length; i += CHUNK_SIZE) {
     chunks.push(String.fromCharCode(...uint8arr.subarray(i, i + CHUNK_SIZE)));

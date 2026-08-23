@@ -91,13 +91,6 @@ export const REG_TAG_QUOT =
   /["'<>]|%(?:22|27|3C|3E)|&(?:apos|lt|gt|quot|#0*(?:34|39|60|62)|#x0*(?:22|27|3C|3E));/i;
 
 /**
- * Matches unsafe URL characters. REG_TAG_QUOT | REG_AMP_ENC
- * @type {RegExp}
- */
-export const REG_UNSAFE_URL_CHAR =
-  /["'<>]|%(?:22|27|3C|3E)|&(?:apos|lt|gt|quot|#0*(?:34|39|60|62)|#x0*(?:22|27|3C|3E));|&(?=[#a-z0-9])(?![a-z0-9]+=)/i;
-
-/**
  * Matches a percent-encoded character (%XX).
  * @type {RegExp}
  */

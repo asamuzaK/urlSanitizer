@@ -8,7 +8,21 @@ import { afterEach, beforeEach, describe, it } from 'mocha';
 import sinon from 'sinon';
 
 /* test */
+import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
+import { MAX_BLOB_SIZE, MAX_URL_LENGTH } from '../src/mjs/constant.js';
 import * as mjs from '../src/mjs/filter.js';
+
+const DEFAULT_OPTS = Object.freeze({
+  allow: Object.freeze([]),
+  deny: Object.freeze([]),
+  only: Object.freeze([]),
+  allowRelative: false,
+  debug: false,
+  revokeObjectURL: false,
+  maxBlobSize: MAX_BLOB_SIZE,
+  maxLength: MAX_URL_LENGTH,
+  schemes: new Set(uriSchemes)
+});
 
 describe('filter', () => {
   describe('Sanitize context', () => {
@@ -146,7 +160,7 @@ describe('filter', () => {
     let filter;
 
     beforeEach(() => {
-      filter = new SanitizeFilter();
+      filter = new SanitizeFilter(DEFAULT_OPTS);
     });
 
     describe('sanitize() URL', () => {
@@ -175,21 +189,26 @@ describe('filter', () => {
       });
 
       it('allows non-registered schemes via "allow" option', () => {
-        const res = filter.sanitize('foo:bar', new Set(), { allow: ['foo'] });
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['foo']
+        };
+        const res = filter.sanitize('foo:bar', opt);
         assert.strictEqual(res, 'foo:bar', 'result');
       });
 
       it('blocks custom schemes when explicitly denied', () => {
-        const res = filter.sanitize('web+foo:bar', new Set(), {
+        const opt = {
+          ...DEFAULT_OPTS,
           deny: ['web+foo']
-        });
+        };
+        const res = filter.sanitize('web+foo:bar', opt);
         assert.deepEqual(res, null, 'result');
       });
 
       it('strips malicious script tags from query parameters', () => {
         const res = filter.sanitize(
-          "http://example.com/?<script>alert('XSS');</script>",
-          new Set(['http', 'https'])
+          "http://example.com/?<script>alert('XSS');</script>"
         );
         assert.strictEqual(res, 'http://example.com/', 'result');
       });
@@ -199,27 +218,33 @@ describe('filter', () => {
       });
 
       it('allows relative URLs when allowRelative is true', () => {
-        const res = filter.sanitize('/about/us?q=1#top', new Set(), {
+        const opt = {
+          ...DEFAULT_OPTS,
           allowRelative: true
-        });
+        };
+        const res = filter.sanitize('/about/us?q=1#top', opt);
         assert.strictEqual(res, '/about/us?q=1#top', 'result');
       });
 
       it('throws RangeError when URL length exceeds max length', () => {
         const testUrl = 'https://example.com/' + 'a'.repeat(30);
+        const opt = {
+          ...DEFAULT_OPTS,
+          maxLength: 49
+        };
         assert.throws(
-          () => filter.sanitize(testUrl, new Set(), { maxLength: 49 }),
+          () => filter.sanitize(testUrl, opt),
           RangeError,
           'URL length 50 exceeds max length 49.'
         );
       });
 
       it('returns null if URL parsing fails in the fast-path', () => {
-        const res = filter.sanitize('http://[::1', new Set(), {});
+        const res = filter.sanitize('http://[::1');
         assert.deepEqual(
           res,
           null,
-          'result should be null for malformed URL in fast-path'
+          'result should be null for invalid URL in fast-path'
         );
       });
 
@@ -232,8 +257,12 @@ describe('filter', () => {
             const htmlBase64 = btoa(html);
             url = `data:text/html;base64,${htmlBase64}`;
           }
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
           assert.throws(
-            () => filter.sanitize(url, new Set(), { allow: ['data'] }),
+            () => filter.sanitize(url, opt),
             Error,
             'Data URLs nested too deeply.'
           );
@@ -242,9 +271,11 @@ describe('filter', () => {
 
       describe('script or blob rejection', () => {
         it('rejects "javascript" from being registered via "allow" option', () => {
-          const res = filter.sanitize('javascript:alert(1)', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['javascript']
-          });
+          };
+          const res = filter.sanitize('javascript:alert(1)', opt);
           assert.deepEqual(
             res,
             null,
@@ -253,9 +284,11 @@ describe('filter', () => {
         });
 
         it('rejects "vbscript" from being registered via "allow" option', () => {
-          const res = filter.sanitize('vbscript:msgbox(1)', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['vbscript']
-          });
+          };
+          const res = filter.sanitize('vbscript:msgbox(1)', opt);
           assert.deepEqual(
             res,
             null,
@@ -264,13 +297,11 @@ describe('filter', () => {
         });
 
         it('rejects "blob" from being registered via "only" option', () => {
-          const res = filter.sanitize(
-            'blob:https://example.com/uuid',
-            new Set(),
-            {
-              only: ['blob']
-            }
-          );
+          const opt = {
+            ...DEFAULT_OPTS,
+            only: ['blob']
+          };
+          const res = filter.sanitize('blob:https://example.com/uuid', opt);
           assert.deepEqual(
             res,
             null,
@@ -281,16 +312,20 @@ describe('filter', () => {
 
       describe('allow scheme logic', () => {
         it('returns sanitized URL if the scheme exactly matches the only option', () => {
-          const res = filter.sanitize('https://example.com', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             only: ['https']
-          });
+          };
+          const res = filter.sanitize('https://example.com', opt);
           assert.strictEqual(res, 'https://example.com/', 'result');
         });
 
         it('returns null if the scheme is omitted from the only option', () => {
-          const res = filter.sanitize('http://example.com', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             only: ['https']
-          });
+          };
+          const res = filter.sanitize('http://example.com', opt);
           assert.deepEqual(
             res,
             null,
@@ -299,16 +334,20 @@ describe('filter', () => {
         });
 
         it('allows custom schemes if explicitly included in the only option', () => {
-          const res = filter.sanitize('web+custom:test', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             only: ['web+custom']
-          });
+          };
+          const res = filter.sanitize('web+custom:test', opt);
           assert.strictEqual(res, 'web+custom:test', 'result');
         });
 
         it('blocks custom schemes if absent from the only option', () => {
-          const res = filter.sanitize('web+custom:test', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             only: ['https']
-          });
+          };
+          const res = filter.sanitize('web+custom:test', opt);
           assert.deepEqual(
             res,
             null,
@@ -317,9 +356,11 @@ describe('filter', () => {
         });
 
         it('blocks data URL if data is omitted from the only option', () => {
-          const res = filter.sanitize('data:text/plain,hello', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             only: ['https']
-          });
+          };
+          const res = filter.sanitize('data:text/plain,hello', opt);
           assert.deepEqual(
             res,
             null,
@@ -328,10 +369,12 @@ describe('filter', () => {
         });
 
         it('returns null if the scheme is simultaneously allowed and denied', () => {
-          const res = filter.sanitize('https://example.com', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['https'],
             deny: ['https']
-          });
+          };
+          const res = filter.sanitize('https://example.com', opt);
           assert.deepEqual(
             res,
             null,
@@ -340,10 +383,12 @@ describe('filter', () => {
         });
 
         it('returns null if an allowed compound scheme contains an explicitly denied part', () => {
-          const res = filter.sanitize('git+https://example.com', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['git+https'],
             deny: ['git']
-          });
+          };
+          const res = filter.sanitize('git+https://example.com', opt);
           assert.deepEqual(
             res,
             null,
@@ -352,9 +397,11 @@ describe('filter', () => {
         });
 
         it('returns null if an allowed compound scheme contains a default denied part like "data"', () => {
-          const res = filter.sanitize('web+data:test', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['web+data']
-          });
+          };
+          const res = filter.sanitize('web+data:test', opt);
           assert.deepEqual(
             res,
             null,
@@ -366,11 +413,15 @@ describe('filter', () => {
       describe('fallback mechanisms', () => {
         it('falls through and uses original DOM string if decodeURIComponent throws', () => {
           const url = 'data:text/html,<div>%</div>';
-          const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const res = filter.sanitize(url, opt);
           assert.strictEqual(
             res,
             'data:text/html,%3Cdiv%3E%25%3C/div%3E',
-            'should handle decodeURIComponent URIError gracefully (fall through)'
+            'should handle decodeURIComponent URIError gracefully'
           );
         });
 
@@ -379,8 +430,12 @@ describe('filter', () => {
             .stub(globalThis, 'encodeURI')
             .throws(new URIError('URI malformed'));
           try {
+            const opt = {
+              ...DEFAULT_OPTS,
+              allow: ['data']
+            };
             const url = 'data:text/html,<div>test</div>';
-            const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+            const res = filter.sanitize(url, opt);
             assert.strictEqual(
               res,
               'data:text/html,<div>test</div>',
@@ -402,7 +457,11 @@ describe('filter', () => {
       it('returns early if attrValue is empty or not a data URL', () => {
         const html = '<img src=""><a href="https://example.com">link</a>';
         const url = `data:text/html,${html}`;
-        const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = filter.sanitize(url, opt);
         assert.ok(
           res.includes('%3Cimg%20src=%22%22%3E'),
           'empty attribute should be safely processed and preserved'
@@ -423,7 +482,11 @@ describe('filter', () => {
         try {
           const html = '<a href="data:text/html,error-trigger">link</a>';
           const url = `data:text/html,${html}`;
-          const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const res = filter.sanitize(url, opt);
           assert.strictEqual(
             parseStub.calledWith('data:text/html,error-trigger'),
             true,
@@ -451,10 +514,14 @@ describe('filter', () => {
             return originalHas.call(this, val);
           });
         try {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data'],
+            debug: true
+          };
           const res = filter.sanitize(
             'data:text/html,<img src="data:text/html,loop">',
-            new Set(),
-            { allow: ['data'], debug: true }
+            opt
           );
           assert.strictEqual(
             res,
@@ -470,7 +537,11 @@ describe('filter', () => {
       it('sets attrValue to empty string if inner sanitization fails or returns null', () => {
         const innerUrl = 'data:text/html,<script>alert(1)</script>';
         const url = `data:text/html,<img src="${innerUrl}">`;
-        const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = filter.sanitize(url, opt);
         assert.strictEqual(
           res,
           'data:text/html,%3Cimg%20src=%22%22%3E',
@@ -481,7 +552,12 @@ describe('filter', () => {
       it('returns null when DOMPurify strips all content (e.g., iframe)', () => {
         const url =
           'data:text/html,<iframe src="data:text/html,test"></iframe>';
-        const res = filter.sanitize(url, new Set(), { allow: ['data'] });
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data'],
+          debug: true
+        };
+        const res = filter.sanitize(url, opt);
         assert.deepEqual(
           res,
           null,
@@ -500,15 +576,12 @@ describe('filter', () => {
           {},
           new Blob(['test'])
         ];
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
         for (const value of invalidBuffers) {
-          const res = await filter.sanitizeBuffer(
-            value,
-            'text/plain',
-            new Set(),
-            {
-              allow: ['data']
-            }
-          );
+          const res = await filter.sanitizeBuffer(value, 'text/plain', opt);
           assert.strictEqual(
             res,
             null,
@@ -530,28 +603,22 @@ describe('filter', () => {
       it('successfully encodes valid buffer to data URL', async () => {
         // "hello" as Uint8Array
         const buffer = new Uint8Array([104, 101, 108, 108, 111]).buffer;
-        const res = await filter.sanitizeBuffer(
-          buffer,
-          'text/plain',
-          new Set(),
-          {
-            allow: ['data']
-          }
-        );
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = await filter.sanitizeBuffer(buffer, 'text/plain', opt);
         assert.strictEqual(res, 'data:text/plain,hello', 'result');
       });
 
       it('successfully encodes valid buffer to data URL regardless of mime type', async () => {
         // "hello" as Uint8Array
         const buffer = new Uint8Array([104, 101, 108, 108, 111]).buffer;
-        const res = await filter.sanitizeBuffer(
-          buffer,
-          'image/png',
-          new Set(),
-          {
-            allow: ['data']
-          }
-        );
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = await filter.sanitizeBuffer(buffer, 'image/png', opt);
         assert.strictEqual(res, 'data:image/png,hello', 'result');
       });
 
@@ -559,14 +626,11 @@ describe('filter', () => {
         const buffer = new Uint8Array([
           0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
         ]).buffer;
-        const res = await filter.sanitizeBuffer(
-          buffer,
-          'image/png',
-          new Set(),
-          {
-            allow: ['data']
-          }
-        );
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = await filter.sanitizeBuffer(buffer, 'image/png', opt);
         assert.strictEqual(res, 'data:image/png;base64,iVBORw0KGgo=', 'result');
       });
 
@@ -574,14 +638,11 @@ describe('filter', () => {
         const buffer = new ArrayBuffer(8);
         const parseStub = sinon.stub(URL, 'parse').returns(null);
         try {
-          const res = await filter.sanitizeBuffer(
-            buffer,
-            'image/png',
-            new Set(),
-            {
-              allow: ['data']
-            }
-          );
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const res = await filter.sanitizeBuffer(buffer, 'image/png', opt);
           assert.strictEqual(
             res,
             null,
@@ -601,10 +662,12 @@ describe('filter', () => {
         const buffer = new Uint8Array(50).buffer;
         let caughtError = null;
         try {
-          await filter.sanitizeBuffer(buffer, 'image/png', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['data'],
             maxLength: 30
-          });
+          };
+          await filter.sanitizeBuffer(buffer, 'image/png', opt);
         } catch (e) {
           caughtError = e;
         }
@@ -622,14 +685,11 @@ describe('filter', () => {
           const buffer = Uint8Array.from(atob(base64Png), c =>
             c.charCodeAt(0)
           ).buffer;
-          const res = await filter.sanitizeBuffer(
-            buffer,
-            'image/png',
-            new Set(),
-            {
-              allow: ['data']
-            }
-          );
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const res = await filter.sanitizeBuffer(buffer, 'image/png', opt);
           assert.ok(
             typeof res === 'string' && res.startsWith('data:image/png;base64,'),
             'result should be a data URL starting with "data:image/png;base64,"'
@@ -639,9 +699,11 @@ describe('filter', () => {
         it('constructs Data URL without mimeType when mimeType is empty or null', async () => {
           const encoder = new TextEncoder();
           const buffer = encoder.encode('Hello World').buffer;
-          const res = await filter.sanitizeBuffer(buffer, '', new Set(), {
+          const opt = {
+            ...DEFAULT_OPTS,
             allow: ['data']
-          });
+          };
+          const res = await filter.sanitizeBuffer(buffer, '', opt);
           assert.strictEqual(
             res,
             'data:,Hello World',
@@ -658,13 +720,11 @@ describe('filter', () => {
       });
 
       it('returns null if the scheme is not "data"', async () => {
-        const res = await filter.sanitizeDataURL(
-          'https://example.com/',
-          new Set(),
-          {
-            allow: ['data']
-          }
-        );
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = await filter.sanitizeDataURL('https://example.com/', opt);
         assert.deepEqual(res, null, 'result');
       });
 
@@ -674,22 +734,22 @@ describe('filter', () => {
       });
 
       it('returns a sanitized string when the data scheme is explicitly allowed', async () => {
-        const res = await filter.sanitizeDataURL(
-          'data:text/plain,hello',
-          new Set(),
-          {
-            allow: ['data']
-          }
-        );
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
+        const res = await filter.sanitizeDataURL('data:text/plain,hello', opt);
         assert.strictEqual(res, 'data:text/plain,hello', 'result');
       });
 
       it('strips malicious scripts from HTML data URLs', async () => {
         const url =
           'data:text/html,<script>alert("XSS")</script><div>Hello</div>';
-        const res = await filter.sanitizeDataURL(url, new Set(), {
+        const opt = {
+          ...DEFAULT_OPTS,
           allow: ['data']
-        });
+        };
+        const res = await filter.sanitizeDataURL(url, opt);
         assert.strictEqual(
           res,
           'data:text/html,%3Cdiv%3EHello%3C/div%3E',
@@ -698,12 +758,13 @@ describe('filter', () => {
       });
 
       it('returns null for unparseable or invalid base64 data URLs', async () => {
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
         const res = await filter.sanitizeDataURL(
           'data:text/html;base64,invalid!base64',
-          new Set(),
-          {
-            allow: ['data']
-          }
+          opt
         );
         assert.deepEqual(res, null, 'result');
       });
@@ -712,7 +773,11 @@ describe('filter', () => {
         const url = 'data:text/plain,hello'; // 21
         let caughtError = null;
         try {
-          await filter.sanitizeDataURL(url, new Set(), { maxLength: 10 });
+          const opt = {
+            ...DEFAULT_OPTS,
+            maxLength: 10
+          };
+          await filter.sanitizeDataURL(url, opt);
         } catch (e) {
           caughtError = e;
         }
@@ -725,9 +790,11 @@ describe('filter', () => {
       });
 
       it('returns null if URL parsing fails', async () => {
-        const res = await filter.sanitizeDataURL('http://[::1', new Set(), {
+        const opt = {
+          ...DEFAULT_OPTS,
           allow: ['data']
-        });
+        };
+        const res = await filter.sanitizeDataURL('http://[::1', opt);
         assert.deepEqual(
           res,
           null,
@@ -736,12 +803,14 @@ describe('filter', () => {
       });
 
       it('returns null when inner URL parsing returns null', async () => {
+        const opt = {
+          ...DEFAULT_OPTS,
+          allow: ['data']
+        };
         const res = await filter.sanitizeDataURL(
           'data:text/html,http://[::1',
-          new Set(),
-          { allow: ['data'] }
+          opt
         );
-
         assert.deepEqual(
           res,
           null,
@@ -751,10 +820,13 @@ describe('filter', () => {
 
       describe('inner URL scheme validation', () => {
         it('returns null if inner URL scheme contains script (e.g. javascript:)', async () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
           const res = await filter.sanitizeDataURL(
             'data:text/html,javascript:alert(1)',
-            new Set(),
-            { allow: ['data'] }
+            opt
           );
           assert.deepEqual(
             res,
@@ -764,10 +836,13 @@ describe('filter', () => {
         });
 
         it('returns null if inner URL scheme contains blob (e.g. blob:)', async () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
           const res = await filter.sanitizeDataURL(
             'data:text/html,blob:https://example.com/uuid',
-            new Set(),
-            { allow: ['data'] }
+            opt
           );
           assert.deepEqual(
             res,
@@ -781,10 +856,14 @@ describe('filter', () => {
         it('logs debug message when base64 parsing fails and debug is true', async () => {
           const warnStub = sinon.stub(console, 'warn');
           try {
+            const opt = {
+              ...DEFAULT_OPTS,
+              allow: ['data'],
+              debug: true
+            };
             const res = await filter.sanitizeDataURL(
               'data:text/html;base64,invalid!base64',
-              new Set(),
-              { allow: ['data'], debug: true }
+              opt
             );
             assert.deepEqual(
               res,
@@ -810,10 +889,14 @@ describe('filter', () => {
         it('does not log debug message when base64 parsing fails and debug is false', async () => {
           const warnStub = sinon.stub(console, 'warn');
           try {
+            const opt = {
+              ...DEFAULT_OPTS,
+              allow: ['data'],
+              debug: false
+            };
             const res = await filter.sanitizeDataURL(
               'data:text/html;base64,invalid!base64',
-              new Set(),
-              { allow: ['data'], debug: false }
+              opt
             );
             assert.deepEqual(
               res,
@@ -839,10 +922,12 @@ describe('filter', () => {
             }
             const payload = `&#${nestedAmps}avascript:alert(1)`;
             const url = `data:text/html,${payload}`;
-            const res = await filter.sanitizeDataURL(url, new Set(), {
+            const opt = {
+              ...DEFAULT_OPTS,
               allow: ['data'],
               debug: true
-            });
+            };
+            const res = await filter.sanitizeDataURL(url, opt);
             assert.deepEqual(res, null, 'should fail securely and return null');
             assert.strictEqual(
               warnStub.called,
@@ -873,10 +958,12 @@ describe('filter', () => {
             }
             const payload = `&#${nestedAmps}avascript:alert(1)`;
             const url = `data:text/html,${payload}`;
-            const res = await filter.sanitizeDataURL(url, new Set(), {
+            const opt = {
+              ...DEFAULT_OPTS,
               allow: ['data'],
               debug: false
-            });
+            };
+            const res = await filter.sanitizeDataURL(url, opt);
             assert.deepEqual(res, null, 'should fail securely and return null');
             assert.strictEqual(
               warnStub.called,
