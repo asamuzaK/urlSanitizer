@@ -18,6 +18,7 @@ import {
 import {
   REG_AMP,
   REG_HASH,
+  REG_NON_ASCII,
   REG_NUM_REF,
   REG_PCT_ENC,
   REG_QUERY,
@@ -77,7 +78,7 @@ export const normalizeURL = (url, isScheme = false) => {
   if (!isString(url)) {
     return null;
   }
-  const normalized = url.normalize('NFKC');
+  const normalized = REG_NON_ASCII.test(url) ? url.normalize('NFKC') : url;
   if (isScheme) {
     return normalized.trim().toLowerCase().replace(/:$/, '');
   }

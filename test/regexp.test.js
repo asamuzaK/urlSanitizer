@@ -183,6 +183,45 @@ describe('regexp', () => {
     });
   });
 
+  describe('REG_NON_ASCII', () => {
+    const { REG_NON_ASCII } = reg;
+
+    it('should match non-ASCII characters', () => {
+      assert.strictEqual(
+        REG_NON_ASCII.test('ＨＴＴＰＳ'),
+        true,
+        'full-width string'
+      );
+      assert.strictEqual(REG_NON_ASCII.test('あ'), true, 'hiragana');
+      assert.strictEqual(REG_NON_ASCII.test('é'), true, 'accented character');
+      assert.strictEqual(REG_NON_ASCII.test('😊'), true, 'emoji');
+      assert.strictEqual(
+        REG_NON_ASCII.test('abcあdef'),
+        true,
+        'mixed string with non-ASCII'
+      );
+    });
+
+    it('should NOT match ASCII-only strings', () => {
+      assert.strictEqual(
+        REG_NON_ASCII.test('https://example.com/'),
+        false,
+        'standard URL'
+      );
+      assert.strictEqual(REG_NON_ASCII.test('0123456789'), false, 'numbers');
+      assert.strictEqual(
+        REG_NON_ASCII.test('!@#$%^&*()_+-=[]{}|;:\'",.<>/?~`'),
+        false,
+        'symbols'
+      );
+      assert.strictEqual(
+        REG_NON_ASCII.test('\x00\x7F'),
+        false,
+        'ASCII boundaries'
+      );
+    });
+  });
+
   describe('REG_NUM_REF', () => {
     const { REG_NUM_REF } = reg;
 

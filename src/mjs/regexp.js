@@ -40,6 +40,12 @@ export const REG_MIME_DOM =
 export const REG_MIME_TEXT = /^text\/[\w#&.;+-]+/i;
 
 /**
+ * Matches non-ASCII character.
+ * @type {RegExp}
+ */
+export const REG_NON_ASCII = /\P{ASCII}/u;
+
+/**
  * Matches numeric character references (hex or decimal).
  * @type {RegExp}
  */
