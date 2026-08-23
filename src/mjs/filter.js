@@ -430,8 +430,8 @@ export class SanitizeFilter {
     let minIndex = urlToSanitize.length;
     let matched = false;
     const patterns = [REG_TAG_QUOT, REG_AMP_ENC];
-    for (let i = 0; i < patterns.length; i++) {
-      const match = patterns[i].exec(urlToSanitize);
+    for (const pattern of patterns) {
+      const match = pattern.exec(urlToSanitize);
       if (match && match.index < minIndex) {
         minIndex = match.index;
         matched = true;
