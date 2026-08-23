@@ -80,6 +80,10 @@ export const runSharedTests = (context, assert, options = {}) => {
   });
 
   describe('sanitize URL', () => {
+    afterEach(() => {
+      urlSanitizer.reset();
+    });
+
     it('should get null for javascript: scheme', async () => {
       const url = 'javascript:alert(1)';
       const res = await sanitizeURL(url);
@@ -137,6 +141,16 @@ export const runSharedTests = (context, assert, options = {}) => {
       const url = 'javasc&Tab;ript:alert(1);';
       const res = await sanitizeURL(url);
       assert.deepEqual(res, null, 'result');
+    });
+
+    it('should return false after scheme has been removed', async () => {
+      const url = 'http://example.com';
+      const res1 = await sanitizeURL(url);
+      assert.strictEqual(res1, 'http://example.com/', 'should get url');
+      urlSanitizer.remove('http');
+      assert.strictEqual(urlSanitizer.has('http'), false, 'should remove scheme');
+      const res2 = await sanitizeURL(url);
+      assert.strictEqual(res2, null, 'should return null after removal');
     });
 
     if (woDomPurify) {

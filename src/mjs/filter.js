@@ -91,10 +91,10 @@ export class SanitizeFilter {
   #defaultOpts;
 
   /**
-   * @param {object} opt - The default sanitization options
+   * @param {object} options - The default sanitization options.
    */
-  constructor(opt) {
-    this.#defaultOpts = opt;
+  constructor(options) {
+    this.#defaultOpts = options;
   }
 
   /**
@@ -475,7 +475,7 @@ export class SanitizeFilter {
       !url.includes('data:')
     ) {
       const urlObj = parseURL(url, null, true);
-      if (urlObj) {
+      if (urlObj && options.schemes.has(urlObj.protocol.replace(/:$/, ''))) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
       return null;
