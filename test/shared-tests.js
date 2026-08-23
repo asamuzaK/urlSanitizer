@@ -1,5 +1,6 @@
 export const runSharedTests = (context, assert, options = {}) => {
   const {
+    afterEach,
     describe,
     it,
     urlSanitizer,
@@ -148,7 +149,11 @@ export const runSharedTests = (context, assert, options = {}) => {
       const res1 = await sanitizeURL(url);
       assert.strictEqual(res1, 'http://example.com/', 'should get url');
       urlSanitizer.remove('http');
-      assert.strictEqual(urlSanitizer.has('http'), false, 'should remove scheme');
+      assert.strictEqual(
+        urlSanitizer.has('http'),
+        false,
+        'should remove scheme'
+      );
       const res2 = await sanitizeURL(url);
       assert.strictEqual(res2, null, 'should return null after removal');
     });

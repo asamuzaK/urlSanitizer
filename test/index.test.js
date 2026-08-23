@@ -86,6 +86,7 @@ describe('URL Sanitizer (Node)', () => {
 
     runSharedTests(
       {
+        afterEach,
         describe,
         it,
         urlSanitizer,

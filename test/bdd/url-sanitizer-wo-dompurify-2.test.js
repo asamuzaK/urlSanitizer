@@ -12,11 +12,12 @@ import urlSanitizer, {
 } from '../../dist/url-sanitizer-wo-dompurify.min.js';
 import { runSharedTests } from '../shared-tests.js';
 
-const { describe, it } = globalThis;
+const { afterEach, describe, it } = globalThis;
 
 describe('dist URL Sanitizer wo-dompurify (No Global DOMPurify)', () => {
   runSharedTests(
     {
+      afterEach,
       describe,
       it,
       urlSanitizer,
