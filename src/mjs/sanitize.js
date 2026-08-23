@@ -217,7 +217,8 @@ export class URLSanitizer extends URISchemes {
       ...restOpts,
       allow: this.normalizeSchemes(allow),
       deny: this.normalizeSchemes(deny),
-      only: this.normalizeSchemes(only)
+      only: this.normalizeSchemes(only),
+      schemes: this.#allowedSchemes
     };
     const scheme = this.getScheme(url);
     if (scheme === null && !options.allowRelative) {
