@@ -39,12 +39,10 @@ export class SanitizeContext {
    * @param {object} domPurifyInstance - The DOMPurify instance.
    */
   constructor(opt, domPurifyInstance) {
-    this.debug = !!opt?.debug;
-    this.schemes =
-      opt?.schemes instanceof Set ? opt.schemes : new Set(opt?.schemes || []);
     this.domPurify = domPurifyInstance;
     this.nest = 0;
     this.recurse = new Set();
+    this.restrictScheme = false;
     this.schemeMap = new Map([
       ['blob', false],
       ['data', false],
@@ -52,13 +50,81 @@ export class SanitizeContext {
       ['javascript', false],
       ['vbscript', false]
     ]);
+    this.#compileRules(opt);
   }
 
   /**
-   * Enters a new level of nested URL sanitization.
+   * Compiles allow, deny, and only rules into the context.
+   * @private
+   * @param {object} opt - Sanitization options.
+   */
+  #compileRules(opt = {}) {
+    const { allowRelative, debug, schemes, allow, deny, only } = opt;
+    this.allowRelative = !!allowRelative;
+    this.debug = !!debug;
+    this.schemes = new Set(schemes || []);
+    if (Array.isArray(only) && only.length) {
+      this.schemes.clear();
+      this.restrictScheme = true;
+      for (const item of only) {
+        if (isString(item)) this.#registerScheme(item);
+      }
+    } else {
+      if (Array.isArray(allow) && allow.length) {
+        for (const scheme of allow) {
+          if (isString(scheme)) {
+            this.#registerScheme(scheme);
+          }
+        }
+      }
+      if (Array.isArray(deny) && deny.length) {
+        for (const scheme of deny) {
+          if (isString(scheme)) {
+            const normalized = normalizeURL(scheme, true);
+            if (normalized) {
+              this.schemeMap.set(normalized, false);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Register schemes for the 'allow' or 'only' options.
+   * @private
+   * @param {string} scheme - The scheme to register.
+   * @returns {boolean} True if the scheme is successfully registered.
+   */
+  #registerScheme(scheme) {
+    const normalizedScheme = normalizeURL(scheme, true);
+    if (!this.#isValidScheme(normalizedScheme)) {
+      return false;
+    }
+    this.schemeMap.set(normalizedScheme, true);
+    this.schemes.add(normalizedScheme);
+    return true;
+  }
+
+  /**
+   * Validates if a normalized URI scheme is syntactically correct.
+   * @private
+   * @param {string} normalizedScheme - The normalized URI scheme to validate.
+   * @returns {boolean} True if the scheme is valid.
+   */
+  #isValidScheme(normalizedScheme) {
+    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
+      return false;
+    }
+    const schemeParts = normalizedScheme.split('+');
+    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
+    return !isScript && REG_SCHEME.test(normalizedScheme);
+  }
+
+  /**
    * Tracks the URL to prevent circular references.
    * @param {string} url - The URL being processed.
-   * @returns {boolean} True if it is safe to proceed, false if circular reference detected.
+   * @returns {boolean} True if safe to proceed, false otherwise.
    */
   enter(url) {
     if (this.recurse.has(url)) {
@@ -73,7 +139,6 @@ export class SanitizeContext {
   }
 
   /**
-   * Leaves the current level of nested URL sanitization.
    * Cleans up the tracking state after processing the URL.
    * @param {string} url - The URL that finished processing.
    */
@@ -101,21 +166,13 @@ export class SanitizeFilter {
    * Process recursive method for sanitization.
    * @private
    * @param {string} url - The URL string to sanitize.
-   * @param {object} rules - The sanitization rules.
-   * @param {string[]} rules.allow - Allowed schemes.
-   * @param {boolean} rules.allowRelative - Allow relative URLs.
-   * @param {string[]} rules.deny - Denied schemes.
-   * @param {string[]} rules.only - Exclusively allowed schemes.
-   * @param {SanitizeContext} ctx - Internal context for state.
+   * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {string|null} The sanitized URL, or null.
    */
-  #process(url, { allow, allowRelative, deny, only }, ctx) {
+  #process(url, ctx) {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
-    // Resolve allowed/denied schemes
-    const { allowedSchemes, restrictScheme, schemeMap } =
-      this.#resolveSchemeRules({ allow, deny, only }, ctx);
     // Parse and verify the URL
     const {
       isDataURL,
@@ -125,20 +182,18 @@ export class SanitizeFilter {
       schemeParts,
       urlObj,
       urlToSanitize
-    } = this.#parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx);
+    } = this.#parseAndVerifyURL(url, ctx);
     if (!isVerified) {
       return null;
     }
     // Check if the scheme is allowed
-    if (
-      !this.#isSchemeAllowed(
-        scheme,
-        schemeParts,
-        restrictScheme,
-        schemeMap,
-        isRelative
-      )
-    ) {
+    const isAllowed = this.#isSchemeAllowed(
+      scheme,
+      schemeParts,
+      isRelative,
+      ctx
+    );
+    if (!isAllowed) {
       return null;
     }
     if (isDataURL) {
@@ -148,98 +203,19 @@ export class SanitizeFilter {
   }
 
   /**
-   * Resolves allow, deny, and only rules into mappings.
-   * @private
-   * @param {object} rules - The sanitization rules.
-   * @param {string[]} rules.allow - Allowed schemes.
-   * @param {string[]} rules.deny - Denied schemes.
-   * @param {string[]} rules.only - Exclusively allowed schemes.
-   * @param {SanitizeContext} ctx - Context for state management.
-   * @returns {object} Resolved scheme objects and flags.
-   */
-  #resolveSchemeRules({ allow, deny, only }, ctx) {
-    let allowedSchemes = new Set(ctx.schemes);
-    let restrictScheme = false;
-    const schemeMap = new Map(ctx.schemeMap);
-    if (Array.isArray(only) && only.length) {
-      allowedSchemes = new Set();
-      restrictScheme = true;
-      for (const item of only) {
-        if (isString(item)) {
-          this.#registerScheme(item, allowedSchemes, schemeMap);
-        }
-      }
-    } else {
-      if (Array.isArray(allow) && allow.length) {
-        for (const item of allow) {
-          if (isString(item)) {
-            this.#registerScheme(item, allowedSchemes, schemeMap);
-          }
-        }
-      }
-      if (Array.isArray(deny) && deny.length) {
-        for (const item of deny) {
-          if (isString(item)) {
-            const normalized = normalizeURL(item, true);
-            if (normalized) {
-              schemeMap.set(normalized, false);
-            }
-          }
-        }
-      }
-    }
-    return { allowedSchemes, restrictScheme, schemeMap };
-  }
-
-  /**
-   * Helper method to register schemes for the 'allow' or 'only' options.
-   * @private
-   * @param {string} item - The scheme to register.
-   * @param {Set<string>} allowedSchemes - The local set of allowed schemes.
-   * @param {Map<string, boolean>} schemeMap - The local map of schemes.
-   * @returns {boolean} True if the scheme is successfully registered.
-   */
-  #registerScheme(item, allowedSchemes, schemeMap) {
-    const normalizedScheme = normalizeURL(item, true);
-    if (!this.#isValidScheme(normalizedScheme)) {
-      return false;
-    }
-    schemeMap.set(normalizedScheme, true);
-    allowedSchemes.add(normalizedScheme);
-    return true;
-  }
-
-  /**
-   * Validates if a normalized URI scheme is syntactically correct.
-   * @private
-   * @param {string} normalizedScheme - The normalized URI scheme to validate.
-   * @returns {boolean} True if the scheme satisfies the syntax and requirements.
-   */
-  #isValidScheme(normalizedScheme) {
-    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
-      return false;
-    }
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    return !isScript && REG_SCHEME.test(normalizedScheme);
-  }
-
-  /**
    * Parses and verifies absolute and relative URLs.
    * @private
    * @param {string} url - The URL to parse.
-   * @param {boolean} allowRelative - Allow relative URLs.
-   * @param {Set<string>} allowedSchemes - Permitted schemes.
-   * @param {SanitizeContext} ctx - Context for logging and state.
+   * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {object} Parsed URL properties and flags.
    */
-  #parseAndVerifyURL(url, allowRelative, allowedSchemes, ctx) {
+  #parseAndVerifyURL(url, ctx) {
     const urlObj = parseURL(url, null, true);
-    let isVerified = allowedSchemes.has(normalizeURL(urlObj?.protocol, true));
+    let isVerified = ctx.schemes.has(normalizeURL(urlObj?.protocol, true));
     let isRelative = false;
     let relativePath = '';
     // Handle Relative URLs
-    if (!isVerified && allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
+    if (!isVerified && ctx.allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
       const dummyURL = parseURL(url, DUMMY_BASE);
       if (dummyURL) {
         if (
@@ -283,19 +259,18 @@ export class SanitizeFilter {
    * @private
    * @param {string} scheme - The normalized URL scheme.
    * @param {string[]} schemeParts - Parts of the split scheme.
-   * @param {boolean} restrictScheme - If rules strictly limit.
-   * @param {Map<string, boolean>} schemeMap - Scheme rules map.
    * @param {boolean} isRelative - If the URL is relative.
+   * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {boolean} True if the scheme is allowed.
    */
-  #isSchemeAllowed(scheme, schemeParts, restrictScheme, schemeMap, isRelative) {
+  #isSchemeAllowed(scheme, schemeParts, isRelative, ctx) {
     if (isRelative) {
       return true;
     }
-    if (restrictScheme) {
-      return schemeMap.has(scheme);
+    if (ctx.restrictScheme) {
+      return ctx.schemeMap.has(scheme);
     }
-    for (const [key, value] of schemeMap.entries()) {
+    for (const [key, value] of ctx.schemeMap.entries()) {
       if (!value && (scheme === key || schemeParts.includes(key))) {
         return false;
       }
@@ -308,7 +283,7 @@ export class SanitizeFilter {
    * @private
    * @param {object} urlObj - The URL object.
    * @param {string} scheme - The URL scheme.
-   * @param {SanitizeContext} ctx - Context for DOMPurify sanitization.
+   * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {string|null} Sanitized Data URL or null.
    */
   #sanitizeDataURL(urlObj, scheme, ctx) {
@@ -334,8 +309,7 @@ export class SanitizeFilter {
       if (!parsedURL) {
         return null;
       }
-      const dataScheme = parsedURL.protocol;
-      const dataSchemeParts = getSchemeParts(dataScheme);
+      const dataSchemeParts = getSchemeParts(parsedURL.protocol);
       if (dataSchemeParts.some(s => REG_SCRIPT_OR_BLOB.test(s))) {
         return null;
       }
@@ -361,7 +335,7 @@ export class SanitizeFilter {
    * Purifies a URL-encoded DOM string to prevent XSS.
    * @private
    * @param {string} dom - The URL-encoded DOM string.
-   * @param {SanitizeContext} ctx - The context for state management.
+   * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {string} The purified DOM string.
    */
   #purify(dom, ctx) {
@@ -409,11 +383,7 @@ export class SanitizeFilter {
       return;
     }
     try {
-      const sanitized = this.#process(
-        originalURL,
-        { allow: ['data'], deny: [], only: [], allowRelative: false },
-        ctx
-      );
+      const sanitized = this.#process(originalURL, ctx);
       evt.attrValue = sanitized || '';
     } finally {
       ctx.leave(originalURL);
@@ -427,27 +397,24 @@ export class SanitizeFilter {
    * @returns {string} The sanitized URL.
    */
   #sanitizeStandardURL(urlToSanitize) {
-    let minIndex = urlToSanitize.length;
-    let matched = false;
+    const len = urlToSanitize.length;
+    let truncateIndex = len;
     const matchTagQuot = REG_TAG_QUOT.exec(urlToSanitize);
     if (matchTagQuot) {
-      minIndex = matchTagQuot.index;
-      matched = true;
+      truncateIndex = matchTagQuot.index;
     }
     if (urlToSanitize.indexOf('&') > -1) {
       const matchAmp = REG_AMP_ENC.exec(urlToSanitize);
       if (matchAmp) {
         const matchAmpIndex = matchAmp.index;
-        if (matchAmpIndex < minIndex) {
-          minIndex = matchAmpIndex;
+        if (matchAmpIndex < truncateIndex) {
+          truncateIndex = matchAmpIndex;
         }
-        matched = true;
       }
     }
-    if (!matched) {
+    if (truncateIndex === len) {
       return urlToSanitize;
     }
-    let truncateIndex = minIndex;
     const lastChar = urlToSanitize.charCodeAt(truncateIndex - 1);
     if (lastChar === 63 /* ? */ || lastChar === 38 /* & */) {
       truncateIndex--;
@@ -465,7 +432,7 @@ export class SanitizeFilter {
     if (!url || !isString(url)) {
       return null;
     }
-    const { allow, allowRelative, deny, maxLength, only } = options;
+    const { deny, maxLength, only, allowRelative } = options;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
       throw new RangeError(msg);
@@ -488,7 +455,7 @@ export class SanitizeFilter {
       return null;
     }
     const ctx = new SanitizeContext(options, domPurify);
-    return this.#process(url, { allow, allowRelative, deny, only }, ctx);
+    return this.#process(url, ctx);
   }
 
   /**
@@ -503,11 +470,10 @@ export class SanitizeFilter {
       return null;
     }
     const ctx = new SanitizeContext(options, domPurify);
-    const { schemeMap } = this.#resolveSchemeRules(options, ctx);
-    if (!schemeMap.get('data')) {
+    if (!ctx.schemeMap.get('data')) {
       return null;
     }
-    const base64Data = encodeBufferToBase64(buffer);
+    const base64Data = await encodeBufferToBase64(buffer);
     const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
     if (
       Number.isInteger(options.maxLength) &&
@@ -549,8 +515,7 @@ export class SanitizeFilter {
       return null;
     }
     const ctx = new SanitizeContext(options, domPurify);
-    const { schemeMap } = this.#resolveSchemeRules(options, ctx);
-    if (!schemeMap.get(scheme)) {
+    if (!ctx.schemeMap.get(scheme)) {
       return null;
     }
     return this.#sanitizeDataURL(urlObj, scheme, ctx);
