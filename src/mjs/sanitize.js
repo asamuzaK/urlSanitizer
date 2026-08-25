@@ -213,8 +213,8 @@ export class URLSanitizer extends URISchemes {
    * @param {object} opt - User options.
    * @returns {{ isValid: boolean|undefined, options: object, scheme: string|null }} Nomalized options, scheme, and isValid.
    */
-  #normalizeOptions(url, opt = {}) {
-    if (!url || !isString(url)) {
+  #normalizeOptions(url, opt) {
+    if (!isString(url) || url === '') {
       return { isValid: false };
     }
     const options = {
@@ -258,7 +258,8 @@ export class URLSanitizer extends URISchemes {
       sanitizedURL = this.#filter.sanitize(url, {
         ...this.#defaultOpts,
         allow: ['data'],
-        allowRelative: true
+        allowRelative: true,
+        schemes: this.#allowedSchemes
       });
       if (!sanitizedURL) {
         invalidReason =
@@ -366,7 +367,10 @@ export class URLSanitizer extends URISchemes {
    * @returns {void}
    */
   reset() {
-    this.#allowedSchemes = new Set(super.get());
+    this.#allowedSchemes.clear();
+    for (const scheme of super.get()) {
+      this.#allowedSchemes.add(scheme);
+    }
   }
 
   /**
@@ -386,7 +390,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
    */
   async sanitizeURL(url, opt) {
-    const { isValid, options, scheme } = this.#normalizeOptions(url, opt);
+    const { isValid, options, scheme } = this.#normalizeOptions(url, opt ?? {});
     if (isValid === false) {
       return null;
     }
@@ -458,7 +462,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {string|null} The sanitized URL, or null if denied.
    */
   sanitizeURLSync(url, opt) {
-    const { isValid, options, scheme } = this.#normalizeOptions(url, opt);
+    const { isValid, options, scheme } = this.#normalizeOptions(url, opt ?? {});
     if (isValid === false) {
       return null;
     }
