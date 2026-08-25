@@ -308,6 +308,32 @@ describe('filter', () => {
             'result should be null because blob cannot be restricted/allowed'
           );
         });
+
+        it('rejects compound schemes containing "javascript"', () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['custom+javascript']
+          };
+          const res = filter.sanitize('custom+javascript:alert(1)', opt);
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null because the compound scheme contains javascript'
+          );
+        });
+
+        it('rejects compound schemes containing "vbscript"', () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['vbscript+custom']
+          };
+          const res = filter.sanitize('vbscript+custom:msgbox(1)', opt);
+          assert.deepEqual(
+            res,
+            null,
+            'result should be null because the compound scheme contains vbscript'
+          );
+        });
       });
 
       describe('allow scheme logic', () => {

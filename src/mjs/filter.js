@@ -62,28 +62,24 @@ export class SanitizeContext {
     const { allowRelative, debug, schemes, allow, deny, only } = opt;
     this.allowRelative = !!allowRelative;
     this.debug = !!debug;
-    this.schemes = new Set(schemes || []);
     if (Array.isArray(only) && only.length) {
-      this.schemes.clear();
+      this.schemes = new Set();
       this.restrictScheme = true;
-      for (const item of only) {
-        if (isString(item)) this.#registerScheme(item);
+      for (const scheme of only) {
+        this.#registerScheme(scheme);
       }
     } else {
+      this.schemes = new Set(schemes || []);
       if (Array.isArray(allow) && allow.length) {
         for (const scheme of allow) {
-          if (isString(scheme)) {
-            this.#registerScheme(scheme);
-          }
+          this.#registerScheme(scheme);
         }
       }
       if (Array.isArray(deny) && deny.length) {
         for (const scheme of deny) {
-          if (isString(scheme)) {
-            const normalized = normalizeURL(scheme, true);
-            if (normalized) {
-              this.schemeMap.set(normalized, false);
-            }
+          const normalized = normalizeURL(scheme, true);
+          if (normalized) {
+            this.schemeMap.set(normalized, false);
           }
         }
       }
@@ -98,27 +94,24 @@ export class SanitizeContext {
    */
   #registerScheme(scheme) {
     const normalizedScheme = normalizeURL(scheme, true);
-    if (!this.#isValidScheme(normalizedScheme)) {
+    if (
+      !normalizedScheme ||
+      REG_SCRIPT_OR_BLOB.test(normalizedScheme) ||
+      !REG_SCHEME.test(normalizedScheme)
+    ) {
       return false;
+    }
+    if (normalizedScheme.includes('+')) {
+      const isScript = normalizedScheme
+        .split('+')
+        .some(s => REG_SCRIPT.test(s));
+      if (isScript) {
+        return false;
+      }
     }
     this.schemeMap.set(normalizedScheme, true);
     this.schemes.add(normalizedScheme);
     return true;
-  }
-
-  /**
-   * Validates if a normalized URI scheme is syntactically correct.
-   * @private
-   * @param {string} normalizedScheme - The normalized URI scheme to validate.
-   * @returns {boolean} True if the scheme is valid.
-   */
-  #isValidScheme(normalizedScheme) {
-    if (REG_SCRIPT_OR_BLOB.test(normalizedScheme)) {
-      return false;
-    }
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    return !isScript && REG_SCHEME.test(normalizedScheme);
   }
 
   /**
@@ -173,120 +166,48 @@ export class SanitizeFilter {
     if (ctx.nest > MAX_NEST) {
       throw new Error('Data URLs nested too deeply.');
     }
-    // Parse and verify the URL
-    const {
-      isDataURL,
-      isRelative,
-      isVerified,
-      scheme,
-      schemeParts,
-      urlObj,
-      urlToSanitize
-    } = this.#parseAndVerifyURL(url, ctx);
-    if (!isVerified) {
-      return null;
-    }
-    // Check if the scheme is allowed
-    const isAllowed = this.#isSchemeAllowed(
-      scheme,
-      schemeParts,
-      isRelative,
-      ctx
-    );
-    if (!isAllowed) {
-      return null;
-    }
-    if (isDataURL) {
-      return this.#sanitizeDataURL(urlObj, scheme, ctx);
-    }
-    return this.#sanitizeStandardURL(urlToSanitize);
-  }
-
-  /**
-   * Parses and verifies absolute and relative URLs.
-   * @private
-   * @param {string} url - The URL to parse.
-   * @param {SanitizeContext} ctx - The sanitization context.
-   * @returns {object} Parsed URL properties and flags.
-   */
-  #parseAndVerifyURL(url, ctx) {
     const urlObj = parseURL(url, null, true);
-    let isVerified = ctx.schemes.has(normalizeURL(urlObj?.protocol, true));
-    let isRelative = false;
-    let relativePath = '';
-    // Handle Relative URLs
-    if (!isVerified && ctx.allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
-      const dummyURL = parseURL(url, DUMMY_BASE);
-      if (dummyURL) {
-        if (
-          dummyURL.protocol === 'http:' &&
-          dummyURL.hostname === 'dummy.local'
-        ) {
-          isVerified = true;
-          isRelative = true;
-          relativePath = `${dummyURL.pathname}${dummyURL.search}${dummyURL.hash}`;
+    if (!urlObj) {
+      if (ctx.allowRelative && !REG_VERIFY_RELATIVE.test(url)) {
+        const dummyURL = parseURL(url, DUMMY_BASE);
+        if (dummyURL) {
+          const { protocol, hostname, pathname, search, hash } = dummyURL;
+          if (protocol === 'http:' && hostname === 'dummy.local') {
+            return this.#sanitizeStandardURL(`${pathname}${search}${hash}`);
+          }
         }
       }
-    }
-    if (!isVerified) {
-      return { isVerified: false };
-    }
-    // Extract parts if verified
-    if (isRelative) {
-      return {
-        isRelative,
-        isVerified,
-        isDataURL: false,
-        scheme: '',
-        schemeParts: [],
-        urlToSanitize: relativePath
-      };
+      return null;
     }
     const scheme = normalizeURL(urlObj.protocol, true);
-    return {
-      isRelative,
-      isVerified,
-      scheme,
-      schemeParts: scheme.split('+'),
-      urlObj,
-      isDataURL: scheme === 'data',
-      urlToSanitize: urlObj.href
-    };
-  }
-
-  /**
-   * Evaluates if the extracted scheme is permitted.
-   * @private
-   * @param {string} scheme - The normalized URL scheme.
-   * @param {string[]} schemeParts - Parts of the split scheme.
-   * @param {boolean} isRelative - If the URL is relative.
-   * @param {SanitizeContext} ctx - The sanitization context.
-   * @returns {boolean} True if the scheme is allowed.
-   */
-  #isSchemeAllowed(scheme, schemeParts, isRelative, ctx) {
-    if (isRelative) {
-      return true;
+    if (ctx.restrictScheme && !ctx.schemeMap.has(scheme)) {
+      return null;
     }
-    if (ctx.restrictScheme) {
-      return ctx.schemeMap.has(scheme);
-    }
-    for (const [key, value] of ctx.schemeMap.entries()) {
-      if (!value && (scheme === key || schemeParts.includes(key))) {
-        return false;
+    if (scheme.includes('+')) {
+      const schemeParts = scheme.split('+');
+      if (
+        ctx.schemeMap.get(scheme) === false ||
+        schemeParts.some(part => ctx.schemeMap.get(part) === false)
+      ) {
+        return null;
       }
+    } else if (ctx.schemeMap.get(scheme) === false) {
+      return null;
     }
-    return true;
+    if (scheme === 'data') {
+      return this.#sanitizeDataURL(urlObj, ctx);
+    }
+    return this.#sanitizeStandardURL(urlObj.href);
   }
 
   /**
    * Decodes, verifies inner protocols, and purifies Data URLs.
    * @private
-   * @param {object} urlObj - The URL object.
-   * @param {string} scheme - The URL scheme.
+   * @param {URL} urlObj - The URL object.
    * @param {SanitizeContext} ctx - The sanitization context.
    * @returns {string|null} Sanitized Data URL or null.
    */
-  #sanitizeDataURL(urlObj, scheme, ctx) {
+  #sanitizeDataURL(urlObj, ctx) {
     const { mediaType, mediaTypes, data, isBase64 } = extractDataURLComponents(
       urlObj.pathname,
       urlObj.search,
@@ -326,7 +247,7 @@ export class SanitizeFilter {
       if (isBase64 && parsedData !== data) {
         mediaTypes.pop();
       }
-      return `${scheme}:${mediaTypes.join(';')},${parsedData}`;
+      return `data:${mediaTypes.join(';')},${parsedData}`;
     }
     return null;
   }
@@ -346,10 +267,9 @@ export class SanitizeFilter {
       // fall through
     }
     let purifiedDom;
-    const tempHook = (node, evt) =>
-      this.#handleSanitizeAttribute(node, evt, ctx);
-    ctx.domPurify.addHook('uponSanitizeAttribute', tempHook);
     try {
+      ctx.domPurify.addHook('uponSanitizeAttribute', (node, evt) =>
+        this.#handleSanitizeAttribute(node, evt, ctx));
       purifiedDom = ctx.domPurify.sanitize(decodedDom);
     } finally {
       ctx.domPurify.removeHook('uponSanitizeAttribute');
@@ -469,11 +389,7 @@ export class SanitizeFilter {
     if (!(buffer instanceof ArrayBuffer)) {
       return null;
     }
-    const ctx = new SanitizeContext(options, domPurify);
-    if (!ctx.schemeMap.get('data')) {
-      return null;
-    }
-    const base64Data = await encodeBufferToBase64(buffer);
+    const base64Data = encodeBufferToBase64(buffer);
     const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
     if (
       Number.isInteger(options.maxLength) &&
@@ -483,11 +399,15 @@ export class SanitizeFilter {
         `URL length ${dataUrl.length} exceeds max length ${options.maxLength}.`
       );
     }
+    const ctx = new SanitizeContext(options, domPurify);
+    if (!ctx.schemeMap.get('data')) {
+      return null;
+    }
     const urlObj = parseURL(dataUrl);
     if (!urlObj) {
       return null;
     }
-    return this.#sanitizeDataURL(urlObj, 'data', ctx);
+    return this.#sanitizeDataURL(urlObj, ctx);
   }
 
   /**
@@ -518,6 +438,6 @@ export class SanitizeFilter {
     if (!ctx.schemeMap.get(scheme)) {
       return null;
     }
-    return this.#sanitizeDataURL(urlObj, scheme, ctx);
+    return this.#sanitizeDataURL(urlObj, ctx);
   }
 }
