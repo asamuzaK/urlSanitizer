@@ -126,8 +126,8 @@ export const runSharedTests = (context, assert, options = {}) => {
       assert.strictEqual(res, 'https://example.com/', 'result');
     });
 
-    it('should return null for custom scheme with XSS', async () => {
-      const url = 'git+https://example.com/foo.git?<script>alert(1)</script>';
+    it('should return null for compound scheme not in a list', async () => {
+      const url = 'git+https://example.com/foo.git';
       const res = await sanitizeURL(url, { only: ['data', 'git', 'https'] });
       assert.strictEqual(res, null, 'result');
     });
