@@ -188,16 +188,22 @@ export class URLSanitizer extends URISchemes {
    * @param {string} normalizedScheme - The normalized URI scheme to validate.
    * @returns {boolean} True if the scheme satisfies the syntax and requirements.
    */
-  #isValidScheme(normalizedScheme) {
+  #isWellFormedScheme(normalizedScheme) {
     if (
       !isString(normalizedScheme) ||
       REG_SCRIPT_OR_BLOB.test(normalizedScheme)
     ) {
       return false;
     }
-    const schemeParts = normalizedScheme.split('+');
-    const isScript = schemeParts.some(s => REG_SCRIPT.test(s));
-    return !isScript && REG_SCHEME.test(normalizedScheme);
+    if (normalizedScheme.includes('+')) {
+      const isScript = normalizedScheme
+        .split('+')
+        .some(s => REG_SCRIPT.test(s));
+      if (isScript) {
+        return false;
+      }
+    }
+    return REG_SCHEME.test(normalizedScheme);
   }
 
   /**
@@ -211,13 +217,12 @@ export class URLSanitizer extends URISchemes {
     if (!url || !isString(url)) {
       return { isValid: false };
     }
-    const { allow, deny, only, ...restOpts } = opt;
     const options = {
       ...this.#defaultOpts,
-      ...restOpts,
-      allow: this.normalizeSchemes(allow),
-      deny: this.normalizeSchemes(deny),
-      only: this.normalizeSchemes(only),
+      ...opt,
+      allow: this.normalizeSchemes(opt.allow),
+      deny: this.normalizeSchemes(opt.deny),
+      only: this.normalizeSchemes(opt.only),
       schemes: this.#allowedSchemes
     };
     const scheme = this.getScheme(url);
@@ -336,7 +341,7 @@ export class URLSanitizer extends URISchemes {
       throw new TypeError(`Expected String but got ${getType(scheme)}.`);
     }
     const normalizedScheme = normalizeURL(scheme, true);
-    if (!this.#isValidScheme(normalizedScheme)) {
+    if (!this.#isWellFormedScheme(normalizedScheme)) {
       throw new Error(`Invalid scheme: ${scheme}`);
     }
     this.#allowedSchemes.add(normalizedScheme);
@@ -481,7 +486,8 @@ export class URLSanitizer extends URISchemes {
             parsedURL.href
           );
           const base64Data = encodeBufferToBase64(buffer);
-          const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+          const dataURL =
+            `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
           const inspectedURLResult = this.#inspect(dataURL);
           inspectedURLResult.input = url;
           return inspectedURLResult;

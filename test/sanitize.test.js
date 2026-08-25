@@ -100,6 +100,20 @@ describe('sanitize', () => {
           'custom scheme is removed'
         );
       });
+
+      it('throws Error if a compound scheme contains a script scheme', () => {
+        const sanitizer = new URLSanitizer();
+        assert.throws(
+          () => sanitizer.add('custom+javascript'),
+          /^Error: Invalid scheme: custom\+javascript$/,
+          'should reject compound scheme containing javascript'
+        );
+        assert.throws(
+          () => sanitizer.add('vbscript+custom'),
+          /^Error: Invalid scheme: vbscript\+custom$/,
+          'should reject compound scheme containing vbscript'
+        );
+      });
     });
 
     describe('isValidURI()', () => {
