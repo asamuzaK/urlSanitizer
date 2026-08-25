@@ -25,7 +25,7 @@ export type InspectedURLResult = {
 export declare class URLSanitizer extends URISchemes {
     #private;
     constructor();
-    private #isValidScheme;
+    private #isWellFormedScheme;
     private #normalizeOptions;
     private #inspect;
     get(): string[];

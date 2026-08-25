@@ -7,6 +7,7 @@
  */
 import { URLSanitizer } from './mjs/sanitize.js';
 export type InspectedURLResult = import('./mjs/sanitize.js').InspectedURLResult;
+export { URLSanitizer };
 declare const sanitizer: URLSanitizer;
 export declare const sanitizeURL: (url: string, opt?: {
     allow?: string[];
