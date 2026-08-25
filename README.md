@@ -204,12 +204,6 @@ const res7_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', 
   only: ['data', 'git', 'https']
 });
 // => 'https://example.com/'
-
-// `only` also allows combination of the schemes in the list
-const res8 = await sanitizeURL('git+https://example.com/foo.git?<script>alert(1)</script>', {
-  only: ['data', 'git', 'https']
-});
-// => 'git+https://example.com/foo.git'
 ```
 
 ### sanitizeURLSync(url, opt)
