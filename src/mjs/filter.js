@@ -269,7 +269,8 @@ export class SanitizeFilter {
     let purifiedDom;
     try {
       ctx.domPurify.addHook('uponSanitizeAttribute', (node, evt) =>
-        this.#handleSanitizeAttribute(node, evt, ctx));
+        this.#handleSanitizeAttribute(node, evt, ctx)
+      );
       purifiedDom = ctx.domPurify.sanitize(decodedDom);
     } finally {
       ctx.domPurify.removeHook('uponSanitizeAttribute');

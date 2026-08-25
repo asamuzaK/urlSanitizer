@@ -486,8 +486,7 @@ export class URLSanitizer extends URISchemes {
             parsedURL.href
           );
           const base64Data = encodeBufferToBase64(buffer);
-          const dataURL =
-            `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+          const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
           const inspectedURLResult = this.#inspect(dataURL);
           inspectedURLResult.input = url;
           return inspectedURLResult;

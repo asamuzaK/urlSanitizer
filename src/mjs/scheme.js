@@ -127,23 +127,24 @@ export class URISchemes {
       return false;
     }
     const normalized = this.normalize(scheme, true);
+    const targetSchemes = schemes || this.#schemes;
+    if (!normalized.includes('+')) {
+      if (REG_SCRIPT.test(normalized)) {
+        return false;
+      }
+      return targetSchemes.has(normalized);
+    }
     const parts = normalized.split('+');
     const isScript = parts.some(s => REG_SCRIPT.test(s));
     if (isScript) {
       return false;
     }
-    if (!schemes) {
-      schemes = this.#schemes;
-    }
-    if (schemes.has(normalized)) {
+    if (targetSchemes.has(normalized)) {
       return true;
     }
-    if (parts.length > 1) {
-      return (
-        (allowCustom && REG_SCHEME_EXT.test(normalized)) ||
-        parts.every(s => schemes.has(s))
-      );
-    }
-    return false;
+    return (
+      (allowCustom && REG_SCHEME_EXT.test(normalized)) ||
+      parts.every(s => targetSchemes.has(s))
+    );
   }
 }
