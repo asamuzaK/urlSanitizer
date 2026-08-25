@@ -49,7 +49,7 @@ export const WINDOWS1252_TO_UNICODE = new Map([
 /**
  * Generates hexadecimal escape strings for non-text codes.
  * @private
- * @returns {Map<number, string>} The map of non-text codes and hexadicimal escape strings.
+ * @returns {Map<number, string>} The map of non-text codes and hexadecimal escape strings.
  */
 const generateNonTextCharCodes = () => {
   const charCodes = new Map();

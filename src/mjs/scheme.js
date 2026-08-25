@@ -123,10 +123,10 @@ export class URISchemes {
    * @returns {boolean} True if the parsed URL is valid and permitted.
    */
   verifyScheme(scheme, schemes, allowCustom = false) {
-    if (!isString(scheme)) {
+    const normalized = this.normalize(scheme, true);
+    if (!normalized) {
       return false;
     }
-    const normalized = this.normalize(scheme, true);
     const targetSchemes = schemes || this.#schemes;
     if (!normalized.includes('+')) {
       if (REG_SCRIPT.test(normalized)) {
