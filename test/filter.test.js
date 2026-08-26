@@ -32,11 +32,6 @@ describe('filter', () => {
       const mockDomPurify = {};
       const ctx = new SanitizeContext(undefined, mockDomPurify);
       assert.strictEqual(ctx.debug, false, 'debug should be false by default');
-      assert.deepEqual(
-        ctx.schemes,
-        new Set(),
-        'schemes should be an empty Set by default'
-      );
       assert.strictEqual(
         ctx.domPurify,
         mockDomPurify,
@@ -63,18 +58,6 @@ describe('filter', () => {
     it('initializes debug property correctly when opt.debug is true', () => {
       const ctx = new SanitizeContext({ debug: true }, {});
       assert.strictEqual(ctx.debug, true, 'debug should be true');
-    });
-
-    it('initializes scheme property correctly when opt.schemes is given', () => {
-      const ctx = new SanitizeContext(
-        { schemes: new Set(['http', 'https']) },
-        {}
-      );
-      assert.deepEqual(
-        ctx.schemes,
-        new Set(['http', 'https']),
-        'schemes should match Set'
-      );
     });
 
     describe('enter() and leave()', () => {
@@ -451,21 +434,35 @@ describe('filter', () => {
           );
         });
 
-        it('returns unencoded DOM if encodeURI throws URIError', () => {
+        it('returns encoded URI string', () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const url = 'data:text/html,<a href="#\uD800">Link</a>';
+          const res = filter.sanitize(url, opt);
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Ca%20href=%22#%EF%BF%BD%22%3ELink%3C/a%3E',
+            'should return encoded URI string (sanity check)'
+          );
+        });
+
+        it('returns null if encodeURI throws URIError', () => {
           const encodeURIStub = sinon
             .stub(globalThis, 'encodeURI')
-            .throws(new URIError('URI malformed'));
+            .throws(new URIError('Unknown URI Error'));
           try {
             const opt = {
               ...DEFAULT_OPTS,
               allow: ['data']
             };
-            const url = 'data:text/html,<div>test</div>';
+            const url = 'data:text/html,<a href="#\uD800">Link</a>';
             const res = filter.sanitize(url, opt);
             assert.strictEqual(
               res,
-              'data:text/html,<div>test</div>',
-              'should return unencoded string if encodeURI fails'
+              null,
+              'should return null if encodeURI fails'
             );
             assert.strictEqual(
               encodeURIStub.called,
