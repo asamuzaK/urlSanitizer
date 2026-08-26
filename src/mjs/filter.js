@@ -59,17 +59,15 @@ export class SanitizeContext {
    * @param {object} opt - Sanitization options.
    */
   #compileRules(opt = {}) {
-    const { allowRelative, debug, schemes, allow, deny, only } = opt;
+    const { allowRelative, debug, allow, deny, only } = opt;
     this.allowRelative = !!allowRelative;
     this.debug = !!debug;
     if (Array.isArray(only) && only.length) {
-      this.schemes = new Set();
       this.restrictScheme = true;
       for (const scheme of only) {
         this.#registerScheme(scheme);
       }
     } else {
-      this.schemes = new Set(schemes || []);
       if (Array.isArray(allow) && allow.length) {
         for (const scheme of allow) {
           this.#registerScheme(scheme);
@@ -110,7 +108,6 @@ export class SanitizeContext {
       }
     }
     this.schemeMap.set(normalizedScheme, true);
-    this.schemes.add(normalizedScheme);
     return true;
   }
 
@@ -365,7 +362,7 @@ export class SanitizeFilter {
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (
       !hasRestrictiveRules &&
-      (url.startsWith('https://') || url.startsWith('http://')) &&
+      /^https?:\/\//.test(url) &&
       !REG_TAG_QUOT.test(url) &&
       !url.includes('data:')
     ) {
@@ -391,7 +388,8 @@ export class SanitizeFilter {
       return null;
     }
     const base64Data = encodeBufferToBase64(buffer);
-    const dataUrl = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+    const mime = mimeType ? `${mimeType};base64` : 'base64';
+    const dataUrl = `data:${mime},${base64Data}`;
     if (
       Number.isInteger(options.maxLength) &&
       dataUrl.length > options.maxLength

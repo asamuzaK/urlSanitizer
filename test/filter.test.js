@@ -32,11 +32,6 @@ describe('filter', () => {
       const mockDomPurify = {};
       const ctx = new SanitizeContext(undefined, mockDomPurify);
       assert.strictEqual(ctx.debug, false, 'debug should be false by default');
-      assert.deepEqual(
-        ctx.schemes,
-        new Set(),
-        'schemes should be an empty Set by default'
-      );
       assert.strictEqual(
         ctx.domPurify,
         mockDomPurify,
@@ -63,18 +58,6 @@ describe('filter', () => {
     it('initializes debug property correctly when opt.debug is true', () => {
       const ctx = new SanitizeContext({ debug: true }, {});
       assert.strictEqual(ctx.debug, true, 'debug should be true');
-    });
-
-    it('initializes scheme property correctly when opt.schemes is given', () => {
-      const ctx = new SanitizeContext(
-        { schemes: new Set(['http', 'https']) },
-        {}
-      );
-      assert.deepEqual(
-        ctx.schemes,
-        new Set(['http', 'https']),
-        'schemes should match Set'
-      );
     });
 
     describe('enter() and leave()', () => {
