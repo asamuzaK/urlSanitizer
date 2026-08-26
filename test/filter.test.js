@@ -434,21 +434,35 @@ describe('filter', () => {
           );
         });
 
-        it('returns unencoded DOM if encodeURI throws URIError', () => {
+        it('returns encoded URI string', () => {
+          const opt = {
+            ...DEFAULT_OPTS,
+            allow: ['data']
+          };
+          const url = 'data:text/html,<a href="#\uD800">Link</a>';
+          const res = filter.sanitize(url, opt);
+          assert.strictEqual(
+            res,
+            'data:text/html,%3Ca%20href=%22#%EF%BF%BD%22%3ELink%3C/a%3E',
+            'should return encoded URI string (sanity check)'
+          );
+        });
+
+        it('returns null if encodeURI throws URIError', () => {
           const encodeURIStub = sinon
             .stub(globalThis, 'encodeURI')
-            .throws(new URIError('URI malformed'));
+            .throws(new URIError('Unknown URI Error'));
           try {
             const opt = {
               ...DEFAULT_OPTS,
               allow: ['data']
             };
-            const url = 'data:text/html,<div>test</div>';
+            const url = 'data:text/html,<a href="#\uD800">Link</a>';
             const res = filter.sanitize(url, opt);
             assert.strictEqual(
               res,
-              'data:text/html,<div>test</div>',
-              'should return unencoded string if encodeURI fails'
+              null,
+              'should return null if encodeURI fails'
             );
             assert.strictEqual(
               encodeURIStub.called,

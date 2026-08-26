@@ -254,16 +254,16 @@ export class SanitizeFilter {
    * @private
    * @param {string} dom - The URL-encoded DOM string.
    * @param {SanitizeContext} ctx - The sanitization context.
-   * @returns {string} The purified DOM string.
+   * @returns {string|null} The purified DOM string or null.
    */
   #purify(dom, ctx) {
-    let decodedDom = dom;
+    let decodedDom = '';
     try {
       decodedDom = decodeURIComponent(dom);
     } catch {
-      // fall through
+      decodedDom = dom;
     }
-    let purifiedDom;
+    let purifiedDom = '';
     try {
       ctx.domPurify.addHook('uponSanitizeAttribute', (node, evt) =>
         this.#handleSanitizeAttribute(node, evt, ctx)
@@ -272,11 +272,13 @@ export class SanitizeFilter {
     } finally {
       ctx.domPurify.removeHook('uponSanitizeAttribute');
     }
-    purifiedDom = trimTrailingEmptyQueryAndHash(purifiedDom);
+    if (!purifiedDom) {
+      return null;
+    }
     try {
-      return encodeURI(purifiedDom);
+      return encodeURI(trimTrailingEmptyQueryAndHash(purifiedDom));
     } catch {
-      return purifiedDom;
+      return null;
     }
   }
 
