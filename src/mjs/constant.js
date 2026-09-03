@@ -69,3 +69,19 @@ export const TYPE_TO = -1;
  * @type {string}
  */
 export const DUMMY_BASE = 'http://dummy.local';
+
+/**
+ * The default sanitization options.
+ * @type {import('../index.js').SanitizeOptions}
+ */
+export const DEFAULT_OPTS = {
+  allow: Object.freeze([]),
+  deny: Object.freeze([]),
+  only: Object.freeze([]),
+  allowRelative: false,
+  debug: false,
+  revokeObjectURL: false,
+  maxBlobSize: MAX_BLOB_SIZE,
+  maxLength: MAX_URL_LENGTH,
+  schemes: new Set()
+};

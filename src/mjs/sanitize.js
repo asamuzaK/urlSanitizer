@@ -15,8 +15,9 @@ import {
 } from './utility.js';
 
 /* constants */
-import { DECI, MAX_BLOB_SIZE, MAX_URL_LENGTH } from './constant.js';
+import { DECI, DEFAULT_OPTS, MAX_BLOB_SIZE } from './constant.js';
 import { REG_SCHEME, REG_SCRIPT, REG_SCRIPT_OR_BLOB } from './regexp.js';
+/* @type {string[]} */
 const URL_PROPS = Object.freeze([
   'href',
   'origin',
@@ -30,16 +31,6 @@ const URL_PROPS = Object.freeze([
   'search',
   'hash'
 ]);
-const DEFAULT_OPTS = Object.freeze({
-  allow: Object.freeze([]),
-  deny: Object.freeze([]),
-  only: Object.freeze([]),
-  allowRelative: false,
-  debug: false,
-  revokeObjectURL: false,
-  maxBlobSize: MAX_BLOB_SIZE,
-  maxLength: MAX_URL_LENGTH
-});
 
 /* typedef */
 /**
@@ -90,6 +81,7 @@ const readStreamInChunksAsArrayBuffer = async (response, maxSize) => {
 
 /**
  * Fetches a Blob URL and extracts its ArrayBuffer and MIME type.
+ * @private
  * @param {string} url - The Blob URL to fetch.
  * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
  * @returns {Promise<{ buffer: ArrayBuffer, mimeType: string }>} A promise resolving to the buffer and MIME type.
@@ -186,8 +178,8 @@ export class URLSanitizer extends URISchemes {
    * Normalizes options and evaluates preliminary scheme routing.
    * @private
    * @param {string} url - The URL string.
-   * @param {SanitizeOptions} opt - User options.
-   * @returns {{ isValid: boolean|undefined, options: object, scheme: string|null }} Nomalized options, scheme, and isValid.
+   * @param {SanitizeOptions} opt - The sanitization options.
+   * @returns {{ isValid: boolean|undefined, options: SanitizeOptions, scheme: string|null }} Nomalized options, scheme, and isValid.
    */
   #normalizeOptions(url, opt) {
     if (!isString(url) || url === '') {
@@ -353,8 +345,8 @@ export class URLSanitizer extends URISchemes {
    * Asynchronously sanitizes the given URL.
    * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
    * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
-   * @param {string} url - URL.
-   * @param {SanitizeOptions} [opt] - options.
+   * @param {string} url - URL
+   * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
    */
   async sanitizeURL(url, opt) {
@@ -365,47 +357,50 @@ export class URLSanitizer extends URISchemes {
     if (scheme === 'blob') {
       const { allow, deny, only } = options;
       let sanitizedData = null;
-      if (
-        (allow.includes('blob') && !deny.includes('blob')) ||
-        only.includes('blob')
-      ) {
-        let fetchedBuffer = null;
-        let fetchedMimeType = '';
-        try {
-          const fetchResult = await fetchBlobAsArrayBuffer(
-            url,
-            options.maxBlobSize
-          );
-          fetchedBuffer = fetchResult.buffer;
-          fetchedMimeType = fetchResult.mimeType;
-        } catch (e) {
-          if (options.debug) {
-            logDebug(
-              `Failed to fetch and convert blob URL: ${truncateURL(url)}`,
-              e
+      try {
+        if (
+          (allow.includes('blob') && !deny.includes('blob')) ||
+          only.includes('blob')
+        ) {
+          let fetchedBuffer = null;
+          let fetchedMimeType = '';
+          try {
+            const fetchResult = await fetchBlobAsArrayBuffer(
+              url,
+              options.maxBlobSize
+            );
+            fetchedBuffer = fetchResult.buffer;
+            fetchedMimeType = fetchResult.mimeType;
+          } catch (e) {
+            if (options.debug) {
+              logDebug(
+                `Failed to fetch and convert blob URL: ${truncateURL(url)}`,
+                e
+              );
+            }
+          }
+          if (fetchedBuffer) {
+            if (only.length) {
+              if (!only.includes('data')) {
+                options.only = [...only, 'data'];
+              }
+            } else {
+              if (!allow.includes('data')) {
+                options.allow = [...allow, 'data'];
+              }
+              options.deny = deny.filter(s => s !== 'data');
+            }
+            sanitizedData = await this.#filter.sanitizeBuffer(
+              fetchedBuffer,
+              fetchedMimeType,
+              options
             );
           }
         }
-        if (fetchedBuffer) {
-          if (only.length) {
-            if (!only.includes('data')) {
-              options.only = [...only, 'data'];
-            }
-          } else {
-            if (!allow.includes('data')) {
-              options.allow = [...allow, 'data'];
-            }
-            options.deny = deny.filter(s => s !== 'data');
-          }
-          sanitizedData = await this.#filter.sanitizeBuffer(
-            fetchedBuffer,
-            fetchedMimeType,
-            options
-          );
+      } finally {
+        if (options.revokeObjectURL) {
+          URL.revokeObjectURL(url);
         }
-      }
-      if (options.revokeObjectURL) {
-        URL.revokeObjectURL(url);
       }
       return sanitizedData;
     } else if (scheme === 'data') {
@@ -419,7 +414,7 @@ export class URLSanitizer extends URISchemes {
    * NOTE: `data` and `file` schemes must be explicitly allowed.
    * The `blob` scheme is not supported and will return `null`.
    * @param {string} url - URL.
-   * @param {SanitizeOptions} [opt] - options.
+   * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {string|null} The sanitized URL, or null if denied.
    */
   sanitizeURLSync(url, opt) {

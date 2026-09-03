@@ -2,7 +2,7 @@
  * dompurify.js
  */
 
-import DOMPurify from 'dompurify';
+import createDOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
 
 const { window } = new JSDOM('');
@@ -12,4 +12,4 @@ const { window } = new JSDOM('');
  * Used to sanitize HTML/SVG strings.
  * @type {import('dompurify').DOMPurify}
  */
-export const domPurify = DOMPurify(window);
+export const domPurify = createDOMPurify(window);
