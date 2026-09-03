@@ -263,14 +263,14 @@ export class SanitizeFilter {
     } catch {
       decodedDom = dom;
     }
+    const hook = (node, evt) =>
+      this.#handleSanitizeAttribute(node, evt, ctx);
     let purifiedDom = '';
     try {
-      ctx.domPurify.addHook('uponSanitizeAttribute', (node, evt) =>
-        this.#handleSanitizeAttribute(node, evt, ctx)
-      );
+      ctx.domPurify.addHook('uponSanitizeAttribute', hook);
       purifiedDom = ctx.domPurify.sanitize(decodedDom);
     } finally {
-      ctx.domPurify.removeHook('uponSanitizeAttribute');
+      ctx.domPurify.removeHook('uponSanitizeAttribute', hook);
     }
     if (!purifiedDom) {
       return null;
