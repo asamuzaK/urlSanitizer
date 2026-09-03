@@ -8,11 +8,40 @@
 
 import { URLSanitizer } from './mjs/sanitize.js';
 
+
+/* typedef */
 /**
- * @typedef {import('./mjs/sanitize.js').InspectedURLResult} InspectedURLResult
+ * The parsed result of a Data URL.
+ * @typedef {object} InspectedDataURL
+ * @property {boolean} base64 - Indicates whether the data is base64-encoded.
+ * @property {string} data - The actual data part of the Data URL.
+ * @property {string} mime - The MIME type of the data.
  */
 
 /**
+ * The result of an inspected URL, extending the standard URL API.
+ * The properties except for input and valid are omitted for invalid URLs.
+ * @typedef {object} InspectedURLResult
+ * @property {string} input - The original URL input.
+ * @property {boolean} valid - Indicates whether the sanitized URL (href) is a valid absolute URL.
+ * @property {string|null} href - The sanitized URL, or null.
+ * @property {boolean} [relative] - Indicates whether the sanitized URL (href) is a valid relative URL.
+ * @property {string} [reason] - The reason why the URL is invalid.
+ * @property {InspectedDataURL|null} [data] - The parsed result of a Data URL, or null.
+ * @property {string} [origin] - The scheme, domain, and port.
+ * @property {string} [protocol] - The protocol scheme.
+ * @property {string} [username] - The specified username.
+ * @property {string} [password] - The specified password.
+ * @property {string} [host] - The domain and port.
+ * @property {string} [hostname] - The domain.
+ * @property {string} [port] - The port number.
+ * @property {string} [pathname] - The path.
+ * @property {string} [search] - The query string.
+ * @property {string} [hash] - The fragment identifier.
+ */
+
+/**
+ * The sanitize options.
  * @typedef {object} SanitizeOptions
  * @property {string[]} [allow] - The array of schemes to allow.
  * @property {string[]} [deny] - The array of schemes to deny.
