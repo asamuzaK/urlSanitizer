@@ -8,7 +8,6 @@
 
 import { URLSanitizer } from './mjs/sanitize.js';
 
-
 /* typedef */
 /**
  * The parsed result of a Data URL.
@@ -44,8 +43,8 @@ import { URLSanitizer } from './mjs/sanitize.js';
  * The sanitize options.
  * @typedef {object} SanitizeOptions
  * @property {string[]} [allow] - The array of schemes to allow.
- * @property {string[]} [deny] - The array of schemes to deny.
- * @property {string[]} [only] - The array of specific schemes to allow.
+ * @property {string[]} [deny] - The array of schemes to deny. Takes precedence over `allow`.
+ * @property {string[]} [only] - The array of specific schemes to allow. Takes precedence over `allow` and `deny`.
  * @property {boolean} [allowRelative] - Allow relative URLs.
  * @property {boolean} [debug] - Enable debug mode.
  * @property {boolean} [revokeObjectURL] - Revokes the Blob URL after sanitization.
