@@ -12,6 +12,18 @@ import { URLSanitizer } from './mjs/sanitize.js';
  * @typedef {import('./mjs/sanitize.js').InspectedURLResult} InspectedURLResult
  */
 
+/**
+ * @typedef {object} SanitizeOptions
+ * @property {string[]} [allow] - The array of schemes to allow.
+ * @property {string[]} [deny] - The array of schemes to deny.
+ * @property {string[]} [only] - The array of specific schemes to allow.
+ * @property {boolean} [allowRelative] - Allow relative URLs.
+ * @property {boolean} [debug] - Enable debug mode.
+ * @property {boolean} [revokeObjectURL] - Revokes the Blob URL after sanitization.
+ * @property {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
+ * @property {number} [maxLength] - The maximum allowed URL length.
+ */
+
 export { URLSanitizer };
 
 /* URLSanitizer instance */
@@ -23,15 +35,7 @@ const sanitizer = new URLSanitizer();
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
  * @param {string} url - URL.
- * @param {object} [opt] - options.
- * @param {string[]} [opt.allow] - The array of schemes to allow.
- * @param {string[]} [opt.deny] - The array of schemes to deny.
- * @param {string[]} [opt.only] - The array of specific schemes to allow.
- * @param {boolean} [opt.allowRelative] - Allow relative URLs.
- * @param {boolean} [opt.debug] - Enable debug mode.
- * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL after sanitization.
- * @param {number} [opt.maxBlobSize] - The maximum allowed Blob size in bytes.
- * @param {number} [opt.maxLength] - The maximum allowed URL length.
+ * @param {SanitizeOptions} [opt] - options.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
 export const sanitizeURL = async (url, opt) => sanitizer.sanitizeURL(url, opt);
@@ -41,14 +45,7 @@ export const sanitizeURL = async (url, opt) => sanitizer.sanitizeURL(url, opt);
  * NOTE: `data` and `file` schemes must be explicitly allowed.
  * The `blob` scheme is not supported and will return `null`.
  * @param {string} url - URL.
- * @param {object} [opt] - options.
- * @param {string[]} [opt.allow] - The array of schemes to allow.
- * @param {string[]} [opt.deny] - The array of schemes to deny.
- * @param {string[]} [opt.only] - The array of specific schemes to allow.
- * @param {boolean} [opt.allowRelative] - Allow relative URLs.
- * @param {boolean} [opt.debug] - Enable debug mode.
- * @param {boolean} [opt.revokeObjectURL] - Revokes the Blob URL.
- * @param {number} [opt.maxLength] - The maximum allowed URL length.
+ * @param {SanitizeOptions} [opt] - options.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
 export const sanitizeURLSync = (url, opt) =>
