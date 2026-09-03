@@ -18,8 +18,16 @@ import {
   truncateURL
 } from './utility.js';
 
+/* typedef */
+/**
+ * @typedef {import('dompurify').DOMPurify} DOMPurify
+ * @typedef {import('../index.js').InspectedDataURL} InspectedDataURL
+ * @typedef {import('../index.js').InspectedURLResult} InspectedURLResult
+ * @typedef {import('../index.js').SanitizeOptions} SanitizeOptions
+ */
+
 /* constants */
-import { DUMMY_BASE, MAX_NEST } from './constant.js';
+import { DEFAULT_OPTS, DUMMY_BASE, MAX_NEST } from './constant.js';
 import {
   REG_AMP_ENC,
   REG_MIME_DOM,
@@ -35,10 +43,10 @@ import {
  */
 export class SanitizeContext {
   /**
-   * @param {object} opt - Sanitization options.
-   * @param {object} domPurifyInstance - The DOMPurify instance.
+   * @param {DOMPurify} domPurifyInstance - The DOMPurify instance.
+   * @param {SanitizeOptions} opt - The sanitization options.
    */
-  constructor(opt, domPurifyInstance) {
+  constructor(domPurifyInstance, opt = DEFAULT_OPTS) {
     this.domPurify = domPurifyInstance;
     this.nest = 0;
     this.recurse = new Set();
@@ -56,9 +64,9 @@ export class SanitizeContext {
   /**
    * Compiles allow, deny, and only rules into the context.
    * @private
-   * @param {object} opt - Sanitization options.
+   * @param {SanitizeOptions} opt - The sanitization options.
    */
-  #compileRules(opt = {}) {
+  #compileRules(opt) {
     const { allowRelative, debug, allow, deny, only } = opt;
     this.allowRelative = !!allowRelative;
     this.debug = !!debug;
@@ -146,10 +154,10 @@ export class SanitizeFilter {
   #defaultOpts;
 
   /**
-   * @param {object} options - The default sanitization options.
+   * @param {SanitizeOptions} opt - The default sanitization options.
    */
-  constructor(options) {
-    this.#defaultOpts = options;
+  constructor(opt = DEFAULT_OPTS) {
+    this.#defaultOpts = opt;
   }
 
   /**
@@ -344,7 +352,7 @@ export class SanitizeFilter {
   /**
    * Sanitizes the URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {object} options - Sanitization options.
+   * @param {SanitizeOptions} options - The sanitization options.
    * @returns {string|null} The sanitized URL, or null.
    */
   sanitize(url, options = this.#defaultOpts) {
@@ -373,7 +381,7 @@ export class SanitizeFilter {
       }
       return null;
     }
-    const ctx = new SanitizeContext(options, domPurify);
+    const ctx = new SanitizeContext(domPurify, options);
     return this.#process(url, ctx);
   }
 
@@ -381,7 +389,7 @@ export class SanitizeFilter {
    * Asynchronously sanitizes an ArrayBuffer and converts it to a Data URL.
    * @param {ArrayBuffer} buffer - The target buffer.
    * @param {string} mimeType - The MIME type of the buffer.
-   * @param {object} options - Sanitization options.
+   * @param {SanitizeOptions} options - The sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
   async sanitizeBuffer(buffer, mimeType, options = this.#defaultOpts) {
@@ -399,7 +407,7 @@ export class SanitizeFilter {
         `URL length ${dataUrl.length} exceeds max length ${options.maxLength}.`
       );
     }
-    const ctx = new SanitizeContext(options, domPurify);
+    const ctx = new SanitizeContext(domPurify, options);
     if (!ctx.schemeMap.get('data')) {
       return null;
     }
@@ -413,7 +421,7 @@ export class SanitizeFilter {
   /**
    * Asynchronously sanitizes the Data URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {object} options - Sanitization options.
+   * @param {SanitizeOptions} options - The sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
   async sanitizeDataURL(url, options = this.#defaultOpts) {
@@ -434,7 +442,7 @@ export class SanitizeFilter {
     if (scheme !== 'data') {
       return null;
     }
-    const ctx = new SanitizeContext(options, domPurify);
+    const ctx = new SanitizeContext(domPurify, options);
     if (!ctx.schemeMap.get(scheme)) {
       return null;
     }

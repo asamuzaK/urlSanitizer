@@ -40,7 +40,7 @@ import { URLSanitizer } from './mjs/sanitize.js';
  */
 
 /**
- * The sanitize options.
+ * The sanitization options.
  * @typedef {object} SanitizeOptions
  * @property {string[]} [allow] - The array of schemes to allow.
  * @property {string[]} [deny] - The array of schemes to deny. Takes precedence over `allow`.
@@ -50,6 +50,7 @@ import { URLSanitizer } from './mjs/sanitize.js';
  * @property {boolean} [revokeObjectURL] - Revokes the Blob URL after sanitization.
  * @property {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
  * @property {number} [maxLength] - The maximum allowed URL length.
+ * @property {Set<string>} [schemes] - The Set of allowed schemes.
  */
 
 export { URLSanitizer };
@@ -63,7 +64,7 @@ const sanitizer = new URLSanitizer();
  * NOTE: `blob`, `data`, and `file` schemes must be explicitly allowed.
  * Given a `blob` URL, it securely converts and returns a sanitized `data` URL.
  * @param {string} url - URL.
- * @param {SanitizeOptions} [opt] - options.
+ * @param {SanitizeOptions} [opt] - The sanitization options.
  * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
  */
 export const sanitizeURL = async (url, opt) => sanitizer.sanitizeURL(url, opt);
@@ -73,7 +74,7 @@ export const sanitizeURL = async (url, opt) => sanitizer.sanitizeURL(url, opt);
  * NOTE: `data` and `file` schemes must be explicitly allowed.
  * The `blob` scheme is not supported and will return `null`.
  * @param {string} url - URL.
- * @param {SanitizeOptions} [opt] - options.
+ * @param {SanitizeOptions} [opt] - The sanitization options.
  * @returns {string|null} The sanitized URL, or null if denied.
  */
 export const sanitizeURLSync = (url, opt) =>

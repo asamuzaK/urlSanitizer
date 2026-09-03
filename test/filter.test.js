@@ -30,7 +30,7 @@ describe('filter', () => {
 
     it('initializes properties correctly with default options', () => {
       const mockDomPurify = {};
-      const ctx = new SanitizeContext(undefined, mockDomPurify);
+      const ctx = new SanitizeContext(mockDomPurify);
       assert.strictEqual(ctx.debug, false, 'debug should be false by default');
       assert.strictEqual(
         ctx.domPurify,
@@ -56,7 +56,7 @@ describe('filter', () => {
     });
 
     it('initializes debug property correctly when opt.debug is true', () => {
-      const ctx = new SanitizeContext({ debug: true }, {});
+      const ctx = new SanitizeContext({}, { debug: true });
       assert.strictEqual(ctx.debug, true, 'debug should be true');
     });
 
@@ -83,7 +83,7 @@ describe('filter', () => {
       });
 
       it('returns false and logs debug message on circular reference', () => {
-        const ctx = new SanitizeContext({ debug: true }, {});
+        const ctx = new SanitizeContext({}, { debug: true });
         const url = 'data:text/html,loop';
         // First enter
         ctx.enter(url);
@@ -112,7 +112,7 @@ describe('filter', () => {
       });
 
       it('does not log debug message on circular reference if debug is false', () => {
-        const ctx = new SanitizeContext({ debug: false }, {});
+        const ctx = new SanitizeContext({}, { debug: false });
         const url = 'data:text/html,loop';
         ctx.enter(url);
         ctx.enter(url);
