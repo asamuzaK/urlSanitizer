@@ -9,3 +9,4 @@ export declare const TRUNCATE_LENGTH: number;
 export declare const TYPE_FROM: number;
 export declare const TYPE_TO: number;
 export declare const DUMMY_BASE: string;
+export declare const DEFAULT_OPTS: import('./sanitize.js').InternalSanitizeOptions;
