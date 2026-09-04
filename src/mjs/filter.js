@@ -24,6 +24,7 @@ import {
  * @typedef {import('../index.js').InspectedDataURL} InspectedDataURL
  * @typedef {import('../index.js').InspectedURLResult} InspectedURLResult
  * @typedef {import('../index.js').SanitizeOptions} SanitizeOptions
+ * @typedef {import('./sanitize.js').InternalSanitizeOptions} InternalSanitizeOptions
  */
 
 /* constants */
@@ -44,7 +45,7 @@ import {
 export class SanitizeContext {
   /**
    * @param {DOMPurify} domPurifyInstance - The DOMPurify instance.
-   * @param {SanitizeOptions} opt - The sanitization options.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    */
   constructor(domPurifyInstance, opt = DEFAULT_OPTS) {
     this.domPurify = domPurifyInstance;
@@ -64,7 +65,7 @@ export class SanitizeContext {
   /**
    * Compiles allow, deny, and only rules into the context.
    * @private
-   * @param {SanitizeOptions} opt - The sanitization options.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    */
   #compileRules(opt) {
     const { allowRelative, debug, allow, deny, only } = opt;
@@ -154,7 +155,7 @@ export class SanitizeFilter {
   #defaultOpts;
 
   /**
-   * @param {SanitizeOptions} opt - The default sanitization options.
+   * @param {InternalSanitizeOptions} opt - The default sanitization options.
    */
   constructor(opt = DEFAULT_OPTS) {
     this.#defaultOpts = opt;
@@ -352,14 +353,14 @@ export class SanitizeFilter {
   /**
    * Sanitizes the URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {SanitizeOptions} options - The sanitization options.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    * @returns {string|null} The sanitized URL, or null.
    */
-  sanitize(url, options = this.#defaultOpts) {
+  sanitize(url, opt = this.#defaultOpts) {
     if (!url || !isString(url)) {
       return null;
     }
-    const { deny, maxLength, only, allowRelative } = options;
+    const { deny, maxLength, only, allowRelative } = opt;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
       throw new RangeError(msg);
@@ -376,12 +377,12 @@ export class SanitizeFilter {
       !url.includes('data:')
     ) {
       const urlObj = parseURL(url, null, true);
-      if (urlObj && options.schemes.has(urlObj.protocol.replace(/:$/, ''))) {
+      if (urlObj && opt.schemes.has(urlObj.protocol.replace(/:$/, ''))) {
         return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
       }
       return null;
     }
-    const ctx = new SanitizeContext(domPurify, options);
+    const ctx = new SanitizeContext(domPurify, opt);
     return this.#process(url, ctx);
   }
 
@@ -389,25 +390,22 @@ export class SanitizeFilter {
    * Asynchronously sanitizes an ArrayBuffer and converts it to a Data URL.
    * @param {ArrayBuffer} buffer - The target buffer.
    * @param {string} mimeType - The MIME type of the buffer.
-   * @param {SanitizeOptions} options - The sanitization options.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
-  async sanitizeBuffer(buffer, mimeType, options = this.#defaultOpts) {
+  async sanitizeBuffer(buffer, mimeType, opt = this.#defaultOpts) {
     if (!(buffer instanceof ArrayBuffer)) {
       return null;
     }
     const base64Data = encodeBufferToBase64(buffer);
     const mime = mimeType ? `${mimeType};base64` : 'base64';
     const dataUrl = `data:${mime},${base64Data}`;
-    if (
-      Number.isInteger(options.maxLength) &&
-      dataUrl.length > options.maxLength
-    ) {
+    if (Number.isInteger(opt.maxLength) && dataUrl.length > opt.maxLength) {
       throw new RangeError(
-        `URL length ${dataUrl.length} exceeds max length ${options.maxLength}.`
+        `URL length ${dataUrl.length} exceeds max length ${opt.maxLength}.`
       );
     }
-    const ctx = new SanitizeContext(domPurify, options);
+    const ctx = new SanitizeContext(domPurify, opt);
     if (!ctx.schemeMap.get('data')) {
       return null;
     }
@@ -421,14 +419,14 @@ export class SanitizeFilter {
   /**
    * Asynchronously sanitizes the Data URL.
    * @param {string} url - The URL string to sanitize.
-   * @param {SanitizeOptions} options - The sanitization options.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    * @returns {Promise<string|null>} The sanitized Data URL, or null.
    */
-  async sanitizeDataURL(url, options = this.#defaultOpts) {
+  async sanitizeDataURL(url, opt = this.#defaultOpts) {
     if (!url || !isString(url)) {
       return null;
     }
-    const { maxLength } = options;
+    const { maxLength } = opt;
     if (Number.isInteger(maxLength) && url.length > maxLength) {
       throw new RangeError(
         `URL length ${url.length} exceeds max length ${maxLength}.`
@@ -442,7 +440,7 @@ export class SanitizeFilter {
     if (scheme !== 'data') {
       return null;
     }
-    const ctx = new SanitizeContext(domPurify, options);
+    const ctx = new SanitizeContext(domPurify, opt);
     if (!ctx.schemeMap.get(scheme)) {
       return null;
     }

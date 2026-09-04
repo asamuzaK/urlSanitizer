@@ -39,6 +39,11 @@ const URL_PROPS = Object.freeze([
  * @typedef {import('../index.js').SanitizeOptions} SanitizeOptions
  */
 
+/**
+ * Internal sanitization options.
+ * @typedef {SanitizeOptions & { schemes?: Set<string> }} InternalSanitizeOptions
+ */
+
 /* blob handlers */
 /**
  * Reads a stream in chunks and generates an ArrayBuffer.
@@ -178,10 +183,10 @@ export class URLSanitizer extends URISchemes {
    * Normalizes options and evaluates preliminary scheme routing.
    * @private
    * @param {string} url - The URL string.
-   * @param {SanitizeOptions} opt - The sanitization options.
-   * @returns {{ isValid: boolean|undefined, options: SanitizeOptions, scheme: string|null }} Nomalized options, scheme, and isValid.
+   * @param {SanitizeOptions} [opt={}] - The sanitization options.
+   * @returns {{ isValid: boolean|undefined, options: InternalSanitizeOptions, scheme: string|null }} Normalized options, scheme, and isValid.
    */
-  #normalizeOptions(url, opt) {
+  #normalizeOptions(url, opt = {}) {
     if (!isString(url) || url === '') {
       return { isValid: false };
     }
@@ -350,7 +355,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {Promise<string|null>} A promise resolving to the sanitized URL, or null.
    */
   async sanitizeURL(url, opt) {
-    const { isValid, options, scheme } = this.#normalizeOptions(url, opt ?? {});
+    const { isValid, options, scheme } = this.#normalizeOptions(url, opt);
     if (isValid === false) {
       return null;
     }
@@ -418,7 +423,7 @@ export class URLSanitizer extends URISchemes {
    * @returns {string|null} The sanitized URL, or null if denied.
    */
   sanitizeURLSync(url, opt) {
-    const { isValid, options, scheme } = this.#normalizeOptions(url, opt ?? {});
+    const { isValid, options, scheme } = this.#normalizeOptions(url, opt);
     if (isValid === false) {
       return null;
     }

@@ -50,7 +50,6 @@ import { URLSanitizer } from './mjs/sanitize.js';
  * @property {boolean} [revokeObjectURL] - Revokes the Blob URL after sanitization.
  * @property {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
  * @property {number} [maxLength] - The maximum allowed URL length.
- * @property {Set<string>} [schemes] - The Set of allowed schemes.
  */
 
 export { URLSanitizer };
