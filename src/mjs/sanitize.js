@@ -183,7 +183,7 @@ export class URLSanitizer extends URISchemes {
    * Normalizes options and evaluates preliminary scheme routing.
    * @private
    * @param {string} url - The URL string.
-   * @param {SanitizeOptions} [opt={}] - The sanitization options.
+   * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {{ isValid: boolean|undefined, options: InternalSanitizeOptions, scheme: string|null }} Normalized options, scheme, and isValid.
    */
   #normalizeOptions(url, opt = {}) {
