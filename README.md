@@ -430,16 +430,20 @@ This strict blocking prevents non-existent or hallucinated schemes from inadvert
 
 Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
 
+## Performance
+
+Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
+
 ### Benchmark Results
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **Normal HTTPS URL** | ~2.01 µs/iter | ~4.39 µs/iter | ~4.65 µs/iter |
-| **HTTPS URL with XSS** | ~6.40 µs/iter<br>returns sanitized URL | ~5.44 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~7.39 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
-| **XSS Scheme URL** | ~5.64 µs/iter<br>returns `null` | ~1.84 µs/iter<br>returns `about:blank` | ~7.77 µs/iter<br>throws `Error` |
-| **XSS Data URL** | ~422.61 µs/iter<br>returns sanitized data URL | ~2.58 µs/iter<br>returns `about:blank` | ~7.94 µs/iter<br>throws `Error` |
-| **XSS Blob URL** | ~591.66 µs/iter<br>returns sanitized data URL | ~2.85 µs/iter<br>returns blob URL as-is | ~8.41 µs/iter<br>throws `Error` |
-| **Invalid URL** | ~0.73 µs/iter<br>returns `null` | ~1.72 µs/iter<br>returns invalid URL as-is | ~17.94 µs/iter<br>throws `Error` |
+| **Normal HTTPS URL** | ~2.12 µs/iter | ~4.74 µs/iter | ~4.92 µs/iter |
+| **HTTPS URL with XSS** | ~3.40 µs/iter<br>returns sanitized URL | ~5.61 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~7.97 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
+| **XSS Scheme URL** | ~2.17 µs/iter<br>returns `null` | ~1.91 µs/iter<br>returns `about:blank` | ~8.75 µs/iter<br>throws `Error` |
+| **XSS Data URL** | ~448.03 µs/iter<br>returns sanitized data URL | ~2.99 µs/iter<br>returns `about:blank` | ~9.58 µs/iter<br>throws `Error` |
+| **XSS Blob URL** | ~626.25 µs/iter<br>returns sanitized data URL | ~2.62 µs/iter<br>returns blob URL as-is | ~9.67 µs/iter<br>throws `Error` |
+| **Invalid URL** | ~0.76 μs/iter<br>returns `null` | ~1.62 µs/iter<br>returns invalid URL as-is | ~18.82 µs/iter<br>throws `Error` |
 
 ### Characteristics & Trade-offs
 
