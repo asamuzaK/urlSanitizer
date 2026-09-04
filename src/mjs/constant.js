@@ -72,7 +72,7 @@ export const DUMMY_BASE = 'http://dummy.local';
 
 /**
  * The default sanitization options.
- * @type {import('../index.js').SanitizeOptions}
+ * @type {import('./sanitize.js').InternalSanitizeOptions}
  */
 export const DEFAULT_OPTS = {
   allow: Object.freeze([]),
