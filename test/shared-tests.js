@@ -158,6 +158,14 @@ export const runSharedTests = (context, assert, options = {}) => {
       assert.strictEqual(res2, null, 'should return null after removal');
     });
 
+    it('should return null for data:text/javascript', async () => {
+      const url = 'data:text/javascript;alert(1)';
+      const res = await sanitizeURL(url, {
+        allow: ['data']
+      });
+      assert.strictEqual(res, null, 'should return null');
+    });
+
     if (woDomPurify) {
       it('should throw on data URL without DOMPurify', async () => {
         const data =
