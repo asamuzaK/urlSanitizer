@@ -16,3 +16,8 @@ export declare const parseURLEncodedNumCharRef: (str: string, nest?: number) => 
 export declare const extractDataURLComponents: (pathname: string, search?: string, hash?: string) => DataURLComponents;
 export declare const parseBase64: (data: string) => string;
 export declare const encodeBufferToBase64: (buffer: ArrayBuffer) => string;
+export declare const readStreamInChunksAsArrayBuffer: (response: Response, maxSize: number, signal?: AbortSignal) => Promise<ArrayBuffer>;
+export declare const fetchBlobAsArrayBuffer: (url: string, maxBlobSize?: number, signal?: AbortSignal) => Promise<{
+    buffer: ArrayBuffer;
+    mimeType: string;
+}>;

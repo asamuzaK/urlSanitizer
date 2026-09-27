@@ -30,6 +30,7 @@ export type InspectedURLResult = {
     hash?: string;
 };
 export type SanitizeOptions = {
+    signal?: AbortSignal;
     allow?: string[];
     deny?: string[];
     only?: string[];

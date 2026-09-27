@@ -11,6 +11,7 @@ export declare class URLSanitizer extends URISchemes {
     private #isWellFormedScheme;
     private #normalizeOptions;
     private #inspect;
+    private #inspectBlob;
     get(): string[];
     has(scheme: string): boolean;
     add(scheme: string): string[];
@@ -18,6 +19,6 @@ export declare class URLSanitizer extends URISchemes {
     reset(): void;
     sanitizeURL(url: string, opt?: SanitizeOptions): Promise<string | null>;
     sanitizeURLSync(url: string, opt?: SanitizeOptions): string | null;
-    inspectURL(url: string): Promise<InspectedURLResult>;
+    inspectURL(url: string, opt?: SanitizeOptions): Promise<InspectedURLResult>;
     isValidURI(uri: string): boolean;
 }
