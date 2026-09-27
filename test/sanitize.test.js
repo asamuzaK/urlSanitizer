@@ -671,6 +671,206 @@ describe('sanitize', () => {
           'metadata should reflect an empty mime type'
         );
       });
+
+      it('re-throws error when fetch throws AbortError during inspectURL', async () => {
+        const abortError = new Error('The operation was aborted.');
+        abortError.name = 'AbortError';
+        fetchStub.rejects(abortError);
+        await assert.rejects(
+          async () => {
+            await sanitizer.inspectURL('blob:https://example.com/uuid');
+          },
+          err => {
+            assert.strictEqual(err.name, 'AbortError');
+            return true;
+          }
+        );
+      });
+
+      it('re-throws error when options.signal is aborted during inspectURL', async () => {
+        const controller = new AbortController();
+        const customError = new Error('Custom abort exception');
+        fetchStub.callsFake(async () => {
+          controller.abort(customError);
+          throw customError;
+        });
+        await assert.rejects(
+          async () => {
+            await sanitizer.inspectURL('blob:https://example.com/uuid', {
+              signal: controller.signal
+            });
+          },
+          err => {
+            assert.strictEqual(err, customError);
+            return true;
+          }
+        );
+      });
+
+      it('logs debug message when fetch fails and debug option is true', async () => {
+        const warnStub = sinon.stub(console, 'warn');
+        try {
+          const fetchError = new Error('Network failure during inspect');
+          fetchStub.rejects(fetchError);
+          const res = await sanitizer.inspectURL(
+            'blob:https://example.com/uuid',
+            {
+              debug: true
+            }
+          );
+          assert.strictEqual(res.valid, false);
+          assert.strictEqual(res.reason, 'Network failure during inspect');
+          assert.strictEqual(
+            warnStub.called,
+            true,
+            'console.warn should be called'
+          );
+          assert.ok(
+            warnStub.firstCall.args[0].includes('Failed to inspect blob URL:'),
+            'warning message should contain log prefix'
+          );
+          assert.strictEqual(
+            warnStub.firstCall.args[1],
+            fetchError,
+            'should pass original error object to logDebug'
+          );
+        } finally {
+          warnStub.restore();
+        }
+      });
+
+      it('revokes ObjectURL in inspectURL when revokeObjectURL option is true', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          const blob = new Blob(['Inspect Revoke'], { type: 'text/plain' });
+          fetchStub.resolves(
+            new Response(blob, {
+              status: 200,
+              headers: { 'content-type': 'text/plain' }
+            })
+          );
+          const blobUrl = 'blob:https://example.com/uuid';
+          await sanitizer.inspectURL(blobUrl, { revokeObjectURL: true });
+          assert.strictEqual(revokeStub.calledWith(blobUrl), true);
+        } finally {
+          revokeStub.restore();
+        }
+      });
+
+      it('returns invalid result object with reason when fetch fails', async () => {
+        const errorMessage = 'Network connection failed';
+        fetchStub.rejects(new Error(errorMessage));
+        const blobUrl = 'blob:https://example.com/uuid';
+        const res = await sanitizer.inspectURL(blobUrl);
+        assert.deepEqual(res, {
+          input: blobUrl,
+          valid: false,
+          reason: errorMessage
+        });
+      });
+
+      it('revokes ObjectURL in inspectURL even if fetch fails when revokeObjectURL is true', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          fetchStub.rejects(new Error('Fetch failure'));
+          const blobUrl = 'blob:https://example.com/uuid';
+          await sanitizer.inspectURL(blobUrl, { revokeObjectURL: true });
+          assert.strictEqual(revokeStub.calledWith(blobUrl), true);
+        } finally {
+          revokeStub.restore();
+        }
+      });
+
+      it('does not revoke ObjectURL by default in inspectURL', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          const blob = new Blob(['No Revoke'], { type: 'text/plain' });
+          fetchStub.resolves(
+            new Response(blob, {
+              status: 200,
+              headers: { 'content-type': 'text/plain' }
+            })
+          );
+          const blobUrl = 'blob:https://example.com/uuid';
+          await sanitizer.inspectURL(blobUrl);
+          assert.strictEqual(revokeStub.called, false);
+        } finally {
+          revokeStub.restore();
+        }
+      });
+
+      it('revokes ObjectURL in inspectURL even when AbortError is re-thrown', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          const abortError = new Error('The operation was aborted.');
+          abortError.name = 'AbortError';
+          fetchStub.rejects(abortError);
+          const blobUrl = 'blob:https://example.com/uuid';
+          await assert.rejects(
+            async () => {
+              await sanitizer.inspectURL(blobUrl, {
+                revokeObjectURL: true
+              });
+            },
+            err => {
+              assert.strictEqual(err.name, 'AbortError');
+              return true;
+            }
+          );
+          assert.strictEqual(
+            revokeStub.calledWith(blobUrl),
+            true,
+            'should revoke ObjectURL in finally block when aborted'
+          );
+        } finally {
+          revokeStub.restore();
+        }
+      });
+
+      it('does not revoke ObjectURL in inspectURL when revoke option is false', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          const blob = new Blob(['Explicit False'], { type: 'text/plain' });
+          fetchStub.resolves(
+            new Response(blob, {
+              status: 200,
+              headers: { 'content-type': 'text/plain' }
+            })
+          );
+          const blobUrl = 'blob:https://example.com/uuid';
+          await sanitizer.inspectURL(blobUrl, { revokeObjectURL: false });
+          assert.strictEqual(revokeStub.called, false);
+        } finally {
+          revokeStub.restore();
+        }
+      });
+
+      it('revokes ObjectURL in inspectURL on successful inspection when revokeObjectURL option is true', async () => {
+        const revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        try {
+          const blob = new Blob(['Inspect Success Revoke'], {
+            type: 'text/plain'
+          });
+          fetchStub.resolves(
+            new Response(blob, {
+              status: 200,
+              headers: { 'content-type': 'text/plain' }
+            })
+          );
+          const blobUrl = 'blob:https://example.com/uuid';
+          const res = await sanitizer.inspectURL(blobUrl, {
+            revokeObjectURL: true
+          });
+          assert.strictEqual(res.valid, true, 'inspection should succeed');
+          assert.strictEqual(
+            revokeStub.calledOnceWith(blobUrl),
+            true,
+            'URL.revokeObjectURL should be called once with the blob URL on success'
+          );
+        } finally {
+          revokeStub.restore();
+        }
+      });
     });
   });
 });

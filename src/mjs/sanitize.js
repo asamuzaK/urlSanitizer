@@ -194,6 +194,40 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Inspects a blob URL by reading its buffer and converting it.
+   * @private
+   * @param {string} url - The blob URL.
+   * @param {InternalSanitizeOptions} options - Sanitization options.
+   * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
+   */
+  async #inspectBlob(url, options) {
+    try {
+      const { buffer, mimeType } = await fetchBlobAsArrayBuffer(
+        url,
+        options.maxBlobSize,
+        options.signal
+      );
+      const base64Data = encodeBufferToBase64(buffer);
+      const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
+      const result = this.#inspect(dataURL, options);
+      result.input = url;
+      return result;
+    } catch (e) {
+      if (e.name === 'AbortError' || options.signal?.aborted) {
+        throw e;
+      }
+      if (options.debug) {
+        logDebug(`Failed to inspect blob URL: ${truncateURL(url)}`, e);
+      }
+      return { input: url, valid: false, reason: e.message };
+    } finally {
+      if (options.revokeObjectURL) {
+        URL.revokeObjectURL(url);
+      }
+    }
+  }
+
+  /**
    * Gets the list of registered URI schemes.
    * @returns {string[]} An array of registered schemes.
    */
@@ -351,29 +385,16 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * Sanitizes the given URL and returns its parsed components.
-   * NOTE: Blob URLs are not revoked after inspection.
    * @param {string} url - The URL string to inspect.
+   * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
    */
-  async inspectURL(url) {
-    if (isString(url)) {
-      const parsedURL = parseURL(url, null, true);
-      if (parsedURL?.protocol === 'blob:') {
-        try {
-          const { buffer, mimeType } = await fetchBlobAsArrayBuffer(
-            parsedURL.href
-          );
-          const base64Data = encodeBufferToBase64(buffer);
-          const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
-          const inspectedURLResult = this.#inspect(dataURL);
-          inspectedURLResult.input = url;
-          return inspectedURLResult;
-        } catch (e) {
-          return { input: url, valid: false, reason: e.message };
-        }
-      }
+  async inspectURL(url, opt) {
+    const { options, scheme } = this.#normalizeOptions(url, opt);
+    if (scheme === 'blob') {
+      return this.#inspectBlob(url, options);
     }
-    return this.#inspect(url);
+    return this.#inspect(url, options);
   }
 
   /**

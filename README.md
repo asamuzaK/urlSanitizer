@@ -16,7 +16,7 @@ It also provides built-in utilities to inspect URLs and verify URI schemes.
 * [API Reference](#api-reference)
   * [sanitizeURL(url, opt)](#sanitizeurlurl-opt)
   * [sanitizeURLSync(url, opt)](#sanitizeurlsyncurl-opt)
-  * [inspectURL(url)](#inspecturlurl)
+  * [inspectURL(url, opt)](#inspecturlurl-opt)
   * [isValidURI(uri)](#isvaliduriuri)
   * [urlSanitizer Instance](#urlsanitizer)
 * [Threat Model](#threat-model)
@@ -216,16 +216,27 @@ Synchronous version of `sanitizeURL()`.
   Use the async version for `blob`.
   However, to prevent memory leaks, it is highly recommended to set the `opt.revokeObjectURL` option to `true` so that the unsupported blob URL is properly revoked before returning `null`.
 
-### inspectURL(url)
+### inspectURL(url, opt)
 
 Sanitizes the given URL and returns its parsed components.
 
 * **Data URLs:** The embedded payload is fully decoded and sanitized (e.g., removing malicious HTML/SVG attributes) before being safely re-encoded.
-* **Blob URLs:** Blob URLs are verified after being converted to data URLs. Note that blob URLs are not revoked.
+* **Blob URLs:** Blob URLs are verified after being converted to data URLs.
+  * Note that blob URLs are not revoked by default unless `opt.revokeObjectURL` is explicitly set to `true`.
 
 #### Parameters
 
 * url **string** The URL string to sanitize and inspect.
+* opt **[object]** Options.
+  * opt.allow **[Array<string>]** Array of allowed schemes, e.g., ['data'].
+  * opt.deny **[Array<string>]** Array of denied schemes, e.g., ['web+foo'].
+  * opt.only **[Array<string>]** Array of specific schemes to allow, e.g., ['git', 'https'].
+    `only` takes precedence over `allow` and `deny`.
+  * opt.allowRelative **[boolean]** If `true`, allows root-relative paths (e.g. `/foo`) and relative paths (e.g. `./foo`). Default is `false`.
+  * opt.debug **[boolean]** If `true`, outputs internal error/warning logs to the console. Default is `false`.
+  * opt.revokeObjectURL **[boolean]** Revokes the blob URL after inspection. Default is `false`.
+  * opt.maxBlobSize **[number]** Maximum allowed blob size in bytes. Default is `16_777_216` (16MB).
+  * opt.maxLength **[number]** Maximum allowed URL length. Default is `65_536` (64KB).
 
 **Returns** **Promise&lt;InspectedURLResult&gt;** The parsed components of the sanitized URL.
 
