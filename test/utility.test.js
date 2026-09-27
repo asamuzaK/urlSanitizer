@@ -5,6 +5,7 @@
 /* api */
 import { strict as assert } from 'node:assert';
 import { afterEach, beforeEach, describe, it } from 'mocha';
+import sinon from 'sinon';
 
 /* test */
 import * as mjs from '../src/mjs/utility.js';
@@ -799,6 +800,253 @@ describe('uri-util', () => {
           }
         }
       });
+    });
+  });
+
+  describe('read stream in chunks as ArrayBuffer', () => {
+    const func = mjs.readStreamInChunksAsArrayBuffer;
+
+    it('reads readable stream in chunks and returns ArrayBuffer', async () => {
+      const text = 'Hello Stream';
+      const uint8 = new TextEncoder().encode(text);
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(uint8);
+          controller.close();
+        }
+      });
+      const response = new Response(stream);
+      const buffer = await func(response, 1024);
+      const decoded = new TextDecoder().decode(buffer);
+      assert.strictEqual(decoded, text);
+    });
+
+    it('throws DOMException when stream size exceeds maxSize', async () => {
+      const chunk1 = new Uint8Array(60);
+      const chunk2 = new Uint8Array(60);
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(chunk1);
+          controller.enqueue(chunk2);
+          controller.close();
+        }
+      });
+      const response = new Response(stream);
+      await assert.rejects(
+        async () => func(response, 100),
+        err => {
+          assert.ok(err instanceof DOMException);
+          assert.strictEqual(err.name, 'NotReadableError');
+          assert.strictEqual(
+            err.message,
+            'Payload (120 bytes) exceeds max (100 bytes).'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('throws abort reason immediately if signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort(new Error('Already aborted'));
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(new Uint8Array([1, 2, 3]));
+        }
+      });
+      const response = new Response(stream);
+      await assert.rejects(
+        async () => func(response, 100, controller.signal),
+        err => {
+          assert.strictEqual(err.message, 'Already aborted');
+          return true;
+        }
+      );
+    });
+
+    it('cancels reader via onAbort listener when signal is aborted during stream read', async () => {
+      const controller = new AbortController();
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(new Uint8Array([1]));
+        }
+      });
+      const response = new Response(stream);
+      const promise = func(response, 100, controller.signal);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      controller.abort(new Error('Aborted during read'));
+      await assert.rejects(promise, err => {
+        assert.strictEqual(err.message, 'Aborted during read');
+        return true;
+      });
+    });
+
+    it('cancels reader and throws signal.reason when aborted right after processing a chunk', async () => {
+      const controller = new AbortController();
+      const chunk = new Uint8Array([1, 2, 3]);
+      Object.defineProperty(chunk, 'byteLength', {
+        get() {
+          controller.abort();
+          return 3;
+        },
+        configurable: true
+      });
+      const stream = new ReadableStream({
+        start(streamController) {
+          streamController.enqueue(chunk);
+        }
+      });
+      const response = new Response(stream);
+      await assert.rejects(
+        async () => func(response, 1024, controller.signal),
+        err => {
+          assert.strictEqual(err, controller.signal.reason);
+          return true;
+        }
+      );
+    });
+  });
+
+  describe('fetch Blob as ArrayBuffer', () => {
+    const func = mjs.fetchBlobAsArrayBuffer;
+    let fetchStub;
+
+    beforeEach(() => {
+      fetchStub = sinon.stub(globalThis, 'fetch');
+    });
+
+    afterEach(() => {
+      fetchStub.restore();
+    });
+
+    it('fetches Blob URL and extracts ArrayBuffer and MIME type via response.body', async () => {
+      const text = 'Hello Fetch Blob';
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(new TextEncoder().encode(text));
+          c.close();
+        }
+      });
+      fetchStub.resolves(
+        new Response(stream, {
+          status: 200,
+          headers: { 'content-type': 'text/plain' }
+        })
+      );
+      const res = await func('blob:https://example.com/uuid');
+      assert.strictEqual(res.mimeType, 'text/plain');
+      assert.strictEqual(new TextDecoder().decode(res.buffer), text);
+    });
+
+    it('falls back to response.blob() when body is null', async () => {
+      const blob = new Blob(['Fallback Blob'], { type: 'text/plain' });
+      const mockResponse = new Response(blob, {
+        status: 200,
+        headers: { 'content-type': 'text/plain' }
+      });
+      Object.defineProperty(mockResponse, 'body', { value: null });
+      fetchStub.resolves(mockResponse);
+
+      const res = await func('blob:https://example.com/uuid');
+      assert.strictEqual(res.mimeType, 'text/plain');
+      assert.strictEqual(new TextDecoder().decode(res.buffer), 'Fallback Blob');
+    });
+
+    it('falls back to empty string when content-type header is missing', async () => {
+      const stream = new ReadableStream({
+        start(c) {
+          c.enqueue(new TextEncoder().encode('No Mime'));
+          c.close();
+        }
+      });
+      fetchStub.resolves(new Response(stream, { status: 200, headers: {} }));
+      const res = await func('blob:https://example.com/uuid');
+      assert.strictEqual(res.mimeType, '');
+      assert.strictEqual(new TextDecoder().decode(res.buffer), 'No Mime');
+    });
+
+    it('throws Error when HTTP response is not ok', async () => {
+      fetchStub.resolves(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      );
+      await assert.rejects(
+        async () => func('blob:https://example.com/uuid'),
+        err => {
+          assert.strictEqual(
+            err.message,
+            'Failed to fetch blob:https://example.com/uuid: 404 Not Found'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('throws Error when HTTP response is not ok and statusText is empty', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: ''
+      };
+      fetchStub.resolves(mockResponse);
+      await assert.rejects(
+        async () => func('blob:https://example.com/uuid'),
+        err => {
+          assert.strictEqual(
+            err.message,
+            'Failed to fetch blob:https://example.com/uuid: 500'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('throws DOMException when content-length exceeds maxSize', async () => {
+      fetchStub.resolves(
+        new Response('dummy', {
+          status: 200,
+          headers: {
+            'content-type': 'text/plain',
+            'content-length': '10000'
+          }
+        })
+      );
+      await assert.rejects(
+        async () => func('blob:https://example.com/uuid', 100),
+        err => {
+          assert.ok(err instanceof DOMException);
+          assert.strictEqual(err.name, 'NotReadableError');
+          assert.strictEqual(
+            err.message,
+            'Payload (10000 bytes) exceeds max (100 bytes).'
+          );
+          return true;
+        }
+      );
+    });
+
+    it('throws DOMException when blob.size exceeds maxSize in fallback path', async () => {
+      const oversizedBlob = new Blob(['A'.repeat(150)], {
+        type: 'text/plain'
+      });
+      const mockResponse = {
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/plain' }),
+        body: null,
+        blob: async () => oversizedBlob
+      };
+      fetchStub.resolves(mockResponse);
+      await assert.rejects(
+        async () => func('blob:https://example.com/uuid', 100),
+        err => {
+          assert.ok(err instanceof DOMException);
+          assert.strictEqual(err.name, 'NotReadableError');
+          assert.strictEqual(
+            err.message,
+            'Payload (150 bytes) exceeds max (100 bytes).'
+          );
+          return true;
+        }
+      );
     });
   });
 });

@@ -9,13 +9,14 @@ import { URISchemes } from './scheme.js';
 import {
   encodeBufferToBase64,
   extractDataURLComponents,
+  fetchBlobAsArrayBuffer,
   normalizeURL,
   parseURL,
   truncateURL
 } from './utility.js';
 
 /* constants */
-import { DECI, DEFAULT_OPTS, MAX_BLOB_SIZE } from './constant.js';
+import { DEFAULT_OPTS } from './constant.js';
 import { REG_SCHEME, REG_SCRIPT, REG_SCRIPT_OR_BLOB } from './regexp.js';
 /* @type {string[]} */
 const URL_PROPS = Object.freeze([
@@ -43,118 +44,6 @@ const URL_PROPS = Object.freeze([
  * Internal sanitization options.
  * @typedef {SanitizeOptions & { schemes?: Set<string> }} InternalSanitizeOptions
  */
-
-/* blob handlers */
-/**
- * Reads a stream in chunks and generates an ArrayBuffer.
- * @private
- * @param {Response} response - The Response instance.
- * @param {number} maxSize - The maximum allowed size in bytes.
- * @param {AbortSignal} [signal] - The abort signal.
- * @returns {Promise<ArrayBuffer>} A promise resolving to the generated ArrayBuffer.
- */
-const readStreamInChunksAsArrayBuffer = async (response, maxSize, signal) => {
-  const reader = response.body.getReader();
-  const chunks = [];
-  const abortMsg = 'Operation aborted';
-  if (signal?.aborted) {
-    await reader.cancel(abortMsg);
-    reader.releaseLock();
-    throw signal.reason;
-  }
-  const onAbort = () => {
-    reader.cancel(abortMsg).catch(() => {});
-  };
-  signal?.addEventListener('abort', onAbort, { once: true });
-  try {
-    let accumulatedSize = 0;
-    while (accumulatedSize <= maxSize) {
-      if (signal?.aborted) {
-        await reader.cancel(abortMsg);
-        throw signal.reason;
-      }
-      const { done, value } = await reader.read();
-      if (signal?.aborted) {
-        throw signal.reason;
-      }
-      if (done) {
-        break;
-      }
-      accumulatedSize += value.byteLength;
-      if (accumulatedSize > maxSize) {
-        await reader.cancel('Size limit exceeded');
-        throw new DOMException(
-          `Payload (${accumulatedSize} bytes) exceeds max (${maxSize} bytes).`,
-          'NotReadableError'
-        );
-      }
-      chunks.push(value);
-    }
-    const combined = new Uint8Array(accumulatedSize);
-    let offset = 0;
-    for (const chunk of chunks) {
-      combined.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return combined.buffer;
-  } finally {
-    signal?.removeEventListener('abort', onAbort);
-    reader.releaseLock();
-  }
-};
-
-/**
- * Fetches a Blob URL and extracts its ArrayBuffer and MIME type.
- * @private
- * @param {string} url - The Blob URL to fetch.
- * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
- * @param {AbortSignal} [signal] - The abort signal.
- * @returns {Promise<{ buffer: ArrayBuffer, mimeType: string }>} A promise resolving to the buffer and MIME type.
- */
-const fetchBlobAsArrayBuffer = async (url, maxBlobSize, signal) => {
-  let maxSize = MAX_BLOB_SIZE;
-  if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
-    maxSize = maxBlobSize;
-  }
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    const truncatedURL = truncateURL(url);
-    let msg = `Failed to fetch ${truncatedURL}`;
-    if (Number.isInteger(response.status)) {
-      if (response.statusText) {
-        msg += `: ${response.status} ${response.statusText}`;
-      } else {
-        msg += `: ${response.status}`;
-      }
-    }
-    throw new Error(msg);
-  }
-  const contentLength = response.headers.get('content-length');
-  if (contentLength) {
-    const parsedLength = Number.parseInt(contentLength, DECI);
-    if (Number.isInteger(parsedLength) && parsedLength > maxSize) {
-      throw new DOMException(
-        `Payload (${parsedLength} bytes) exceeds max (${maxSize} bytes).`,
-        'NotReadableError'
-      );
-    }
-  }
-  const mimeType = response.headers.get('content-type') || '';
-  let buffer;
-  if (response.body) {
-    buffer = await readStreamInChunksAsArrayBuffer(response, maxSize, signal);
-  } else {
-    const blob = await response.blob();
-    if (blob.size > maxSize) {
-      throw new DOMException(
-        `Payload (${blob.size} bytes) exceeds max (${maxSize} bytes).`,
-        'NotReadableError'
-      );
-    }
-    buffer = await blob.arrayBuffer();
-  }
-  return { buffer, mimeType };
-};
 
 /**
  * URL sanitizer
