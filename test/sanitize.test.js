@@ -484,6 +484,191 @@ describe('sanitize', () => {
           'should fall back to empty mimeType and construct plain data URL'
         );
       });
+
+      it('throws AbortError if AbortSignal is aborted before reading stream', async () => {
+        const controller = new AbortController();
+        controller.abort();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('test data'));
+            controller.close();
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        await assert.rejects(
+          async () => {
+            await sanitizer.sanitizeURL('blob:https://example.com/uuid', {
+              allow: ['blob'],
+              signal: controller.signal
+            });
+          },
+          (err) => {
+            assert.strictEqual(err.name, 'AbortError');
+            return true;
+          }
+        );
+      });
+
+      it('throws reason if AbortSignal is aborted with reason', async () => {
+        const controller = new AbortController();
+        const customReason = new Error('Custom abort reason');
+        controller.abort(customReason);
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('test data'));
+            controller.close();
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        await assert.rejects(
+          async () => {
+            await sanitizer.sanitizeURL('blob:https://example.com/uuid', {
+              allow: ['blob'],
+              signal: controller.signal
+            });
+          },
+          (err) => {
+            assert.strictEqual(err, customReason);
+            return true;
+          }
+        );
+      });
+
+      it('cancels reader via onAbort listener when signal is aborted', async () => {
+        const controller = new AbortController();
+        const stream = new ReadableStream({
+          start(streamController) {
+            streamController.enqueue(new Uint8Array([1]));
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        const sanitizePromise = sanitizer.sanitizeURL(
+          'blob:https://example.com/uuid',
+          {
+            allow: ['blob'],
+            signal: controller.signal
+          }
+        );
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.abort();
+        await assert.rejects(
+          sanitizePromise,
+          (err) => {
+            assert.strictEqual(err.name, 'AbortError');
+            return true;
+          }
+        );
+      });
+
+      it('throws AbortError when signal is aborted during pending reader.read()', async () => {
+        const controller = new AbortController();
+        const stream = new ReadableStream({
+          start(streamController) {
+            streamController.enqueue(new Uint8Array([1, 2, 3]));
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        const promise = sanitizer.sanitizeURL('blob:https://example.com/uuid', {
+          allow: ['blob'],
+          signal: controller.signal
+        });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        controller.abort();
+        await assert.rejects(promise, (err) => {
+          assert.strictEqual(err.name, 'AbortError');
+          return true;
+        });
+      });
+
+      it('cancels reader and throws AbortError if signal is aborted', async () => {
+        const controller = new AbortController();
+        let pullCount = 0;
+        const stream = new ReadableStream({
+          async pull(streamController) {
+            pullCount++;
+            if (pullCount === 1) {
+              streamController.enqueue(new Uint8Array([1, 2, 3]));
+            } else if (pullCount === 2) {
+              controller.abort();
+              streamController.enqueue(new Uint8Array([4, 5, 6]));
+              streamController.close();
+            }
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        await assert.rejects(
+          async () => {
+            await sanitizer.sanitizeURL('blob:https://example.com/uuid', {
+              allow: ['blob'],
+              signal: controller.signal
+            });
+          },
+          (err) => {
+            assert.strictEqual(err.name, 'AbortError');
+            return true;
+          }
+        );
+      });
+
+      it('cancels reader and throws AbortError when aborted right after processing a chunk', async () => {
+        const controller = new AbortController();
+        const chunk = new Uint8Array([1, 2, 3]);
+        Object.defineProperty(chunk, 'byteLength', {
+          get() {
+            controller.abort();
+            return 3;
+          },
+          configurable: true
+        });
+        const stream = new ReadableStream({
+          start(streamController) {
+            streamController.enqueue(chunk);
+          }
+        });
+        fetchStub.resolves(
+          new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        await assert.rejects(
+          async () => {
+            await sanitizer.sanitizeURL('blob:https://example.com/uuid', {
+              allow: ['blob'],
+              signal: controller.signal
+            });
+          },
+          (err) => {
+            assert.strictEqual(err.name, 'AbortError');
+            return true;
+          }
+        );
+      });
     });
 
     describe('inspectURL()', () => {

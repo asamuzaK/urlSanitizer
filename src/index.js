@@ -42,6 +42,7 @@ import { URLSanitizer } from './mjs/sanitize.js';
 /**
  * The sanitization options.
  * @typedef {object} SanitizeOptions
+ * @property {AbortSignal} [signal] - An AbortSignal to cancel the operation.
  * @property {string[]} [allow] - The array of schemes to allow.
  * @property {string[]} [deny] - The array of schemes to deny. Takes precedence over `allow`.
  * @property {string[]} [only] - The array of specific schemes to allow. Takes precedence over `allow` and `deny`.
