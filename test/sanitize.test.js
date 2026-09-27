@@ -139,6 +139,10 @@ describe('sanitize', () => {
         assert.strictEqual(sanitizer.sanitizeURLSync(123), null);
       });
 
+      it('returns null for unregistered scheme', () => {
+        assert.strictEqual(sanitizer.sanitizeURLSync('foo:bar'), null);
+      });
+
       it('sanitizes standard HTTPS URL synchronously', () => {
         const res = sanitizer.sanitizeURLSync(
           'https://example.com/path?query=1#hash'
@@ -183,6 +187,11 @@ describe('sanitize', () => {
     });
 
     describe('sanitizeURL() Async', () => {
+      it('returns null for unregistered scheme', async () => {
+        const res = await sanitizer.sanitizeURL('foo:bar');
+        assert.strictEqual(res, null);
+      });
+
       it('sanitizes data URL asynchronously when explicitly allowed', async () => {
         const res = await sanitizer.sanitizeURL('data:text/plain,hello', {
           allow: ['data']

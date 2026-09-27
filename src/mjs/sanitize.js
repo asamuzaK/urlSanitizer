@@ -111,6 +111,10 @@ export class URLSanitizer extends URISchemes {
     if (scheme === null && !options.allowRelative) {
       return { isValid: false };
     }
+    // Reject any scheme that is not explicitly registered
+    if (scheme !== null && !this.has(scheme)) {
+      return { isValid: false };
+    }
     return { options, scheme };
   }
 
