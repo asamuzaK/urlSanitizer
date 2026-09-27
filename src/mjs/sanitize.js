@@ -50,15 +50,33 @@ const URL_PROPS = Object.freeze([
  * @private
  * @param {Response} response - The Response instance.
  * @param {number} maxSize - The maximum allowed size in bytes.
+ * @param {AbortSignal} [signal] - The abort signal.
  * @returns {Promise<ArrayBuffer>} A promise resolving to the generated ArrayBuffer.
  */
-const readStreamInChunksAsArrayBuffer = async (response, maxSize) => {
+const readStreamInChunksAsArrayBuffer = async (response, maxSize, signal) => {
   const reader = response.body.getReader();
   const chunks = [];
+  const abortMsg = 'Operation aborted';
+  if (signal?.aborted) {
+    await reader.cancel(abortMsg);
+    reader.releaseLock();
+    throw signal.reason;
+  }
+  const onAbort = () => {
+    reader.cancel(abortMsg).catch(() => {});
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
   try {
     let accumulatedSize = 0;
     while (accumulatedSize <= maxSize) {
+      if (signal?.aborted) {
+        await reader.cancel(abortMsg);
+        throw signal.reason;
+      }
       const { done, value } = await reader.read();
+      if (signal?.aborted) {
+        throw signal.reason;
+      }
       if (done) {
         break;
       }
@@ -80,6 +98,7 @@ const readStreamInChunksAsArrayBuffer = async (response, maxSize) => {
     }
     return combined.buffer;
   } finally {
+    signal?.removeEventListener('abort', onAbort);
     reader.releaseLock();
   }
 };
@@ -89,14 +108,15 @@ const readStreamInChunksAsArrayBuffer = async (response, maxSize) => {
  * @private
  * @param {string} url - The Blob URL to fetch.
  * @param {number} [maxBlobSize] - The maximum allowed Blob size in bytes.
+ * @param {AbortSignal} [signal] - The abort signal.
  * @returns {Promise<{ buffer: ArrayBuffer, mimeType: string }>} A promise resolving to the buffer and MIME type.
  */
-const fetchBlobAsArrayBuffer = async (url, maxBlobSize) => {
+const fetchBlobAsArrayBuffer = async (url, maxBlobSize, signal) => {
   let maxSize = MAX_BLOB_SIZE;
   if (Number.isInteger(maxBlobSize) && maxBlobSize > 0) {
     maxSize = maxBlobSize;
   }
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     const truncatedURL = truncateURL(url);
     let msg = `Failed to fetch ${truncatedURL}`;
@@ -122,7 +142,7 @@ const fetchBlobAsArrayBuffer = async (url, maxBlobSize) => {
   const mimeType = response.headers.get('content-type') || '';
   let buffer;
   if (response.body) {
-    buffer = await readStreamInChunksAsArrayBuffer(response, maxSize);
+    buffer = await readStreamInChunksAsArrayBuffer(response, maxSize, signal);
   } else {
     const blob = await response.blob();
     if (blob.size > maxSize) {
@@ -372,11 +392,15 @@ export class URLSanitizer extends URISchemes {
           try {
             const fetchResult = await fetchBlobAsArrayBuffer(
               url,
-              options.maxBlobSize
+              options.maxBlobSize,
+              options.signal
             );
             fetchedBuffer = fetchResult.buffer;
             fetchedMimeType = fetchResult.mimeType;
           } catch (e) {
+            if (e.name === 'AbortError' || options.signal?.aborted) {
+              throw e;
+            }
             if (options.debug) {
               logDebug(
                 `Failed to fetch and convert blob URL: ${truncateURL(url)}`,
