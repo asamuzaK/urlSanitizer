@@ -68,9 +68,10 @@ export class SanitizeContext {
    * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    */
   #compileRules(opt) {
-    const { allowRelative, debug, allow, deny, only } = opt;
+    const { allowRelative, debug, allow, deny, only, schemes } = opt;
     this.allowRelative = !!allowRelative;
     this.debug = !!debug;
+    this.schemes = schemes;
     if (Array.isArray(only) && only.length) {
       this.restrictScheme = true;
       for (const scheme of only) {
@@ -197,7 +198,11 @@ export class SanitizeFilter {
       ) {
         return null;
       }
-    } else if (ctx.schemeMap.get(scheme) === false) {
+    } else if (ctx.schemeMap.has(scheme)) {
+      if (ctx.schemeMap.get(scheme) === false) {
+        return null;
+      }
+    } else if (!ctx.schemes.has(scheme)) {
       return null;
     }
     if (scheme === 'data') {
