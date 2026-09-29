@@ -118,9 +118,10 @@ export class URLSanitizer extends URISchemes {
    * Inspects, parses, and sanitizes the given URL.
    * @private
    * @param {string} url - The URL string to parse.
+   * @param {InternalSanitizeOptions} options - Sanitization options.
    * @returns {InspectedURLResult} The result of an inspected URL.
    */
-  #inspect(url) {
+  #inspect(url, options) {
     const inspectedURL = {
       input: url,
       href: null,
@@ -138,9 +139,7 @@ export class URLSanitizer extends URISchemes {
     let invalidReason = null;
     try {
       sanitizedURL = this.#filter.sanitize(url, {
-        ...this.#defaultOpts,
-        allow: ['data'],
-        allowRelative: true,
+        ...options,
         schemes: this.#allowedSchemes
       });
       if (!sanitizedURL) {
