@@ -12,6 +12,7 @@ export declare class SanitizeContext {
     schemeMap: Map<string, boolean>;
     allowRelative: boolean | undefined;
     debug: boolean | undefined;
+    schemes: Set<string> | undefined;
     constructor(domPurifyInstance: DOMPurify, opt?: InternalSanitizeOptions);
     private #compileRules;
     private #registerScheme;

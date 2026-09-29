@@ -44,7 +44,7 @@ export { URLSanitizer };
 declare const sanitizer: URLSanitizer;
 export declare const sanitizeURL: (url: string, opt?: SanitizeOptions) => Promise<string | null>;
 export declare const sanitizeURLSync: (url: string, opt?: SanitizeOptions) => string | null;
-export declare const inspectURL: (url: string) => Promise<InspectedURLResult>;
+export declare const inspectURL: (url: string, opt?: SanitizeOptions) => Promise<InspectedURLResult>;
 export declare const isValidURI: (uri: string) => boolean;
 export declare const isURISync: (uri: string) => boolean;
 export default sanitizer;
