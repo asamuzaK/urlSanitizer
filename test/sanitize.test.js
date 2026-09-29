@@ -568,7 +568,10 @@ describe('sanitize', () => {
 
       it('inspects data URL and extracts data metadata', async () => {
         const res = await sanitizer.inspectURL(
-          'data:text/plain;base64,SGVsbG8='
+          'data:text/plain;base64,SGVsbG8=',
+          {
+            allow: ['data']
+          }
         );
         assert.strictEqual(res.valid, true);
         assert.deepEqual(res.data, {
@@ -579,7 +582,9 @@ describe('sanitize', () => {
       });
 
       it('inspects relative URL properly', async () => {
-        const res = await sanitizer.inspectURL('/about/us?q=1');
+        const res = await sanitizer.inspectURL('/about/us?q=1', {
+          allowRelative: true
+        });
         assert.strictEqual(res.valid, false);
         assert.strictEqual(res.relative, true);
         assert.strictEqual(res.href, '/about/us?q=1');
@@ -593,7 +598,12 @@ describe('sanitize', () => {
             headers: { 'content-type': 'text/plain' }
           })
         );
-        const res = await sanitizer.inspectURL('blob:https://example.com/uuid');
+        const res = await sanitizer.inspectURL(
+          'blob:https://example.com/uuid',
+          {
+            allow: ['blob', 'data']
+          }
+        );
         assert.strictEqual(res.valid, true);
         assert.strictEqual(res.input, 'blob:https://example.com/uuid');
         assert.strictEqual(res.href, 'data:text/plain,Inspect Blob');
@@ -624,7 +634,9 @@ describe('sanitize', () => {
           const htmlBase64 = btoa(html);
           nestedUrl = `data:text/html;base64,${htmlBase64}`;
         }
-        const res = await sanitizer.inspectURL(nestedUrl);
+        const res = await sanitizer.inspectURL(nestedUrl, {
+          allow: ['data']
+        });
         assert.strictEqual(res.valid, false, 'should be invalid');
         assert.strictEqual(
           res.reason,
@@ -635,7 +647,26 @@ describe('sanitize', () => {
 
       it('pops "base64" from mediaTypes when the sanitized URL retains base64 encoding', async () => {
         const validBase64Img = 'data:image/png;base64,iVBORw0KGgo=';
-        const res = await sanitizer.inspectURL(validBase64Img);
+        const res = await sanitizer.inspectURL(validBase64Img, {
+          allow: ['data']
+        });
+        assert.strictEqual(res.valid, true, 'should be valid');
+        assert.deepEqual(
+          res.data,
+          {
+            mime: 'image/png',
+            base64: true,
+            data: 'iVBORw0KGgo='
+          },
+          'mime type should not include base64 after pop()'
+        );
+      });
+
+      it('pops "base64" from mediaTypes when the sanitized URL retains base64 encoding', async () => {
+        const validBase64Img = 'data:image/png;base64,iVBORw0KGgo=';
+        const res = await sanitizer.inspectURL(validBase64Img, {
+          allow: ['data']
+        });
         assert.strictEqual(res.valid, true, 'should be valid');
         assert.deepEqual(
           res.data,
@@ -663,7 +694,12 @@ describe('sanitize', () => {
             headers: {}
           })
         );
-        const res = await sanitizer.inspectURL('blob:https://example.com/uuid');
+        const res = await sanitizer.inspectURL(
+          'blob:https://example.com/uuid',
+          {
+            allow: ['blob', 'data']
+          }
+        );
         assert.strictEqual(res.valid, true, 'should be valid');
         assert.strictEqual(
           res.input,
@@ -847,7 +883,10 @@ describe('sanitize', () => {
             })
           );
           const blobUrl = 'blob:https://example.com/uuid';
-          await sanitizer.inspectURL(blobUrl, { revokeObjectURL: false });
+          await sanitizer.inspectURL(blobUrl, {
+            allow: ['blob', 'data'],
+            revokeObjectURL: false
+          });
           assert.strictEqual(revokeStub.called, false);
         } finally {
           revokeStub.restore();
@@ -868,6 +907,7 @@ describe('sanitize', () => {
           );
           const blobUrl = 'blob:https://example.com/uuid';
           const res = await sanitizer.inspectURL(blobUrl, {
+            allow: ['blob', 'data'],
             revokeObjectURL: true
           });
           assert.strictEqual(res.valid, true, 'inspection should succeed');
@@ -879,6 +919,97 @@ describe('sanitize', () => {
         } finally {
           revokeStub.restore();
         }
+      });
+
+      it('should set reason to error message when sanitize throws an exception', async () => {
+        const url = 'https://example.com';
+        const res = await sanitizer.inspectURL(url, { maxLength: 10 });
+        assert.deepEqual(
+          res,
+          {
+            input: url,
+            valid: false,
+            href: null,
+            reason: `URL length ${url.length} exceeds max length 10.`
+          },
+          'result'
+        );
+      });
+    });
+
+    describe('inspectURL blob revocation in finally', () => {
+      let originalRevokeObjectURL;
+      let revokedUrls;
+
+      beforeEach(() => {
+        revokedUrls = [];
+        originalRevokeObjectURL = URL.revokeObjectURL;
+        URL.revokeObjectURL = url => {
+          revokedUrls.push(url);
+          if (typeof originalRevokeObjectURL === 'function') {
+            originalRevokeObjectURL(url);
+          }
+        };
+      });
+
+      afterEach(() => {
+        URL.revokeObjectURL = originalRevokeObjectURL;
+      });
+
+      it('should not call URL.revokeObjectURL in finally on success when revokeObjectURL option is false', async () => {
+        const blob = new Blob(['<svg><g/></svg>'], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        await sanitizer.inspectURL(url, {
+          allow: ['blob', 'data'],
+          revokeObjectURL: false
+        });
+        assert.strictEqual(
+          revokedUrls.includes(url),
+          false,
+          'should not revoke object URL'
+        );
+      });
+
+      it('should call URL.revokeObjectURL in finally on success when revokeObjectURL option is true', async () => {
+        const blob = new Blob(['<svg><g/></svg>'], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        await sanitizer.inspectURL(url, {
+          allow: ['blob', 'data'],
+          revokeObjectURL: true
+        });
+        assert.strictEqual(
+          revokedUrls.includes(url),
+          true,
+          'should revoke object URL'
+        );
+      });
+
+      it('should call URL.revokeObjectURL in finally on failure when revokeObjectURL option is true', async () => {
+        const blob = new Blob(['sample data over limit'], {
+          type: 'text/plain'
+        });
+        const url = URL.createObjectURL(blob);
+        await sanitizer.inspectURL(url, {
+          revokeObjectURL: true,
+          maxBlobSize: 5
+        });
+        assert.strictEqual(
+          revokedUrls.includes(url),
+          true,
+          'should revoke object URL even if error occurs'
+        );
+      });
+
+      it('should not call URL.revokeObjectURL when revokeObjectURL option is false', async () => {
+        const blob = new Blob(['<svg><g/></svg>'], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        await sanitizer.inspectURL(url, { revokeObjectURL: false });
+        assert.strictEqual(
+          revokedUrls.includes(url),
+          false,
+          'should not revoke object URL'
+        );
+        originalRevokeObjectURL(url);
       });
     });
   });

@@ -118,9 +118,10 @@ export class URLSanitizer extends URISchemes {
    * Inspects, parses, and sanitizes the given URL.
    * @private
    * @param {string} url - The URL string to parse.
+   * @param {InternalSanitizeOptions} options - Sanitization options.
    * @returns {InspectedURLResult} The result of an inspected URL.
    */
-  #inspect(url) {
+  #inspect(url, options) {
     const inspectedURL = {
       input: url,
       href: null,
@@ -137,12 +138,7 @@ export class URLSanitizer extends URISchemes {
     let sanitizedURL;
     let invalidReason = null;
     try {
-      sanitizedURL = this.#filter.sanitize(url, {
-        ...this.#defaultOpts,
-        allow: ['data'],
-        allowRelative: true,
-        schemes: this.#allowedSchemes
-      });
+      sanitizedURL = this.#filter.sanitize(url, options);
       if (!sanitizedURL) {
         invalidReason =
           'Sanitization failed (blocked by allowed schemes or rules).';
@@ -389,7 +385,7 @@ export class URLSanitizer extends URISchemes {
    * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
    */
-  async inspectURL(url, opt) {
+  async inspectURL(url, opt = {}) {
     const { options, scheme } = this.#normalizeOptions(url, opt);
     if (scheme === 'blob') {
       return this.#inspectBlob(url, options);

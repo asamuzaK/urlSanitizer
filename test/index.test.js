@@ -57,7 +57,7 @@ describe('URL Sanitizer (Node)', () => {
       const url = 'http://example.com';
       const result = await inspectURL(url);
       assert.deepEqual(result, { valid: true });
-      assert.strictEqual(inspectURLStub.calledOnceWithExactly(url), true);
+      assert.strictEqual(inspectURLStub.calledOnceWithExactly(url, {}), true);
     });
 
     it('isValidURI should call urlSanitizer.isValidURI', () => {
