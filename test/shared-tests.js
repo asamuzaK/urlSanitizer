@@ -437,10 +437,60 @@ export const runSharedTests = (context, assert, options = {}) => {
       );
     });
 
-    it('should validate and parse base64 PNG data URL', async () => {
+    it('should not validate and parse base64 PNG data URL', async () => {
       const data =
         'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
       const res = await inspectURL(`data:image/png;base64,${data}`);
+      assert.deepEqual(
+        res,
+        {
+          input: `data:image/png;base64,${data}`,
+          valid: false,
+          href: null,
+          reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+        },
+        'result'
+      );
+    });
+
+    it('should validate and parse base64 PNG data URL', async () => {
+      const data =
+        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+      const res = await inspectURL(`data:image/png;base64,${data}`, {
+        allow: ['data']
+      });
+      assert.deepEqual(
+        res,
+        {
+          input: `data:image/png;base64,${data}`,
+          valid: true,
+          data: {
+            mime: 'image/png',
+            base64: true,
+            data
+          },
+          href: `data:image/png;base64,${data}`,
+          origin: 'null',
+          protocol: 'data:',
+          username: '',
+          password: '',
+          host: '',
+          port: '',
+          hostname: '',
+          pathname: `image/png;base64,${data}`,
+          search: '',
+          hash: ''
+        },
+        'result'
+      );
+    });
+
+    it('should validate and parse base64 PNG data URL', async () => {
+      const data =
+        'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==';
+      const res = await inspectURL(`data:image/png;base64,${data}`, {
+        only: ['data', 'http', 'https']
+      });
       assert.deepEqual(
         res,
         {
@@ -505,9 +555,30 @@ export const runSharedTests = (context, assert, options = {}) => {
         );
       });
     } else {
-      it('should validate and parse data URL containing SVG', async () => {
+      it('should not validate and parse data URL containing SVG', async () => {
         const data = '<svg><g onclick="alert(1)"/></svg>';
         const res = await inspectURL(`data:image/svg+xml;base64,${btoa(data)}`);
+        assert.deepEqual(
+          res,
+          {
+            input:
+              'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+            valid: false,
+            href: null,
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+          },
+          'result'
+        );
+      });
+
+      it('should validate and parse data URL containing SVG', async () => {
+        const data = '<svg><g onclick="alert(1)"/></svg>';
+        const res = await inspectURL(
+          `data:image/svg+xml;base64,${btoa(data)}`,
+          {
+            allow: ['data']
+          }
+        );
         assert.deepEqual(
           res,
           {
@@ -535,12 +606,122 @@ export const runSharedTests = (context, assert, options = {}) => {
         );
       });
 
-      it('should validate and parse blob URL containing SVG', async () => {
+      it('should validate and parse data URL containing SVG', async () => {
+        const data = '<svg><g onclick="alert(1)"/></svg>';
+        const res = await inspectURL(
+          `data:image/svg+xml;base64,${btoa(data)}`,
+          {
+            only: ['data', 'http', 'https']
+          }
+        );
+        assert.deepEqual(
+          res,
+          {
+            input:
+              'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
+            valid: true,
+            data: {
+              mime: 'image/svg+xml',
+              base64: false,
+              data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+            },
+            href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+            origin: 'null',
+            protocol: 'data:',
+            username: '',
+            password: '',
+            host: '',
+            port: '',
+            hostname: '',
+            pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+            search: '',
+            hash: ''
+          },
+          'result'
+        );
+      });
+
+      it('should not validate and parse blob URL containing SVG', async () => {
         const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
           type: 'image/svg+xml'
         });
         const url = URL.createObjectURL(blob);
         const res = await inspectURL(url);
+        URL.revokeObjectURL(url);
+        assert.deepEqual(
+          res,
+          {
+            input: url,
+            valid: false,
+            href: null,
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+          },
+          'result'
+        );
+      });
+
+      it('should not validate and parse blob URL containing SVG when data is not allowed', async () => {
+        const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await inspectURL(url);
+        URL.revokeObjectURL(url);
+        assert.deepEqual(
+          res,
+          {
+            input: url,
+            valid: false,
+            href: null,
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
+          },
+          'result'
+        );
+      });
+
+      it('should validate and parse blob URL containing SVG', async () => {
+        const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await inspectURL(url, {
+          allow: ['blob', 'data']
+        });
+        URL.revokeObjectURL(url);
+        assert.deepEqual(
+          res,
+          {
+            input: url,
+            valid: true,
+            data: {
+              mime: 'image/svg+xml',
+              base64: false,
+              data: '%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E'
+            },
+            href: 'data:image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+            origin: 'null',
+            protocol: 'data:',
+            username: '',
+            password: '',
+            host: '',
+            port: '',
+            hostname: '',
+            pathname: 'image/svg+xml,%3Csvg%3E%3Cg%3E%3C/g%3E%3C/svg%3E',
+            search: '',
+            hash: ''
+          },
+          'result'
+        );
+      });
+
+      it('should validate and parse blob URL containing SVG', async () => {
+        const blob = new Blob(['<svg><g onload="alert(1)"/></svg>'], {
+          type: 'image/svg+xml'
+        });
+        const url = URL.createObjectURL(blob);
+        const res = await inspectURL(url, {
+          only: ['blob', 'data', 'http', 'https']
+        });
         URL.revokeObjectURL(url);
         assert.deepEqual(
           res,

@@ -84,9 +84,11 @@ export const sanitizeURLSync = (url, opt) =>
  * Sanitizes the given URL and returns its parsed components.
  * NOTE: Blob URLs are not revoked after inspection.
  * @param {string} url - The URL string to inspect.
+ * @param {SanitizeOptions} [opt] - The sanitization options.
  * @returns {Promise<InspectedURLResult>} A promise resolving to the inspected URL result.
  */
-export const inspectURL = async url => sanitizer.inspectURL(url);
+export const inspectURL = async (url, opt = {}) =>
+  sanitizer.inspectURL(url, opt);
 
 /**
  * Checks if the given string is a valid URI and is registered.
