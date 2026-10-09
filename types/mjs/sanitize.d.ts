@@ -12,6 +12,7 @@ export declare class URLSanitizer extends URISchemes {
     private #normalizeOptions;
     private #inspect;
     private #inspectBlob;
+    private #shouldThrow;
     get(): string[];
     has(scheme: string): boolean;
     add(scheme: string): string[];
