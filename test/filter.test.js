@@ -1,6 +1,7 @@
 /**
  * filter.test.js
  */
+/* eslint-disable no-await-in-loop */
 
 /* api */
 import { strict as assert } from 'node:assert';

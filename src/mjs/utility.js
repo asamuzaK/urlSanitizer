@@ -356,6 +356,8 @@ export const encodeBufferToBase64 = buffer => {
  * @param {AbortSignal} [signal] - The abort signal.
  * @returns {Promise<ArrayBuffer>} A promise resolving to the generated ArrayBuffer.
  */
+// Stream reading requires sequential async execution.
+/* eslint-disable no-await-in-loop */
 export const readStreamInChunksAsArrayBuffer = async (
   response,
   maxSize,
@@ -409,6 +411,7 @@ export const readStreamInChunksAsArrayBuffer = async (
     reader.releaseLock();
   }
 };
+/* eslint-enable no-await-in-loop */
 
 /**
  * Fetches a Blob URL and extracts its ArrayBuffer and MIME type.

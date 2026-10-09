@@ -7,13 +7,20 @@ import neostandard from 'neostandard';
 
 export default [
   ...neostandard({
-    semi: true
+    noStyle: true
   }),
   jsdoc.configs['flat/recommended'],
   regexp.configs['flat/recommended'],
   prettierRecommended,
   {
-    ignores: ['dist/', 'test/file/', 'benchmark/', 'repl']
+    ignores: [
+      'bundle/',
+      'bundle_wo_dompurify',
+      'dist/',
+      'benchmark/',
+      'repl',
+      'test/file/'
+    ]
   },
   {
     languageOptions: {
@@ -31,8 +38,20 @@ export default [
       regexp,
       unicorn
     },
+    settings: {
+      jsdoc: {
+        mode: 'typescript'
+      }
+    },
     rules: {
       curly: ['error', 'all'],
+      'jsdoc/no-undefined-types': [
+        'error',
+        {
+          definedTypes: ['ReadonlyArray']
+        }
+      ],
+      'no-await-in-loop': 'error',
       'no-use-before-define': [
         'error',
         {
