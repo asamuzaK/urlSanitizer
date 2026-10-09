@@ -224,6 +224,23 @@ export class URLSanitizer extends URISchemes {
   }
 
   /**
+   * Re-throws errors or operation aborts.
+   * @private
+   * @param {Error} e - The error object to evaluate.
+   * @param {InternalSanitizeOptions} options - The internal sanitization options.
+   * @throws {Error} Re-throws the given error if it is a TypeError, AbortError, or aborted signal.
+   */
+  #shouldThrow(e, options) {
+    if (
+      e instanceof TypeError ||
+      e.name === 'AbortError' ||
+      options.signal?.aborted
+    ) {
+      throw e;
+    }
+  }
+
+  /**
    * Gets the list of registered URI schemes.
    * @returns {string[]} An array of registered schemes.
    */
@@ -345,16 +362,31 @@ export class URLSanitizer extends URISchemes {
             );
           }
         }
+      } catch (e) {
+        this.#shouldThrow(e, options);
+        if (options.debug) {
+          logDebug(`Failed to sanitize URL: ${truncateURL(url)}`, e);
+        }
+        return null;
       } finally {
         if (options.revokeObjectURL) {
           URL.revokeObjectURL(url);
         }
       }
       return sanitizedData;
-    } else if (scheme === 'data') {
-      return this.#filter.sanitizeDataURL(url, options);
     }
-    return this.#filter.sanitize(url, options);
+    try {
+      if (scheme === 'data') {
+        return this.#filter.sanitizeDataURL(url, options);
+      }
+      return this.#filter.sanitize(url, options);
+    } catch (e) {
+      this.#shouldThrow(e, options);
+      if (options.debug) {
+        logDebug(`Failed to sanitize URL: ${truncateURL(url)}`, e);
+      }
+      return null;
+    }
   }
 
   /**
@@ -376,7 +408,15 @@ export class URLSanitizer extends URISchemes {
       }
       return null;
     }
-    return this.#filter.sanitize(url, options);
+    try {
+      return this.#filter.sanitize(url, options);
+    } catch (e) {
+      this.#shouldThrow(e, options);
+      if (options.debug) {
+        logDebug(`Failed to sanitize URL: ${truncateURL(url)}`, e);
+      }
+      return null;
+    }
   }
 
   /**

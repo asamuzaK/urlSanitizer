@@ -5,12 +5,23 @@
 
 /* api */
 import fc from 'fast-check';
-import { describe, it } from 'mocha';
+import { afterEach, beforeEach, describe, it } from 'mocha';
+import sinon from 'sinon';
 
 /* test target */
 import { sanitizeURL, sanitizeURLSync } from '../src/index.js';
 
 describe('Fuzz Testing (Property-based Testing)', () => {
+  let warnStub;
+
+  beforeEach(() => {
+    warnStub = sinon.stub(console, 'warn');
+  });
+
+  afterEach(() => {
+    warnStub.restore();
+  });
+
   describe('sanitizeURLSync', () => {
     it('should never crash with completely random strings', () => {
       fc.assert(

@@ -533,6 +533,77 @@ describe('sanitize', () => {
       });
     });
 
+    describe('sanitizeURL blob revocation in finally', () => {
+      let fetchStub;
+      let revokeStub;
+      let warnStub;
+
+      beforeEach(() => {
+        fetchStub = sinon.stub(globalThis, 'fetch');
+        revokeStub = sinon.stub(URL, 'revokeObjectURL');
+        warnStub = sinon.stub(console, 'warn');
+      });
+
+      afterEach(() => {
+        fetchStub.restore();
+        revokeStub.restore();
+        warnStub.restore();
+      });
+
+      it('calls revokeObjectURL (debug: true)', async () => {
+        fetchStub.resolves(
+          new Response('Blob content exceeding max length', {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        const blobUrl = 'blob:https://example.com/uuid-outer-catch-debug';
+        const res = await sanitizer.sanitizeURL(blobUrl, {
+          allow: ['blob'],
+          maxLength: 10,
+          revokeObjectURL: true,
+          debug: true
+        });
+        assert.strictEqual(res, null);
+        assert.strictEqual(revokeStub.calledOnceWith(blobUrl), true);
+        assert.strictEqual(warnStub.called, true);
+      });
+
+      it('calls revokeObjectURL (debug: false)', async () => {
+        fetchStub.resolves(
+          new Response('Blob content exceeding max length', {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        const blobUrl = 'blob:https://example.com/uuid-outer-catch-no-debug';
+        const res = await sanitizer.sanitizeURL(blobUrl, {
+          allow: ['blob'],
+          maxLength: 10,
+          revokeObjectURL: true,
+          debug: false
+        });
+        assert.strictEqual(res, null);
+        assert.strictEqual(revokeStub.calledOnceWith(blobUrl), true);
+        assert.strictEqual(warnStub.called, false);
+      });
+
+      it('executes finally block without revoking', async () => {
+        fetchStub.resolves(
+          new Response('Blob content', {
+            status: 200,
+            headers: { 'content-type': 'text/plain' }
+          })
+        );
+        const blobUrl = 'blob:https://example.com/uuid-no-revoke';
+        const res = await sanitizer.sanitizeURL(blobUrl, {
+          allow: ['blob']
+        });
+        assert.strictEqual(res, 'data:text/plain,Blob content');
+        assert.strictEqual(revokeStub.called, false);
+      });
+    });
+
     describe('inspectURL()', () => {
       let fetchStub;
 
