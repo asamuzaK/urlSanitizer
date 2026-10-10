@@ -449,12 +449,12 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **Normal HTTPS URL** | ~2.12 µs/iter | ~4.74 µs/iter | ~4.92 µs/iter |
-| **HTTPS URL with XSS** | ~3.40 µs/iter<br>returns sanitized URL | ~5.61 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~7.97 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
-| **XSS Scheme URL** | ~2.17 µs/iter<br>returns `null` | ~1.91 µs/iter<br>returns `about:blank` | ~8.75 µs/iter<br>throws `Error` |
-| **XSS Data URL** | ~448.03 µs/iter<br>returns sanitized data URL | ~2.99 µs/iter<br>returns `about:blank` | ~9.58 µs/iter<br>throws `Error` |
-| **XSS Blob URL** | ~626.25 µs/iter<br>returns sanitized data URL | ~2.62 µs/iter<br>returns blob URL as-is | ~9.67 µs/iter<br>throws `Error` |
-| **Invalid URL** | ~0.76 μs/iter<br>returns `null` | ~1.62 µs/iter<br>returns invalid URL as-is | ~18.82 µs/iter<br>throws `Error` |
+| **Normal HTTPS URL** | ~2.00 µs/iter | ~4.47 µs/iter | ~4.36 µs/iter |
+| **HTTPS URL with XSS** | ~2.97 µs/iter<br>returns sanitized URL | ~5.16 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~7.26 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
+| **XSS Scheme URL** | ~2.14 µs/iter<br>returns `null` | ~1.70 µs/iter<br>returns `about:blank` | ~7.71 µs/iter<br>throws `Error` |
+| **XSS Data URL** | ~384.94 µs/iter<br>returns sanitized data URL | ~2.67 µs/iter<br>returns `about:blank` | ~7.83 µs/iter<br>throws `Error` |
+| **XSS Blob URL** | ~528.22 µs/iter<br>returns sanitized data URL | ~2.31 µs/iter<br>returns blob URL as-is | ~7.77 µs/iter<br>throws `Error` |
+| **Invalid URL** | ~0.67 µs/iter<br>returns `null` | ~1.38 µs/iter<br>returns invalid URL as-is | ~16.01 µs/iter<br>throws `Error` |
 
 ### Characteristics & Trade-offs
 
