@@ -441,10 +441,6 @@ This strict blocking prevents non-existent or hallucinated schemes from inadvert
 
 Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
 
-## Performance
-
-Execution times were measured using [mitata](https://github.com/evanwashere/mitata) on Node.js.
-
 ### Benchmark Results
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
