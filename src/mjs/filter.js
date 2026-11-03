@@ -72,7 +72,7 @@ export class SanitizeContext {
     this.allowRelative = !!allowRelative;
     this.debug = !!debug;
     this.schemes = schemes;
-    if (Array.isArray(only) && only.length) {
+    if (Array.isArray(only)) {
       this.restrictScheme = true;
       for (const scheme of only) {
         this.#registerScheme(scheme);
@@ -372,7 +372,7 @@ export class SanitizeFilter {
     }
     const hasRestrictiveRules =
       (Array.isArray(deny) && deny.length > 0) ||
-      (Array.isArray(only) && only.length > 0) ||
+      Array.isArray(only) ||
       allowRelative;
     // Early return for standard HTTP/HTTPS URLs without restrictive rules.
     if (

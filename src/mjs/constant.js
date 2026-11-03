@@ -77,7 +77,7 @@ export const DUMMY_BASE = 'http://dummy.local';
 export const DEFAULT_OPTS = {
   allow: Object.freeze([]),
   deny: Object.freeze([]),
-  only: Object.freeze([]),
+  only: null,
   allowRelative: false,
   debug: false,
   revokeObjectURL: false,

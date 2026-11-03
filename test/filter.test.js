@@ -16,7 +16,7 @@ import * as mjs from '../src/mjs/filter.js';
 const DEFAULT_OPTS = Object.freeze({
   allow: Object.freeze([]),
   deny: Object.freeze([]),
-  only: Object.freeze([]),
+  only: null,
   allowRelative: false,
   debug: false,
   revokeObjectURL: false,

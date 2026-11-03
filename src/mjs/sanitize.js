@@ -104,7 +104,9 @@ export class URLSanitizer extends URISchemes {
       ...opt,
       allow: this.normalizeSchemes(opt.allow),
       deny: this.normalizeSchemes(opt.deny),
-      only: this.normalizeSchemes(opt.only),
+      only: Object.hasOwn(opt, 'only')
+        ? this.normalizeSchemes(opt.only)
+        : this.#defaultOpts.only,
       schemes: this.#allowedSchemes
     };
     const scheme = this.getScheme(url);
@@ -321,7 +323,7 @@ export class URLSanitizer extends URISchemes {
       try {
         if (
           (allow.includes('blob') && !deny.includes('blob')) ||
-          only.includes('blob')
+          (Array.isArray(only) && only.includes('blob'))
         ) {
           let fetchedBuffer = null;
           let fetchedMimeType = '';
@@ -345,7 +347,7 @@ export class URLSanitizer extends URISchemes {
             }
           }
           if (fetchedBuffer) {
-            if (only.length) {
+            if (only?.length) {
               if (!only.includes('data')) {
                 options.only = [...only, 'data'];
               }
