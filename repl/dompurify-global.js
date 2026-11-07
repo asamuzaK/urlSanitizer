@@ -13,8 +13,11 @@ const PROPERTIES = Object.freeze([
 const hookQueue = [];
 export const domPurify = new Proxy({}, {
   get(target, prop, receiver) {
-    const purifier = globalThis.DOMPurify || globalThis.window?.DOMPurify;
-    if (purifier) {
+    const basePurifier = globalThis.DOMPurify || globalThis.window?.DOMPurify;
+    if (basePurifier) {
+      const purifier = typeof basePurifier === 'function'
+        ? basePurifier(globalThis.window || globalThis)
+        : basePurifier;
       if (hookQueue.length) {
         for (const { prop: p, args } of hookQueue) {
           if (typeof purifier[p] === 'function') {
