@@ -7,7 +7,6 @@ import sinon from 'sinon';
 import urlSanitizer, {
   inspectURL,
   isValidURI,
-  isURISync,
   sanitizeURL,
   sanitizeURLSync
 } from '../src/index.js';
@@ -66,13 +65,6 @@ describe('URL Sanitizer (Node)', () => {
       assert.strictEqual(result, true);
       assert.strictEqual(isValidURIStub.calledOnceWithExactly(url), true);
     });
-
-    it('isURISync should call urlSanitizer.isValidURI (deprecated)', () => {
-      const url = 'http://example.com';
-      const result = isURISync(url);
-      assert.strictEqual(result, true);
-      assert.strictEqual(isValidURIStub.calledOnceWithExactly(url), true);
-    });
   });
 
   describe('alias behavior', () => {
@@ -81,7 +73,6 @@ describe('URL Sanitizer (Node)', () => {
       assert.strictEqual(typeof sanitizeURLSync, 'function');
       assert.strictEqual(typeof inspectURL, 'function');
       assert.strictEqual(typeof isValidURI, 'function');
-      assert.strictEqual(typeof isURISync, 'function');
     });
 
     runSharedTests(

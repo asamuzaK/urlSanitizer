@@ -393,15 +393,15 @@ export class URLSanitizer extends URISchemes {
 
   /**
    * Synchronously sanitizes the given URL.
-   * NOTE: `data` and `file` schemes must be explicitly allowed.
-   * The `blob` scheme is not supported and will return `null`.
+   * NOTE: `file` schemes must be explicitly allowed.
+   * The `blob` and `data` schemes are not supported and will return `null`.
    * @param {string} url - URL.
    * @param {SanitizeOptions} [opt] - The sanitization options.
    * @returns {string|null} The sanitized URL, or null if denied.
    */
   sanitizeURLSync(url, opt) {
     const { isValid, options, scheme } = this.#normalizeOptions(url, opt);
-    if (isValid === false) {
+    if (isValid === false || scheme === 'data') {
       return null;
     }
     if (scheme === 'blob') {

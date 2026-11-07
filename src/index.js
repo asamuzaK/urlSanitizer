@@ -71,8 +71,8 @@ export const sanitizeURL = async (url, opt) => sanitizer.sanitizeURL(url, opt);
 
 /**
  * Synchronously sanitizes the given URL.
- * NOTE: `data` and `file` schemes must be explicitly allowed.
- * The `blob` scheme is not supported and will return `null`.
+ * NOTE: `file` schemes must be explicitly allowed.
+ * The `blob` and `data` schemes are not supported and will return `null`.
  * @param {string} url - URL.
  * @param {SanitizeOptions} [opt] - The sanitization options.
  * @returns {string|null} The sanitized URL, or null if denied.
@@ -96,13 +96,6 @@ export const inspectURL = async (url, opt = {}) =>
  * @returns {boolean} True if valid and registered, false otherwise.
  */
 export const isValidURI = uri => sanitizer.isValidURI(uri);
-
-/**
- * @deprecated Use {@link isValidURI} instead.
- * @param {string} uri - The URI string to verify.
- * @returns {boolean} True if valid and registered, false otherwise.
- */
-export const isURISync = uri => sanitizer.isValidURI(uri);
 
 /* export instance */
 export default sanitizer;

@@ -343,48 +343,33 @@ export const runSharedTests = (context, assert, options = {}) => {
         assert.deepEqual(res, null, 'result');
       });
     } else {
-      it('should sanitize XSS from data:text/html URL', () => {
+      it('should return null on data URL', () => {
         const data =
           '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
         const url = `data:text/html,${encodeURIComponent(data)}`;
         const res = sanitizeURLSync(url, { allow: ['data'] });
         assert.strictEqual(
           res,
-          'data:text/html,%3Cdiv%3E%3C/div%3E%3Cp%3E%3C/p%3E',
+          null,
           'result'
-        );
-        assert.strictEqual(
-          decodeURIComponent(res),
-          'data:text/html,<div></div><p></p>',
-          'decode'
         );
       });
 
-      it('should sanitize XSS from base64 data:text/html', () => {
+      it('should return null on base64 data URL', () => {
         const base64data = btoa('<div><script>alert(1);</script></div>');
         const url = `data:text/html;base64,${base64data}`;
         const res = sanitizeURLSync(url, { allow: ['data'] });
-        assert.strictEqual(res, 'data:text/html,%3Cdiv%3E%3C/div%3E', 'result');
-        assert.strictEqual(
-          decodeURIComponent(res),
-          'data:text/html,<div></div>',
-          'decode'
-        );
+        assert.strictEqual(res, null, 'result');
       });
 
-      it('should sanitize javascript: img from base64 data', () => {
+      it('should return null on javascript: img from base64 data URL', () => {
         const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
         const url = `data:text/html;base64,${base64data}`;
         const res = sanitizeURLSync(url, { allow: ['data'] });
         assert.strictEqual(
           res,
-          'data:text/html,%3Cdiv%3E%3Cimg%3E%3C/div%3E',
+          null,
           'result'
-        );
-        assert.strictEqual(
-          decodeURIComponent(res),
-          'data:text/html,<div><img></div>',
-          'decode'
         );
       });
 
@@ -394,7 +379,7 @@ export const runSharedTests = (context, assert, options = {}) => {
         const url = URL.createObjectURL(blob);
         const res = sanitizeURLSync(url, { allow: ['blob'] });
         URL.revokeObjectURL(url);
-        assert.deepEqual(res, null, 'result');
+        assert.strictEqual(res, null, 'result');
       });
     }
   });
