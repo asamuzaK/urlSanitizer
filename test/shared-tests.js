@@ -49,17 +49,19 @@ export const runSharedTests = (context, assert, options = {}) => {
       });
 
       it('should throw when trying to add javascript', () => {
-        assert.throws(() => urlSanitizer.add('javascript'), {
-          name: 'Error',
-          message: 'Invalid scheme: javascript'
-        });
+        assert.throws(
+          () => urlSanitizer.add('javascript'),
+          Error,
+          'Invalid scheme: javascript'
+        );
       });
 
       it('should throw when trying to add vbscript', () => {
-        assert.throws(() => urlSanitizer.add('vbscript'), {
-          name: 'Error',
-          message: 'Invalid scheme: vbscript'
-        });
+        assert.throws(
+          () => urlSanitizer.add('vbscript'),
+          Error,
+          'Invalid scheme: vbscript'
+        );
       });
     });
 
@@ -201,17 +203,13 @@ export const runSharedTests = (context, assert, options = {}) => {
         assert.strictEqual(res, undefined);
       });
 
-      it('should throw on blob URL without DOMPurify', async () => {
+      it('should return null on blob URL without DOMPurify', async () => {
         const data = '<svg><g onload="alert(1)"/></svg>';
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
-        let err;
-        const res = await sanitizeURL(url, { allow: ['blob'] }).catch(e => {
-          err = e;
-        });
+        const res = await sanitizeURL(url, { allow: ['blob'] });
         URL.revokeObjectURL(url);
-        assert.strictEqual(err instanceof Error, true);
-        assert.strictEqual(res, undefined);
+        assert.strictEqual(res, null);
       });
     } else {
       it('should sanitize XSS from data:text/html URL', async () => {
@@ -314,23 +312,26 @@ export const runSharedTests = (context, assert, options = {}) => {
     });
 
     if (woDomPurify) {
-      it('should throw on data URL without DOMPurify', () => {
+      it('should return null on data URL without DOMPurify', () => {
         const data =
           '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
         const url = `data:text/html,${encodeURIComponent(data)}`;
-        assert.throws(() => sanitizeURLSync(url, { allow: ['data'] }));
+        const res = sanitizeURLSync(url, { allow: ['data'] });
+        assert.deepEqual(res, null, 'result');
       });
 
-      it('should throw on base64 data URL without DOMPurify', () => {
+      it('should return null on base64 data URL without DOMPurify', () => {
         const base64data = btoa('<div><script>alert(1);</script></div>');
         const url = `data:text/html;base64,${base64data}`;
-        assert.throws(() => sanitizeURLSync(url, { allow: ['data'] }));
+        const res = sanitizeURLSync(url, { allow: ['data'] });
+        assert.deepEqual(res, null, 'result');
       });
 
-      it('should throw on base64 img URL without DOMPurify', () => {
+      it('should return null on base64 img URL without DOMPurify', () => {
         const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
         const url = `data:text/html;base64,${base64data}`;
-        assert.throws(() => sanitizeURLSync(url, { allow: ['data'] }));
+        const res = sanitizeURLSync(url, { allow: ['data'] });
+        assert.deepEqual(res, null, 'result');
       });
 
       it('should return null on blob URL without DOMPurify', async () => {
@@ -528,8 +529,7 @@ export const runSharedTests = (context, assert, options = {}) => {
               'data:image/svg+xml;base64,PHN2Zz48ZyBvbmNsaWNrPSJhbGVydCgxKSIvPjwvc3ZnPg==',
             valid: false,
             href: null,
-            reason:
-              'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
           },
           'result'
         );
@@ -548,8 +548,7 @@ export const runSharedTests = (context, assert, options = {}) => {
             input: url,
             valid: false,
             href: null,
-            reason:
-              'DOMPurify is not available. Ensure DOMPurify is exposed globally (e.g., window.DOMPurify).'
+            reason: 'Sanitization failed (blocked by allowed schemes or rules).'
           },
           'result'
         );
