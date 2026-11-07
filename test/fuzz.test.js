@@ -23,8 +23,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
   });
 
   describe('sanitizeURLSync', () => {
-    it('should never crash with completely random strings', () => {
-      fc.assert(
+    it('should never crash with completely random strings', async () => {
+      await fc.assert(
         fc.property(fc.string(), randomString => {
           try {
             sanitizeURLSync(randomString, { debug: false });
@@ -41,8 +41,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should never crash with randomly generated valid web URLs', () => {
-      fc.assert(
+    it('should never crash with randomly generated valid web URLs', async () => {
+      await fc.assert(
         fc.property(fc.webUrl(), randomUrl => {
           try {
             sanitizeURLSync(randomUrl);
@@ -56,8 +56,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should never crash with randomly constructed data URLs', () => {
-      fc.assert(
+    it('should never crash with randomly constructed data URLs', async () => {
+      await fc.assert(
         fc.property(
           fc.string({ maxLength: 1000 }),
           fc.string({ maxLength: 5000 }),
@@ -79,8 +79,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should never crash and always return null for javascript: URLs', () => {
-      fc.assert(
+    it('should never crash and always return null for javascript: URLs', async () => {
+      await fc.assert(
         fc.property(fc.string({ maxLength: 5000 }), randomScript => {
           const url = `javascript:${randomScript}`;
           try {
@@ -99,8 +99,8 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should never crash and always return null for vbscript: URLs', () => {
-      fc.assert(
+    it('should never crash and always return null for vbscript: URLs', async () => {
+      await fc.assert(
         fc.property(fc.string({ maxLength: 5000 }), randomScript => {
           const url = `vbscript:${randomScript}`;
           try {
@@ -119,7 +119,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle control characters', () => {
+    it('should correctly handle control characters', async () => {
       const ctrlCharArb = fc
         .tuple(
           fc.constantFrom(
@@ -166,7 +166,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
           return String.fromCharCode(code);
         });
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           fc.constantFrom('javascript', 'vbscript'),
           fc.array(ctrlCharArb, { minLength: 1, maxLength: 3 }),
@@ -229,7 +229,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle Unicode control and invisible chars', () => {
+    it('should correctly handle Unicode control and invisible chars', async () => {
       const unicodeCtrlArb = fc
         .tuple(
           fc.constantFrom(
@@ -265,7 +265,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
           return String.fromCodePoint(code);
         });
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           fc.constantFrom('javascript', 'vbscript'),
           fc.array(unicodeCtrlArb, { minLength: 1, maxLength: 3 }),
@@ -340,7 +340,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle %xx URL encoded bypass attempts', () => {
+    it('should correctly handle %xx URL encoded bypass attempts', async () => {
       const percentHexArb = fc
         .tuple(
           fc.constantFrom(
@@ -407,7 +407,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
           return str;
         }
       };
-      fc.assert(
+      await fc.assert(
         fc.property(
           fc.constantFrom('javascript', 'vbscript'),
           fc.array(percentHexArb, { minLength: 1, maxLength: 3 }),
@@ -488,7 +488,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle entity reference bypass attempts', () => {
+    it('should correctly handle entity reference bypass attempts', async () => {
       const entityArb = fc
         .tuple(
           fc.constantFrom(
@@ -578,7 +578,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         return current;
       };
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           fc.constantFrom('javascript', 'vbscript'),
           fc.array(entityArb, { minLength: 1, maxLength: 3 }),
@@ -662,7 +662,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle Unicode normalization bypass attempts', () => {
+    it('should correctly handle Unicode normalization bypass attempts', async () => {
       const unicodeSchemeArb = fc
         .constantFrom('javascript', 'vbscript')
         .chain(scheme =>
@@ -689,7 +689,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         }
       };
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           unicodeSchemeArb,
           fc.string({ maxLength: 100 }),
@@ -770,7 +770,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle mixed encoding bypass attempts', () => {
+    it('should correctly handle mixed encoding bypass attempts', async () => {
       const encodeTypes = ['raw', 'url', 'dec', 'hex', 'url_dec', 'url_hex'];
       const mixedSchemeArb = fc
         .constantFrom('javascript', 'vbscript')
@@ -846,7 +846,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         return current.replace(/[\x00-\x20\x7F]/g, '').toLowerCase();
       };
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           mixedSchemeArb,
           fc.string({ maxLength: 100 }),
@@ -920,7 +920,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle scheme splitting bypass attempts', () => {
+    it('should correctly handle scheme splitting bypass attempts', async () => {
       const splitters = [
         '',
         '\t',
@@ -991,7 +991,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         return current.replace(/[\n\r\t\0]/g, '').toLowerCase();
       };
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           splitSchemeArb,
           fc.string({ maxLength: 100 }),
@@ -1065,7 +1065,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle various relative URLs', () => {
+    it('should correctly handle various relative URLs', async () => {
       const prefixArb = fc.constantFrom(
         '/',
         './',
@@ -1094,7 +1094,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
           return `${prefix}${path}${q}${h}`;
         });
 
-      fc.assert(
+      await fc.assert(
         fc.property(relativeUrlArb, relativeUrl => {
           try {
             const res = sanitizeURLSync(relativeUrl, { allowRelative: true });
@@ -1118,7 +1118,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle prefix padding bypass attempts', () => {
+    it('should correctly handle prefix padding bypass attempts', async () => {
       const prefixCharsArb = fc
         .array(
           fc.constantFrom(
@@ -1135,7 +1135,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         )
         .map(arr => arr.join(''));
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           prefixCharsArb,
           fc.constantFrom('javascript:', 'vbscript:'),
@@ -1171,7 +1171,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should not crash with completely randomized options', () => {
+    it('should not crash with completely randomized options', async () => {
       const schemesArb = fc.array(fc.string({ maxLength: 10 }), {
         maxLength: 5
       });
@@ -1195,7 +1195,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         { requiredKeys: [] }
       );
 
-      fc.assert(
+      await fc.assert(
         fc.property(fc.webUrl(), optionsArb, (url, opts) => {
           try {
             sanitizeURLSync(url, opts);
@@ -1215,14 +1215,14 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should handle potentially expensive repeating characters without ReDoS', () => {
+    it('should handle potentially expensive repeating characters without ReDoS', async () => {
       const redosArb = fc
         .array(fc.constantFrom('%', '&', 'a', ';', '0', '#', 'x'), {
           maxLength: 10000
         })
         .map(arr => arr.join(''));
 
-      fc.assert(
+      await fc.assert(
         fc.property(redosArb, str => {
           try {
             sanitizeURLSync(str, { maxLength: 10000 });
@@ -1239,12 +1239,12 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should never crash with invalid UTF-16 (unpaired surrogates)', () => {
+    it('should never crash with invalid UTF-16 (unpaired surrogates)', async () => {
       const invalidUTF16Arb = fc
         .array(fc.integer({ min: 0, max: 0xffff }), { maxLength: 5000 })
         .map(arr => String.fromCharCode(...arr));
 
-      fc.assert(
+      await fc.assert(
         fc.property(invalidUTF16Arb, randomStr => {
           try {
             sanitizeURLSync(randomStr);
@@ -1258,7 +1258,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
       );
     });
 
-    it('should correctly handle Unicode case-folding anomalies (e.g., Long S)', () => {
+    it('should correctly handle Unicode case-folding anomalies (e.g., Long S)', async () => {
       // 's' -> 'ſ' (U+017F)
       // 'a' -> 'ª' (U+00AA)
       // 'i' -> 'İ' (U+0130)
@@ -1298,7 +1298,7 @@ describe('Fuzz Testing (Property-based Testing)', () => {
         }
       };
 
-      fc.assert(
+      await fc.assert(
         fc.property(
           anomalySchemeArb,
           fc.string({ maxLength: 100 }),
