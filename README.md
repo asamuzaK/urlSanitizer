@@ -54,21 +54,11 @@ CDN-based ESM imports (e.g., `esm.sh`, `jsdelivr`, or `unpkg`) may work, but are
 Standalone ESM builds are available in the `dist/` directory:
 
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
-* node_modules/url-sanitizer/dist/url-sanitizer-wo-dompurify.min.js
 
 Alternatively, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 ``` html
 <script type="module">
   import urlSanitizer from 'path/to/url-sanitizer.min.js';
-</script>
-```
-
-**Note:** `url-sanitizer-wo-dompurify.min.js` is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
-If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
-``` html
-<script src="https://unpkg.com/dompurify/dist/purify.min.js"></script>
-<script type="module">
-  import urlSanitizer from 'path/to/url-sanitizer-wo-dompurify.min.js';
 </script>
 ```
 
@@ -96,7 +86,6 @@ Sanitizes the given URL asynchronously.
   * You can restrict the allowed blob size using the `opt.maxBlobSize` option.
     Default is `16_777_216` (16MB).
     While 16MB may be suitable for client-side processing, it is highly recommended to reduce this limit to `1_048_576` (1MB) or `2_097_152` (2MB) in server-side applications.
-    Parsing large HTML/SVG contents inside Data/Blob URLs via JSDOM can consume massive amounts of V8 heap memory.
 
 #### Parameters
 
@@ -210,10 +199,10 @@ const res7_2 = await sanitizeURL('https://example.com/"onmouseover="alert(1)"', 
 
 Synchronous version of `sanitizeURL()`.
 
-* `data` and `file` schemes must be explicitly allowed.
+* `file` schemes must be explicitly allowed.
 * **File URLs:** Allowing the `file` scheme can be extremely dangerous in web applications. [See above](#about-file-scheme)
-* **Blob URLs:** `blob` scheme is **not supported** and will return `null`.
-  Use the async version for `blob`.
+* **Blob URLs and Data URLs:** `blob` and `data` schemes are **not supported** and will return `null`.
+  Use the async version for `blob` and `data` URLs.
   However, to prevent memory leaks, it is highly recommended to set the `opt.revokeObjectURL` option to `true` so that the unsupported blob URL is properly revoked before returning `null`.
 
 ### inspectURL(url, opt)
@@ -343,8 +332,6 @@ Specifically, it verifies that the input has a correct URI syntax, is not a deni
 * The scheme is registered in the default list (e.g., IANA registered schemes, `https`, `mailto`).
 * The scheme has a custom prefix like `web+` or `ext+` (which are always allowed for web applications).
 
-**Note:** `isURISync()` is deprecated. Please use `isValidURI()` instead.
-
 #### Parameters
 
 * uri **string** URI input.
@@ -445,22 +432,22 @@ Execution times were measured using [mitata](https://github.com/evanwashere/mita
 
 | URL Type | `url-sanitizer` | [@braintree/sanitize-url](https://www.npmjs.com/package/@braintree/sanitize-url) | [strict-url-sanitise](https://www.npmjs.com/package/strict-url-sanitise) |
 | :--- | :--- | :--- | :--- |
-| **Normal HTTPS URL** | ~2.00 µs/iter | ~4.47 µs/iter | ~4.36 µs/iter |
-| **HTTPS URL with XSS** | ~2.97 µs/iter<br>returns sanitized URL | ~5.16 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | ~7.26 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
-| **XSS Scheme URL** | ~2.14 µs/iter<br>returns `null` | ~1.70 µs/iter<br>returns `about:blank` | ~7.71 µs/iter<br>throws `Error` |
-| **XSS Data URL** | ~384.94 µs/iter<br>returns sanitized data URL | ~2.67 µs/iter<br>returns `about:blank` | ~7.83 µs/iter<br>throws `Error` |
-| **XSS Blob URL** | ~528.22 µs/iter<br>returns sanitized data URL | ~2.31 µs/iter<br>returns blob URL as-is | ~7.77 µs/iter<br>throws `Error` |
-| **Invalid URL** | ~0.67 µs/iter<br>returns `null` | ~1.38 µs/iter<br>returns invalid URL as-is | ~16.01 µs/iter<br>throws `Error` |
+| **Normal HTTPS URL** | 2.06 µs/iter | 4.23 µs/iter | 4.30 µs/iter |
+| **HTTPS XSS URL** | 3.08 µs/iter<br>returns sanitized URL | 5.13 µs/iter<br>returns encoded URL (not fully sanitized against XSS) | 7.06 µs/iter<br>returns encoded URL (not fully sanitized against XSS) |
+| **XSS Scheme URL** | 2.14 µs/iter<br>returns `null` | 1.69 µs/iter<br>returns `about:blank` | 7.67 µs/iter<br>throws `Error` |
+| **Data URL** | 197.24 µs/iter<br>returns sanitized data URL | 2.45 µs/iter<br>returns `about:blank` | 7.62 µs/iter<br>throws `Error` |
+| **Blob URL** | 319.98 µs/iter<br>returns sanitized data URL | 2.31 µs/iter<br>returns blob URL as-is | 7.59 µs/iter<br>throws `Error` |
+| **Invalid URL** | 0.71 µs/iter<br>returns `null` | 1.36 µs/iter<br>returns invalid URL as-is | 16.70 µs/iter<br>throws `Error` |
 
 ### Characteristics & Trade-offs
 
 * **Optimized for Standard Routing & XSS Rejection**
-  * For **normal HTTP(S) URLs** and URLs containing common XSS patterns, `url-sanitizer` achieves low latency by leveraging the native `URL` API and applying optimized early-return paths when strict inspection is unnecessary.
+  * For **normal HTTP(S) URLs** and URLs containing common XSS patterns, `url-sanitizer` achieves low latency by leveraging native `URL` parsing and applying optimized early-return paths when strict inspection is unnecessary.
 * **Exceptional Invalid URL Handling (Fail-Fast)**
-  * For **invalid URLs** (such as malformed schemes or unparseable formats), `url-sanitizer` uses a fail-fast architecture based on `URL.parse()`, avoiding unnecessary sanitization steps after validation failure.
+  * For **invalid URLs** (such as malformed schemes or unparseable formats), `url-sanitizer` achieves sub-microsecond performance (~719.54 ns) via a fail-fast architecture based on native parsing, avoiding unnecessary sanitization steps after validation failure.
 * **Deep Inspection for High-Risk Payloads**
   * For **Data URLs** and **Blob URLs**, `url-sanitizer` prioritizes security over raw execution speed. The following inspection pipeline is applied:
-    1. If Blob URL is given, convert it to a Data URL.
+    1. If a Blob URL is given, convert it to a Data URL.
     2. Parses and normalizes the Data URL structure.
     3. Decodes Base64 payloads when present.
     4. Decodes URL-encoded content and numeric character references.
