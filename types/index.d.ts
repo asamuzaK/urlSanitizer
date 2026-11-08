@@ -5,7 +5,7 @@
  * @copyright asamuzaK (Kazz)
  * @see {@link https://github.com/asamuzaK/urlSanitizer/blob/main/LICENSE}
  */
-import { URLSanitizer } from './mjs/sanitize.js';
+import { URLSanitizer } from './main/sanitize.js';
 export type InspectedDataURL = {
     base64: boolean;
     data: string;
