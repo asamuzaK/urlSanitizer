@@ -20,7 +20,7 @@ import {
 
 /* typedef */
 /**
- * @typedef {import('dompurify').DOMPurify} DOMPurify
+ * @typedef {import('purify-edge').DOMPurify} DOMPurify
  * @typedef {import('../index.js').InspectedDataURL} InspectedDataURL
  * @typedef {import('../index.js').InspectedURLResult} InspectedURLResult
  * @typedef {import('../index.js').SanitizeOptions} SanitizeOptions

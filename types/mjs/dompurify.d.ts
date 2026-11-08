@@ -1,1 +1,1 @@
-export declare const domPurify: import('dompurify').DOMPurify;
+export declare const domPurify: import('purify-edge').DOMPurify;

@@ -1,4 +1,4 @@
-export type DOMPurify = import('dompurify').DOMPurify;
+export type DOMPurify = import('purify-edge').DOMPurify;
 export type InspectedDataURL = import('../index.js').InspectedDataURL;
 export type InspectedURLResult = import('../index.js').InspectedURLResult;
 export type SanitizeOptions = import('../index.js').SanitizeOptions;
@@ -27,7 +27,11 @@ export declare class SanitizeFilter {
     private #purify;
     private #handleSanitizeAttribute;
     private #sanitizeStandardURL;
-    sanitize(url: string, opt?: InternalSanitizeOptions): string | null;
+    private #validateLength;
+    private #hasRestrictiveRules;
+    private #tryFastPath;
     sanitizeBuffer(buffer: ArrayBuffer, mimeType: string, opt?: InternalSanitizeOptions): Promise<string | null>;
     sanitizeDataURL(url: string, opt?: InternalSanitizeOptions): Promise<string | null>;
+    sanitizeURL(url: string, scheme: string, opt?: InternalSanitizeOptions): Promise<string | null>;
+    sanitizeURLSync(url: string, scheme: string, opt?: InternalSanitizeOptions): string | null;
 }
