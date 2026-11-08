@@ -348,11 +348,7 @@ export const runSharedTests = (context, assert, options = {}) => {
           '<div><script>alert(1);</script></div><p onclick="alert(2)"></p>';
         const url = `data:text/html,${encodeURIComponent(data)}`;
         const res = sanitizeURLSync(url, { allow: ['data'] });
-        assert.strictEqual(
-          res,
-          null,
-          'result'
-        );
+        assert.strictEqual(res, null, 'result');
       });
 
       it('should return null on base64 data URL', () => {
@@ -366,11 +362,7 @@ export const runSharedTests = (context, assert, options = {}) => {
         const base64data = btoa('<div><img src="javascript:alert(1)"></div>');
         const url = `data:text/html;base64,${base64data}`;
         const res = sanitizeURLSync(url, { allow: ['data'] });
-        assert.strictEqual(
-          res,
-          null,
-          'result'
-        );
+        assert.strictEqual(res, null, 'result');
       });
 
       it('should return null for blob URL in sync mode', async () => {

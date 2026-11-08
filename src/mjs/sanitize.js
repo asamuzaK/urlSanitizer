@@ -121,9 +121,9 @@ export class URLSanitizer extends URISchemes {
    * @private
    * @param {string} url - The URL string to parse.
    * @param {InternalSanitizeOptions} options - Sanitization options.
-   * @returns {InspectedURLResult} The result of an inspected URL.
+   * @returns {Promise<InspectedURLResult>} The result of an inspected URL.
    */
-  #inspect(url, options) {
+  async #inspect(url, options) {
     const inspectedURL = {
       input: url,
       href: null,
@@ -140,7 +140,8 @@ export class URLSanitizer extends URISchemes {
     let sanitizedURL;
     let invalidReason = null;
     try {
-      sanitizedURL = this.#filter.sanitize(url, options);
+      const scheme = this.getScheme(url, true);
+      sanitizedURL = await this.#filter.sanitizeURL(url, scheme, options);
       if (!sanitizedURL) {
         invalidReason =
           'Sanitization failed (blocked by allowed schemes or rules).';
@@ -207,7 +208,7 @@ export class URLSanitizer extends URISchemes {
       );
       const base64Data = encodeBufferToBase64(buffer);
       const dataURL = `data:${mimeType ? `${mimeType};base64` : 'base64'},${base64Data}`;
-      const result = this.#inspect(dataURL, options);
+      const result = await this.#inspect(dataURL, options);
       result.input = url;
       return result;
     } catch (e) {
@@ -379,9 +380,11 @@ export class URLSanitizer extends URISchemes {
     }
     try {
       if (scheme === 'data') {
-        return this.#filter.sanitizeDataURL(url, options);
+        const sanitizedData = await this.#filter.sanitizeDataURL(url, options);
+        return sanitizedData;
       }
-      return this.#filter.sanitize(url, options);
+      const sanitizedURL = await this.#filter.sanitizeURL(url, scheme, options);
+      return sanitizedURL;
     } catch (e) {
       this.#shouldThrow(e, options);
       if (options.debug) {
@@ -411,7 +414,7 @@ export class URLSanitizer extends URISchemes {
       return null;
     }
     try {
-      return this.#filter.sanitize(url, options);
+      return this.#filter.sanitizeURLSync(url, scheme, options);
     } catch (e) {
       this.#shouldThrow(e, options);
       if (options.debug) {

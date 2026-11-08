@@ -48,7 +48,7 @@ export class SanitizeContext {
    * @param {InternalSanitizeOptions} opt - The internal sanitization options.
    */
   constructor(domPurifyInstance, opt = DEFAULT_OPTS) {
-    this.domPurify = domPurifyInstance;
+    this.domPurify = domPurifyInstance ?? null;
     this.nest = 0;
     this.recurse = new Set();
     this.restrictScheme = false;
@@ -288,11 +288,7 @@ export class SanitizeFilter {
     if (!purifiedDom) {
       return null;
     }
-    try {
-      return encodeURI(trimTrailingEmptyQueryAndHash(purifiedDom));
-    } catch {
-      return null;
-    }
+    return encodeURI(trimTrailingEmptyQueryAndHash(purifiedDom));
   }
 
   /**
@@ -356,39 +352,48 @@ export class SanitizeFilter {
   }
 
   /**
-   * Sanitizes the URL.
-   * @param {string} url - The URL string to sanitize.
-   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
-   * @returns {string|null} The sanitized URL, or null.
+   * Validates the input URL length against the maximum allowed length.
+   * @private
+   * @param {string} url - The URL string to validate.
+   * @param {number} [maxLength] - The maximum allowed length.
+   * @throws {RangeError} If the URL length exceeds the maximum length.
    */
-  sanitize(url, opt = this.#defaultOpts) {
-    if (!url || !isString(url)) {
-      return null;
-    }
-    const { deny, maxLength, only, allowRelative } = opt;
+  #validateLength(url, maxLength) {
     if (Number.isInteger(maxLength) && url.length > maxLength) {
-      const msg = `URL length ${url.length} exceeds max length ${maxLength}.`;
-      throw new RangeError(msg);
+      throw new RangeError(
+        `URL length ${url.length} exceeds max length ${maxLength}.`
+      );
     }
-    const hasRestrictiveRules =
+  }
+
+  /**
+   * Checks if restrictive rules (deny, only, allowRelative) are present.
+   * @private
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
+   * @returns {boolean} True if restrictive rules exist, false otherwise.
+   */
+  #hasRestrictiveRules(opt) {
+    const { deny, only, allowRelative } = opt;
+    return (
       (Array.isArray(deny) && deny.length > 0) ||
       Array.isArray(only) ||
-      allowRelative;
-    // Early return for standard HTTP/HTTPS URLs without restrictive rules.
-    if (
-      !hasRestrictiveRules &&
-      /^https?:\/\//.test(url) &&
-      !REG_TAG_QUOT.test(url) &&
-      !url.includes('data:')
-    ) {
-      const urlObj = parseURL(url, null, true);
-      if (urlObj && opt.schemes.has(urlObj.protocol.replace(/:$/, ''))) {
-        return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
-      }
-      return null;
+      !!allowRelative
+    );
+  }
+
+  /**
+   * Attempts to process standard URLs via the fast-path.
+   * @private
+   * @param {string} url - The URL string.
+   * @param {InternalSanitizeOptions} opt - The internal sanitization options.
+   * @returns {string|null} The sanitized URL string, or null if fast-path cannot be applied.
+   */
+  #tryFastPath(url, opt) {
+    const urlObj = parseURL(url, null, true);
+    if (urlObj && opt.schemes.has(urlObj.protocol.replace(/:$/, ''))) {
+      return urlObj.href.replace(/%26/g, escapeURLEncodedHTMLChars);
     }
-    const ctx = new SanitizeContext(domPurify, opt);
-    return this.#process(url, ctx);
+    return null;
   }
 
   /**
@@ -450,5 +455,52 @@ export class SanitizeFilter {
       return null;
     }
     return this.#sanitizeDataURL(urlObj, ctx);
+  }
+
+  /**
+   * Asynchronously sanitizes the URL.
+   * @param {string} url - The URL string to sanitize.
+   * @param {string} scheme - The URL scheme.
+   * @param {InternalSanitizeOptions} [opt] - The internal sanitization options.
+   * @returns {Promise<string|null>} The sanitized URL, or null.
+   */
+  async sanitizeURL(url, scheme, opt = this.#defaultOpts) {
+    if (!url || !isString(url)) {
+      return null;
+    }
+    this.#validateLength(url, opt.maxLength);
+    if (
+      /^https?$/.test(scheme) &&
+      !REG_TAG_QUOT.test(url) &&
+      !this.#hasRestrictiveRules(opt) &&
+      !url.includes('data:')
+    ) {
+      return this.#tryFastPath(url, opt);
+    }
+    const ctx = new SanitizeContext(domPurify, opt);
+    return this.#process(url, ctx);
+  }
+
+  /**
+   * Synchronously sanitizes the URL.
+   * @param {string} url - The URL string to sanitize.
+   * @param {string} scheme - The URL scheme.
+   * @param {InternalSanitizeOptions} [opt] - The internal sanitization options.
+   * @returns {string|null} The sanitized URL, or null.
+   */
+  sanitizeURLSync(url, scheme, opt = this.#defaultOpts) {
+    if (!url || !isString(url) || scheme === 'data') {
+      return null;
+    }
+    this.#validateLength(url, opt.maxLength);
+    if (
+      /^https?$/.test(scheme) &&
+      !REG_TAG_QUOT.test(url) &&
+      !this.#hasRestrictiveRules(opt)
+    ) {
+      return this.#tryFastPath(url, opt);
+    }
+    const ctx = new SanitizeContext(null, opt);
+    return this.#process(url, ctx);
   }
 }
