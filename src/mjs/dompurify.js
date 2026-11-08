@@ -2,14 +2,10 @@
  * dompurify.js
  */
 
-import createDOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
-
-const { window } = new JSDOM('');
+import { createDOMPurify } from 'purify-edge';
 
 /**
- * An instance of DOMPurify initialized with a JSDOM window context.
- * Used to sanitize HTML/SVG strings.
- * @type {import('dompurify').DOMPurify}
+ * An instance of DOMPurify initialized with a window shim.
+ * @type {import('purify-edge').DOMPurify}
  */
-export const domPurify = createDOMPurify(window);
+export const domPurify = createDOMPurify();

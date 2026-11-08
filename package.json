@@ -25,12 +25,10 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "dompurify": "^3.4.17",
-    "jsdom": "^31.0.0"
+    "purify-edge": "^0.1.2"
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
-    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.6",
     "c8": "^12.0.0",
     "chai": "^6.3.0",
@@ -58,6 +56,7 @@
     "undici": "^8.12.4"
   },
   "overrides": {
+    "dompurify": "^3.4.17",
     "glob": "^14.0.3",
     "minimatch": "^11.0.4"
   },
@@ -67,15 +66,9 @@
   "scripts": {
     "bench": "node benchmark/benchmark.js",
     "build": "npm run include && npm run char && npm run tsc && npm run lint && npm test && npm run copy && npm run bundle",
-    "bundle": "npm run bundle:min && npm run bundle:min-wo-dompurify",
-    "bundle:min": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.min.js --bundle --minify --sourcemap bundle/index.js",
-    "bundle:min-wo-dompurify": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer-wo-dompurify.min.js --bundle --minify --sourcemap bundle_wo_dompurify/index.js",
+    "bundle": "esbuild --format=esm --platform=browser --outfile=dist/url-sanitizer.min.js --bundle --minify --sourcemap bundle/index.js",
     "char": "node scripts/index char -i",
-    "copy": "npm run copy:src && npm run copy:src-wo-dompurify && npm run copy:repl && npm run copy:repl-wo-dompurify",
-    "copy:src": "copyfiles-ng src/**/* bundle --up=1 --verbose --exclude=src/mjs/dompurify.js",
-    "copy:src-wo-dompurify": "copyfiles-ng src/**/* bundle_wo_dompurify --up=1 --verbose --exclude=src/mjs/dompurify.js",
-    "copy:repl": "copyfiles-ng repl/dompurify.js bundle/mjs --up=1 --verbose",
-    "copy:repl-wo-dompurify": "copyfiles-ng repl/dompurify-global.js bundle_wo_dompurify/mjs --up=1 --verbose && node scripts/index rename --oldpath=bundle_wo_dompurify/mjs/dompurify-global.js --newpath=bundle_wo_dompurify/mjs/dompurify.js -i",
+    "copy": "copyfiles-ng src/**/* bundle --up=1 --verbose",
     "include": "node scripts/index include --dir=iana -i",
     "lint": "eslint --fix .",
     "test": "c8 --reporter=text mocha --exit test/*.test.js",
