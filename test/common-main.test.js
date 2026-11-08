@@ -8,11 +8,11 @@ import { describe, it, beforeEach, afterEach } from 'mocha';
 import sinon from 'sinon';
 
 /* test */
-import * as mjs from '../src/mjs/common.js';
+import * as api from '../src/main/common.js';
 
 describe('common', () => {
   describe('get type', () => {
-    const func = mjs.getType;
+    const func = api.getType;
 
     it('should get Array', () => {
       const res = func([]);
@@ -51,7 +51,7 @@ describe('common', () => {
   });
 
   describe('is string', () => {
-    const func = mjs.isString;
+    const func = api.isString;
 
     it('should get false', () => {
       const items = [[], ['foo'], {}, { foo: 'bar' }, undefined, null, 1, true];
@@ -69,7 +69,7 @@ describe('common', () => {
   });
 
   describe('logDebug', () => {
-    const func = mjs.logDebug;
+    const func = api.logDebug;
     let warnStub;
     beforeEach(() => {
       warnStub = sinon.stub(console, 'warn');

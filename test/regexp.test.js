@@ -7,7 +7,7 @@ import { strict as assert } from 'node:assert';
 import { beforeEach, describe, it } from 'mocha';
 
 /* test */
-import * as reg from '../src/mjs/regexp.js';
+import * as reg from '../src/main/regexp.js';
 
 describe('regexp', () => {
   describe('REG_AMP', () => {

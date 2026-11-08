@@ -8,11 +8,11 @@ import { afterEach, beforeEach, describe, it } from 'mocha';
 import sinon from 'sinon';
 
 /* test */
-import * as mjs from '../src/mjs/sanitize.js';
+import * as api from '../src/main/sanitize.js';
 
 describe('sanitize', () => {
   describe('URL sanitizer', () => {
-    const { URLSanitizer } = mjs;
+    const { URLSanitizer } = api;
     let sanitizer;
 
     beforeEach(() => {

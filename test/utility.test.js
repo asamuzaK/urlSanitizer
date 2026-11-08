@@ -8,11 +8,11 @@ import { afterEach, beforeEach, describe, it } from 'mocha';
 import sinon from 'sinon';
 
 /* test */
-import * as mjs from '../src/mjs/utility.js';
+import * as api from '../src/main/utility.js';
 
 describe('uri-util', () => {
   describe('normalize URL', () => {
-    const func = mjs.normalizeURL;
+    const func = api.normalizeURL;
 
     it('returns null if the given url is not a string', () => {
       assert.strictEqual(func(123), null, 'result for number');
@@ -51,7 +51,7 @@ describe('uri-util', () => {
   });
 
   describe('parse URL', () => {
-    const func = mjs.parseURL;
+    const func = api.parseURL;
 
     it('returns null if url is not a string', () => {
       assert.strictEqual(func(123), null, 'result for number');
@@ -101,7 +101,7 @@ describe('uri-util', () => {
   });
 
   describe('parse URL fallback', () => {
-    const func = mjs.parseURL;
+    const func = api.parseURL;
     let originalURLParse;
     beforeEach(() => {
       originalURLParse = globalThis.URL.parse;
@@ -152,7 +152,7 @@ describe('uri-util', () => {
   });
 
   describe('get URL encoded string', () => {
-    const func = mjs.getURLEncodedString;
+    const func = api.getURLEncodedString;
 
     it('throws TypeError if argument is not a string', () => {
       assert.throws(
@@ -179,7 +179,7 @@ describe('uri-util', () => {
   });
 
   describe('escape URL encoded HTML special chars', () => {
-    const func = mjs.escapeURLEncodedHTMLChars;
+    const func = api.escapeURLEncodedHTMLChars;
 
     it('returns undefined if input is missing', () => {
       const res = func();
@@ -233,7 +233,7 @@ describe('uri-util', () => {
   });
 
   describe('truncate URL', () => {
-    const func = mjs.truncateURL;
+    const func = api.truncateURL;
 
     it('returns the same string when string length is equal to or less', () => {
       const exact64Chars = 'a'.repeat(64);
@@ -258,7 +258,7 @@ describe('uri-util', () => {
   });
 
   describe('parse base64 encoded data', () => {
-    const func = mjs.parseBase64;
+    const func = api.parseBase64;
 
     it('throws TypeError if argument is not a string', () => {
       assert.throws(
@@ -373,7 +373,7 @@ describe('uri-util', () => {
   });
 
   describe('replace numeric character reference', () => {
-    const func = mjs.replaceNumCharRef;
+    const func = api.replaceNumCharRef;
 
     it('replaces decimal text character references', () => {
       // 44 is ','
@@ -433,7 +433,7 @@ describe('uri-util', () => {
   });
 
   describe('parse URL encoded numeric character reference', () => {
-    const func = mjs.parseURLEncodedNumCharRef;
+    const func = api.parseURLEncodedNumCharRef;
 
     it('throws TypeError if argument is not a string', () => {
       assert.throws(
@@ -525,7 +525,7 @@ describe('uri-util', () => {
   });
 
   describe('trim trailing empty query and hash', () => {
-    const func = mjs.trimTrailingEmptyQueryAndHash;
+    const func = api.trimTrailingEmptyQueryAndHash;
 
     it('does not remove fragments or query', () => {
       assert.strictEqual(
@@ -618,7 +618,7 @@ describe('uri-util', () => {
   });
 
   describe('get scheme parts', () => {
-    const func = mjs.getSchemeParts;
+    const func = api.getSchemeParts;
 
     it('returns empty array if argument is not a string', () => {
       assert.deepEqual(func(), [], 'result for undefined');
@@ -640,7 +640,7 @@ describe('uri-util', () => {
   });
 
   describe('extract Data URL components', () => {
-    const func = mjs.extractDataURLComponents;
+    const func = api.extractDataURLComponents;
 
     it('returns default object if pathname is not a string', () => {
       const expected = {
@@ -707,7 +707,7 @@ describe('uri-util', () => {
   });
 
   describe('encode buffer to base64', () => {
-    const func = mjs.encodeBufferToBase64;
+    const func = api.encodeBufferToBase64;
 
     it('encodes an ArrayBuffer to a base64 string', () => {
       const text = 'Hello, World!';
@@ -804,7 +804,7 @@ describe('uri-util', () => {
   });
 
   describe('read stream in chunks as ArrayBuffer', () => {
-    const func = mjs.readStreamInChunksAsArrayBuffer;
+    const func = api.readStreamInChunksAsArrayBuffer;
 
     it('reads readable stream in chunks and returns ArrayBuffer', async () => {
       const text = 'Hello Stream';
@@ -908,7 +908,7 @@ describe('uri-util', () => {
   });
 
   describe('fetch Blob as ArrayBuffer', () => {
-    const func = mjs.fetchBlobAsArrayBuffer;
+    const func = api.fetchBlobAsArrayBuffer;
     let fetchStub;
 
     beforeEach(() => {

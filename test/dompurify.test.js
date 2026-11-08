@@ -7,7 +7,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 
 /* test */
-import { domPurify } from '../src/mjs/dompurify.js';
+import { domPurify } from '../src/main/dompurify.js';
 
 describe('DOMPurify', () => {
   describe('domPurify', () => {

@@ -7,7 +7,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'mocha';
 
 /* test */
-import * as constant from '../src/mjs/constant.js';
+import * as constant from '../src/main/constant.js';
 
 describe('constants', () => {
   const items = Object.keys(constant);

@@ -10,7 +10,7 @@ import {
   NON_TEXT_CHAR_CODES,
   TEXT_CHAR_CODES,
   WINDOWS1252_TO_UNICODE
-} from '../src/mjs/text-chars.js';
+} from '../src/main/text-chars.js';
 
 describe('text-chars', () => {
   describe('TEXT_CHAR_CODES', () => {

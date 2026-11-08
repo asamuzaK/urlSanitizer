@@ -10,8 +10,8 @@ import sinon from 'sinon';
 
 /* test */
 import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
-import { MAX_BLOB_SIZE, MAX_URL_LENGTH } from '../src/mjs/constant.js';
-import * as mjs from '../src/mjs/filter.js';
+import { MAX_BLOB_SIZE, MAX_URL_LENGTH } from '../src/main/constant.js';
+import * as api from '../src/main/filter.js';
 
 const DEFAULT_OPTS = Object.freeze({
   allow: Object.freeze([]),
@@ -27,7 +27,7 @@ const DEFAULT_OPTS = Object.freeze({
 
 describe('filter', () => {
   describe('Sanitize context', () => {
-    const { SanitizeContext } = mjs;
+    const { SanitizeContext } = api;
 
     it('initializes properties correctly with default options', () => {
       const mockDomPurify = {};
@@ -156,7 +156,7 @@ describe('filter', () => {
   });
 
   describe('Sanitize filter', () => {
-    const { SanitizeFilter } = mjs;
+    const { SanitizeFilter } = api;
     let filter;
 
     beforeEach(() => {

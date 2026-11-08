@@ -6,7 +6,7 @@
  * @see {@link https://github.com/asamuzaK/urlSanitizer/blob/main/LICENSE}
  */
 
-import { URLSanitizer } from './mjs/sanitize.js';
+import { URLSanitizer } from './main/sanitize.js';
 
 /* typedef */
 /**

@@ -8,11 +8,11 @@ import { afterEach, beforeEach, describe, it } from 'mocha';
 
 /* test */
 import uriSchemes from '../src/lib/iana/uri-schemes.json' with { type: 'json' };
-import * as mjs from '../src/mjs/scheme.js';
+import * as api from '../src/main/scheme.js';
 
 describe('scheme', () => {
   describe('URI schemes', () => {
-    const { URISchemes } = mjs;
+    const { URISchemes } = api;
 
     it('creates an instance of URISchemes', () => {
       const schemes = new URISchemes();
@@ -273,7 +273,7 @@ describe('scheme', () => {
     });
 
     describe('parse URL fallback', () => {
-      const { URISchemes } = mjs;
+      const { URISchemes } = api;
       let originalURLParse;
 
       beforeEach(() => {
