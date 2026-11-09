@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tests for URL Sanitizer with DOMPurify exposed</title>
+    <link rel="stylesheet" href="../../node_modules/mocha/mocha.css" />
+    <script src="../../node_modules/mocha/mocha.js"></script>
+    <script src="../../node_modules/dompurify/dist/purify.min.js"></script>
+    <script>
+      mocha.setup('bdd');
+      mocha.checkLeaks();
+      window.addEventListener('load', () => {
+        mocha.run();
+      });
+    </script>
+    <script type="module" src="./url-sanitizer-wo-dompurify.test.js">
+    </script>
+  </head>
+  <body>
+    <div id="mocha"></div>
+  </body>
+</html>
