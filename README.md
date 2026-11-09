@@ -54,11 +54,21 @@ CDN-based ESM imports (e.g., `esm.sh`, `jsdelivr`, or `unpkg`) may work, but are
 Standalone ESM builds are available in the `dist/` directory:
 
 * node_modules/url-sanitizer/dist/url-sanitizer.min.js
+* node_modules/url-sanitizer/dist/url-sanitizer-wo-dompurify.min.js
 
 Alternatively, download them from [Releases](https://github.com/asamuzaK/urlSanitizer/releases).
 ``` html
 <script type="module">
   import urlSanitizer from 'path/to/url-sanitizer.min.js';
+</script>
+```
+
+**Note:** `url-sanitizer-wo-dompurify.min.js` is a lightweight build without [DOMPurify](https://www.npmjs.com/package/dompurify) bundled.
+If you use this build, ensure DOMPurify is exposed globally (e.g., `window.DOMPurify`), otherwise the sanitizer will throw an error at runtime.
+``` html
+<script src="https://unpkg.com/dompurify/dist/purify.min.js"></script>
+<script type="module">
+  import urlSanitizer from 'path/to/url-sanitizer-wo-dompurify.min.js';
 </script>
 ```
 
