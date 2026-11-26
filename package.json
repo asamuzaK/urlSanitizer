@@ -29,36 +29,39 @@
   },
   "devDependencies": {
     "@braintree/sanitize-url": "^7.1.2",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.11",
     "c8": "^12.0.0",
     "chai": "^6.3.0",
     "commander": "^15.1.0",
     "copyfiles-ng": "^2.4.9",
+    "dompurify": "^3.5.0",
     "esbuild": "^0.28.2",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jsdoc": "^65.4.5",
+    "eslint-plugin-jsdoc": "^65.5.6",
     "eslint-plugin-prettier": "^5.5.7",
     "eslint-plugin-regexp": "^3.3.3",
-    "eslint-plugin-unicorn": "^79.0.0",
-    "fast-check": "^4.10.2",
+    "eslint-plugin-unicorn": "^80.0.0",
+    "fast-check": "^4.11.0",
     "globals": "^17.14.0",
     "http-server": "^14.1.1",
     "mitata": "^1.0.34",
     "mocha": "^12.0.3",
     "neostandard": "^0.14.1",
     "papaparse": "^5.7.1",
+    "parse5": "^8.1.1",
     "prettier": "^3.10.1",
     "prettier-plugin-brace-style": "^0.10.4",
     "sinon": "^22.1.0",
     "strict-url-sanitise": "^0.0.1",
     "typescript": "^7.0.2",
-    "undici": "^8.12.4"
+    "undici": "^8.13.1"
   },
   "overrides": {
-    "dompurify": "^3.4.17",
+    "dompurify": "$dompurify",
     "glob": "^14.0.3",
-    "minimatch": "^11.0.4"
+    "minimatch": "^11.0.4",
+    "parse5": "$parse5"
   },
   "allowScripts": {
     "esbuild@0.28.2": true
@@ -83,5 +86,5 @@
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
-  "version": "6.1.0"
+  "version": "6.1.1"
 }
